@@ -1,0 +1,21 @@
+{
+    "name": "Python",
+    "dockerFile": "Dockerfile",
+    "customizations": {
+
+        "settings": {
+            "python.pythonPath": "/usr/local/bin/python",
+            "python.linting.enabled": true,
+            "python.languageServer": "Pylance"
+
+        },
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "GitHub.copilot",
+                "ms-azuretools.vscode-docker"
+            ]
+        }
+    }
+
+}
