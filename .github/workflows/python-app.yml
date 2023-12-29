@@ -24,12 +24,12 @@ jobs:
       with:
         context: ./.devcontainer
         push: true
-        tags: ghcr.io/${{ github.repository }}/devcontainer:latest
+        tags: ghcr.io/${{ github.event.repository.name | lower }}/devcontainer:latest
 
   test:
     needs: build
     runs-on: ubuntu-latest
-    container: ghcr.io/${{ github.repository }}/devcontainer:latest
+    container: ghcr.io/${{ github.event.repository.name | lower }}/devcontainer:latest
     steps:
     - name: Test
       run: |
