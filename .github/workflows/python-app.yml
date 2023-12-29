@@ -19,21 +19,17 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Set lowercase repo name
-      id: set_env
-      run: echo "REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
     - name: Build and push Docker image
       uses: docker/build-push-action@v2
       with:
         context: ./.devcontainer
         push: true
-        tags: ghcr.io/${{ github.repository_owner }}/${{ env.REPO_NAME }}/devcontainer:latest
+        tags: ghcr.io/digital-defiance/llm-voice-chat/devcontainer:latest
 
   test:
     needs: build
     runs-on: ubuntu-latest
-    container: ghcr.io/${{ github.repository_owner }}/${{ env.REPO_NAME }}/devcontainer:latest
+    container: ghcr.io/digital-defiance/llm-voice-chat/devcontainer:latest
     steps:
     - name: Test
       run: |
