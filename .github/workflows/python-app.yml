@@ -1,36 +1,45 @@
-name: Test Workflow with GitHub Container Registry
+name: GPT Array Sorter Experiment
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Loss Function'
+        required: true
+        default: 'CrossEntropy'
+        type: choice
+        options:
+          - 'CrossEntropy'
+
+      number_of_blocks:
+        description: 'The number of transformer blocks.'
+        required: true
+        type: string
+      coordinates:
+        description: 'The word embedding dimension.'
+        required: true
+        type: string
+      words:
+        description: 'The number of tokens in the input sequence.'
+        required: true
+        type: string
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v3
 
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v1
+    - name: Set up Python
+      uses: actions/setup-python@v2
       with:
-        registry: ghcr.io
-        username: ${{ github.repository_owner }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        python-version: '3.10'  
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v2
-      with:
-        context: ./.devcontainer
-        push: true
-        tags: ghcr.io/digital-defiance/llm-voice-chat/devcontainer:latest
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    container: ghcr.io/digital-defiance/llm-voice-chat/devcontainer:latest
-    steps:
-    - name: Test
+    - name: Install Dependencies
       run: |
-        echo "success"
+        python -m pip install --upgrade pip
+        pip install spotty awscli boto3
