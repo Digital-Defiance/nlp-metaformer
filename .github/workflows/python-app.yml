@@ -1,10 +1,7 @@
-
-name: Test Workflow to Setup Self Hosted Runners
+name: Test Workflow with GitHub Container Registry
 
 on:
   workflow_dispatch:
-  
-  
 
 permissions:
   contents: read
@@ -12,26 +9,28 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
 
-    - name: Build and load Docker image
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push Docker image
       uses: docker/build-push-action@v2
       with:
         context: ./.devcontainer
-        push: false
-        tags: devcontainer
-        load: true
+        push: true
+        tags: ghcr.io/${{ github.repository }}/devcontainer:latest
 
   test:
     needs: build
-    container:
-      image: devcontainer
     runs-on: ubuntu-latest
-
+    container: ghcr.io/${{ github.repository }}/devcontainer:latest
     steps:
     - name: Test
       run: |
         echo "success"
-
