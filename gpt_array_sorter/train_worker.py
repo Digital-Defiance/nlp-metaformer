@@ -89,7 +89,7 @@ class TrainConfiguration(BaseSettings):
 
 torch.autograd.set_detect_anomaly(True)
 
-with MLFlowHandler.continue_run() as run:
+with MLFlowHandler.continue_run() as mlflow_handler:
     with ModelParameters.make_model() as nanoGPT:
         with TrainConfiguration.train(nanoGPT) as trainer:
             loss_function = trainer.create_loss_function()
@@ -107,8 +107,7 @@ with MLFlowHandler.continue_run() as run:
 
                 mlflow.log_metric("loss", loss.item(), epoch)
                 mlflow.pytorch.log_model(nanoGPT, f"gpt_array_sorter_epoch_{epoch}")
-    
- 
+            mlflow_handler.finish_experiment()
 
 
 

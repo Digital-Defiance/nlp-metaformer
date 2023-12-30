@@ -42,4 +42,10 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install spotty awscli boto3
+        pip install awscli boto3
+        pip install -r .devcontainer/requirements.txt
+
+    - name: Babysit Experiment
+      run: |
+        cd gpt_array_sorter
+        python train_main.py

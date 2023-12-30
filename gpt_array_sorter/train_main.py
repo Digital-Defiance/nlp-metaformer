@@ -41,7 +41,6 @@ with MLFlowHandler.start_run() as mlflow_handler:
     mlflow.log_param("model_definition", model_parameters)
 
     for iteration in range(MAX_ITERATIONS):
-        mlflow.log_param("iteration", iteration)
         logger.info(f"Starting iteration {iteration}")
 
         if not mlflow_handler.is_active():

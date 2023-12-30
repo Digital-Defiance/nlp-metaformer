@@ -21,10 +21,8 @@ class MLFlowHandler(BaseSettings):
         mlflow.set_tracking_uri(self.TRACKING_URL)
 
         with mlflow.start_run(experiment_id=self.EXPERIMENT_ID) as run:
-            mlflow.log_param("status", "STARTING")
             self._run_id = run.info.run_id
             yield self
-
 
     @classmethod
     @contextmanager
@@ -38,16 +36,14 @@ class MLFlowHandler(BaseSettings):
         ) as run:
             mlflow.log_param("status", "RESUMING")
             self._run_id = run.info.run_id
-            yield run
+            yield self
                 
-
     def is_active(self):
         run = mlflow.get_run(self._run_id)
-        status = run.data.params['status']
-
-        if status == 'FINISHED':
-            return False
-        
-        return True
+        status = run.data.params.get("FINISH_CONDITION", None)
+        return status == None
+    
+    def finish_experiment(self, status = "FINISHED"):
+        mlflow.log_param("FINISH_CONDITION", status)
 
 
