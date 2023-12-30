@@ -7,10 +7,10 @@ from tqdm import tqdm
 from model import NanoGPT
 from system_parameters import DEVICE
 from train_config import TrainConfiguration, ModelHandler, MLFlowHandler
-load_dotenv()
-torch.autograd.set_detect_anomaly(True)
 import torch
 
+load_dotenv()
+torch.autograd.set_detect_anomaly(True)
 
 def generate_data(params, batches = 32):
   for _ in range(batches):

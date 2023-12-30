@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from contextlib import contextmanager
 import os
 from typing import Literal
+import mlflow
 
 load_dotenv()
 
@@ -57,19 +58,19 @@ class TrainConfiguration(BaseSettings):
     learning_rate: float = 0.001
     loss_function: str = "CrossEntropyLoss"
 
-    def save_to_mlflow(self, mlflow_handler):
-        mlflow_handler.log_param("epochs", self.NUMBER_OF_EPOCHS)
-        mlflow_handler.log_param("batches", self.NUMBER_OF_BATCHES)
-        mlflow_handler.log_param("learning_rate", self.LEARNING_RATE)
-        mlflow_handler.log_param("loss_function", self.LOSS_FUNCTION)
+    def save_to_mlflow(self):
+        mlflow.log_param("epochs", self.number_of_epochs)
+        mlflow.log_param("batches", self.number_of_batches)
+        mlflow.log_param("learning_rate", self.learning_rate)
+        mlflow.log_param("loss_function", self.loss_function)
 
     @classmethod
-    def load_from_mlflow(cls, mlflow_handler):
+    def load_from_mlflow(cls):
         return cls(
-            NUMBER_OF_EPOCHS=mlflow_handler.get_parameter("epochs"),
-            NUMBER_OF_BATCHES=mlflow_handler.get_parameter("batches"),
-            LEARNING_RATE=mlflow_handler.get_parameter("learning_rate"),
-            LOSS_FUNCTION=mlflow_handler.get_parameter("loss_function"),
+            number_of_epochs=mlflow.get_parameter("epochs"),
+            number_of_batches=mlflow.get_parameter("batches"),
+            learning_rate=mlflow.get_parameter("learning_rate"),
+            loss_function=mlflow.get_parameter("loss_function"),
         )
 
 class ModelHandler(BaseSettings):
@@ -88,17 +89,17 @@ class ModelHandler(BaseSettings):
     words: int = 11
     number_of_blocks: int = 3
 
-    def save_to_mlflow(self, mlflow_handler):
-        mlflow_handler.log_param("number_of_blocks", self.number_of_blocks)
-        mlflow_handler.log_param("coordinates", self.coordinates)
-        mlflow_handler.log_param("tokens", self.tokens)
-        mlflow_handler.log_param("words", self.words)
+    def save_to_mlflow(self):
+        mlflow.log_param("number_of_blocks", self.number_of_blocks)
+        mlflow.log_param("coordinates", self.coordinates)
+        mlflow.log_param("tokens", self.tokens)
+        mlflow.log_param("words", self.words)
     
     @classmethod
-    def load_from_mlflow(cls, mlflow_handler):
+    def load_from_mlflow(cls):
         return cls(
-            number_of_blocks=mlflow_handler.get_parameter("number_of_blocks"),
-            coordinates=mlflow_handler.get_parameter("coordinates"),
-            tokens=mlflow_handler.get_parameter("tokens"),
-            words=mlflow_handler.get_parameter("words"),
+            number_of_blocks=mlflow.get_parameter("number_of_blocks"),
+            coordinates=mlflow.get_parameter("coordinates"),
+            tokens=mlflow.get_parameter("tokens"),
+            words=mlflow.get_parameter("words"),
         )

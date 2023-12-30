@@ -1,16 +1,13 @@
 
-from mlflow_handler import MLFlowHandler
-import mlflow
 import time
 import boto3
 from pydantic_settings import BaseSettings
 import subprocess
-from mlflow_handler import MLFlowHandler
 import os
 import base64
 import logging
 from logging import getLogger
-from train_config import TrainConfiguration, ModelHandler
+from train_config import TrainConfiguration, ModelHandler, MLFlowHandler
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s",)
 
