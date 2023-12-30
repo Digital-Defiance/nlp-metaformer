@@ -1,5 +1,5 @@
 project:
-  name: gpt-array-sorter-13
+  name: gpt-array-sorter-40
   syncFilters:
     - exclude:
       - .git/*
@@ -8,7 +8,7 @@ project:
 
 containers:
   - projectDir: /workspace/project
-    image: pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+    image: python:3.10 # pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
     env:
       PYTHONPATH: /workspace/project
 
@@ -18,13 +18,16 @@ instances:
     parameters:
       amiId: ami-09477e8d34e7ae7a2
       region: eu-west-2
-      instanceType: p3.2xlarge
+      instanceType: t2.micro
       volumes:
         - name: workspace
           parameters:
             size: 50
 
+
 scripts:
   jupyter: |
     jupyter notebook --allow-root --ip 0.0.0.0 --notebook-dir=/workspace/project
+
+ 
  

@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM spotty-instance-gpt-array-sorter-20-aws-1-BuildingDockerImageSignal-114L9OI9A07Z9
 
 RUN apt update && apt install docker.io -y \
                && apt install awscli -y

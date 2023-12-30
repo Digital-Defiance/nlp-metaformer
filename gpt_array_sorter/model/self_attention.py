@@ -20,6 +20,12 @@ class SelfAttention(nn.Module):
     metrics_31ww: Tensor
 
     def __init__(self, params: SelfAttentionParameters):
+        """
+        Initializes the SelfAttention module.
+
+        Args:
+            params (SelfAttentionParameters): The parameters for the SelfAttention module.
+        """
         super(SelfAttention, self).__init__()
         self.COORDINATES = params.coordinates
         self.norm = nn.LayerNorm(params.coordinates)
@@ -38,6 +44,15 @@ class SelfAttention(nn.Module):
 
 
     def forward(self, in_sequence_bwc: Tensor) -> Tensor:
+        """
+        Performs forward pass through the SelfAttention module.
+
+        Args:
+            in_sequence_bwc (Tensor): The input sequence tensor of shape (batch, words, coordinates).
+
+        Returns:
+            Tensor: The output sequence tensor of shape (batch, words, coordinates).
+        """
         batch, words, coordinates = in_sequence_bwc.size()
 
         # d = 3*c where c = coordinates
@@ -79,6 +94,12 @@ class SelfAttention(nn.Module):
 
 
     def get_metric(self):
+        """
+        Computes the metric for the SelfAttention module.
+
+        Returns:
+            Tensor: The computed metric tensor.
+        """
         coordinates = self.COORDINATES
         Wq, Wk, _ = self.attention_heads_dc.weight.transpose(-1, -2).split(coordinates , dim=-1)
         Wq = Wq.view(coordinates, 3, coordinates // 3).transpose(0, 1)
@@ -87,3 +108,8 @@ class SelfAttention(nn.Module):
         M = Wq @ Wk.transpose(-1, -2) # 3 x (wordsxwords)
         M = M.unsqueeze(1) # 3 x 1 x (wordsxwords)
         return M
+    
+
+
+
+

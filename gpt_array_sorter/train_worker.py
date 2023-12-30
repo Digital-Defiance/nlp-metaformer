@@ -10,10 +10,9 @@ from dotenv import load_dotenv
 from contextlib import contextmanager
 from tqdm import tqdm
 from typing import Any
+from mlflow_handler import MLFlowHandler
 
 load_dotenv()
-
-
 
 class ModelParameters(BaseSettings):
     """
@@ -47,9 +46,7 @@ class ModelParameters(BaseSettings):
         mlflow.log_param("parameters", nanoGPT.count_parameters())
         mlflow.log_param("device", DEVICE)
 
-        yield  nanoGPT.to(DEVICE)
-
-        
+        yield nanoGPT.to(DEVICE)
 
 
 class TrainConfiguration(BaseSettings):
@@ -92,7 +89,7 @@ class TrainConfiguration(BaseSettings):
 
 torch.autograd.set_detect_anomaly(True)
 
-with MLFlowSettings.start_run() as run:
+with MLFlowHandler.continue_run() as run:
     with ModelParameters.make_model() as nanoGPT:
         with TrainConfiguration.train(nanoGPT) as trainer:
             loss_function = trainer.create_loss_function()
@@ -112,3 +109,6 @@ with MLFlowSettings.start_run() as run:
                 mlflow.pytorch.log_model(nanoGPT, f"gpt_array_sorter_epoch_{epoch}")
     
  
+
+
+
