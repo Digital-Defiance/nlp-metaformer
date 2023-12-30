@@ -34,7 +34,6 @@ class MLFlowHandler(BaseSettings):
             run_id=os.environ.get("RUN_ID"),
             log_system_metrics=self.LOG_SYSTEM_METRICS,
         ) as run:
-            mlflow.log_param("status", "RESUMING")
             self._run_id = run.info.run_id
             yield self
                 

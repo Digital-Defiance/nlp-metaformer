@@ -25,7 +25,7 @@ class AWSSpot(BaseSettings):
     aws_secret_access_key: str
     region_name: str = "eu-west-2"
     ami_id: str = "ami-093cb9fb2d34920ad"
-    instance_type: str = "c4.large"
+    instance_type: str = "c5n.xlarge"
     max_price: str = "5"
 
 MAX_ITERATIONS = 5
@@ -66,13 +66,26 @@ with MLFlowHandler.start_run() as mlflow_handler:
                     {
                         'DeviceName': '/dev/xvda',
                         'Ebs': {
-                            'VolumeSize': 30,  
+                            'VolumeSize': 130,  
                             'DeleteOnTermination': True,
                             'VolumeType': 'gp2',
                         },
                     },
+
                 ],
                 'UserData': base64.b64encode(f"""#!/bin/bash
+                                             
+
+sudo mkdir /larger_tmp
+export TMPDIR=/larger_tmp
+
+sudo fallocate -l 30G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile1
+sudo swapon /swapfile
+
+ 
+
 sudo yum update -y 
 sudo yum install -y git  
 sudo yum install -y python
@@ -97,6 +110,8 @@ echo 'export MLFLOW_TRACKING_PASSWORD={MLFLOW_TRACKING_PASSWORD}' >> ~/.bash_pro
 echo 'export AWS_ACCESS_KEY_ID={spot_parameters.aws_access_key_id}' >> ~/.bash_profile
 echo 'export AWS_SECRET_ACCESS_KEY={spot_parameters.aws_secret_access_key}' >> ~/.bash_profile
 
+python -m venv env
+source env/bin/activate
 pip install -r .devcontainer/requirements.txt
 cd gpt_array_sorter
 python train_worker.py
