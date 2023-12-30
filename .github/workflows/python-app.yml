@@ -1,10 +1,28 @@
-
-name: Test Workflow to Setup Self Hosted Runners
+name: GPT Array Sorter Experiment
 
 on:
   workflow_dispatch:
-  
-  
+    inputs:
+      environment:
+        description: 'Loss Function'
+        required: true
+        default: 'CrossEntropy'
+        type: choice
+        options:
+          - 'CrossEntropy'
+
+      number_of_blocks:
+        description: 'The number of transformer blocks.'
+        required: true
+        type: string
+      coordinates:
+        description: 'The word embedding dimension.'
+        required: true
+        type: string
+      words:
+        description: 'The number of tokens in the input sequence.'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -16,22 +34,12 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Build and load Docker image
-      uses: docker/build-push-action@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
       with:
-        context: ./.devcontainer
-        push: false
-        tags: devcontainer
-        load: true
+        python-version: '3.10'  
 
-  test:
-    needs: build
-    container:
-      image: devcontainer
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Test
+    - name: Install Dependencies
       run: |
-        echo "success"
-
+        python -m pip install --upgrade pip
+        pip install spotty awscli boto3
