@@ -1,7 +1,5 @@
 
-from spot_handler import AWSSpot
 from mlflow_handler import MLFlowHandler
-from model_handler import ModelHandler
 import mlflow
 import time
 import boto3
@@ -12,7 +10,7 @@ import os
 import base64
 import logging
 from logging import getLogger
-from train_config import TrainConfiguration
+from train_config import TrainConfiguration, ModelHandler
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s",)
 
@@ -26,6 +24,14 @@ class AWSSpot(BaseSettings):
     ami_id: str = "ami-093cb9fb2d34920ad"
     instance_type: str = "c5n.xlarge"
     max_price: str = "5"
+
+    def create_client(self):
+        return boto3.client(
+            'ec2',
+            aws_access_key_id=self.aws_access_key_id,
+            aws_secret_access_key=self.aws_secret_access_key,
+            region_name=self.region_name,
+        )
 
 
 MAX_ITERATIONS = 5
@@ -69,31 +75,17 @@ python train_worker.py
 shutdown -h now
                 """.encode()).decode()
 
-spot_parameters = AWSSpot()
-model_parameters = ModelHandler.export_parameters()
-trainer = TrainConfiguration()
-train_parameters = trainer.model_dump_json()
 
 with MLFlowHandler.start_run() as mlflow_handler:
-    mlflow.log_param("model_definition", model_parameters)
-    mlflow.log_param("train_definition", train_parameters)
-
-    for iteration in range(MAX_ITERATIONS):
-        logger.info(f"Starting iteration {iteration}")
-
-        if not mlflow_handler.is_active():
-            logger.info("MLFlow run is not active")
+    TrainConfiguration().save_to_mlflow(mlflow_handler)
+    ModelHandler().save_to_mlflow(mlflow_handler)
+    spot_parameters = AWSSpot()
+    aws_spot = spot_parameters.create_client()
+    for _ in range(MAX_ITERATIONS):
+        if mlflow_handler.get_status() == "FINISHED":
+            logger.info("MLFlow run is finished")
             break
 
-        logger.info("Creating spot instance request")
-        aws_spot = boto3.client(
-            'ec2',
-            aws_access_key_id=spot_parameters.aws_access_key_id,
-            aws_secret_access_key=spot_parameters.aws_secret_access_key,
-            region_name=spot_parameters.region_name
-        )
-
-        logger.info(f"Requesting spot instance {spot_parameters.instance_type}")
         spot_request_id = aws_spot.request_spot_instances(
             InstanceCount=1,
             Type='one-time',
@@ -101,7 +93,7 @@ with MLFlowHandler.start_run() as mlflow_handler:
                 'ImageId': spot_parameters.ami_id,
                 'InstanceType': spot_parameters.instance_type,
                 'KeyName': 'r',
-                'UserData': make_user_data(mlflow_handler, spot_parameters, trainer),
+                'UserData': make_user_data(mlflow_handler, spot_parameters),
                 'BlockDeviceMappings': [
                     {
                         'DeviceName': '/dev/xvda',
@@ -116,34 +108,29 @@ with MLFlowHandler.start_run() as mlflow_handler:
                 
             },
         )['SpotInstanceRequests'][0]['SpotInstanceRequestId']
+        logger.info(f"Spot request {spot_request_id} created. Waiting for fulfilment.")
 
-        logger.info(f"Spot request {spot_request_id} created")
-        aws_spot.get_waiter('spot_instance_request_fulfilled').wait(SpotInstanceRequestIds=[spot_request_id])
-        logger.info(f"Spot request {spot_request_id} fulfilled")
+        aws_spot \
+            .get_waiter('spot_instance_request_fulfilled') \
+            .wait(SpotInstanceRequestIds=[spot_request_id])
+        logger.info(f"Spot request {spot_request_id} fulfilled. Waiting for instance creation.")
+
         instance_id = aws_spot.describe_spot_instance_requests(SpotInstanceRequestIds=[spot_request_id])['SpotInstanceRequests'][0]['InstanceId']
-        logger.info(f"Instance {instance_id} created")
-        spot_instance = boto3.resource(
-            'ec2',
-            aws_access_key_id=spot_parameters.aws_access_key_id,
-            aws_secret_access_key=spot_parameters.aws_secret_access_key,
-            region_name=spot_parameters.region_name
-        ).Instance(instance_id).wait_until_running()
-        logger.info(f"Instance {instance_id} is running")
+        logger.info(f"Instance {instance_id} created. Waiting for running.")
+
+        aws_spot.Instance(instance_id).wait_until_running()
+        logger.info(f"Instance {instance_id} is running. Waiting for instance status check.")
 
         try:
             AWS_EC2_STATUS_CODE_RUNNING = 16
-            while boto3.resource(
-                'ec2',
-                aws_access_key_id=spot_parameters.aws_access_key_id,
-                aws_secret_access_key=spot_parameters.aws_secret_access_key,
-                region_name=spot_parameters.region_name
-            ).Instance(instance_id).state['Code'] == AWS_EC2_STATUS_CODE_RUNNING:
+            while aws_spot.Instance(instance_id).state['Code'] == AWS_EC2_STATUS_CODE_RUNNING:
                 logger.info("Instance is running")
                 time.sleep(10)
         finally:
             logger.info(f"Cancelling spot request {spot_request_id}")
             aws_spot.cancel_spot_instance_requests(SpotInstanceRequestIds=[spot_request_id])
             logger.info(f"Spot request {spot_request_id} cancelled")
+
             logger.info(f"Stopping instance {instance_id}")
             aws_spot.terminate_instances(InstanceIds=[instance_id])
             logger.info(f"Instance {instance_id} stopped")

@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 from contextlib import contextmanager
 import os
+from typing import Literal
 
 load_dotenv()
 
@@ -36,17 +37,16 @@ class MLFlowHandler(BaseSettings):
         ) as run:
             self._run_id = run.info.run_id
             yield self
-                
-    def is_active(self):
+
+
+    def get_status(self) -> Literal["RUNNING", "FINISHED", "FAILED"]:
         run = mlflow.get_run(self._run_id)
-        status = run.data.params.get("FINISH_CONDITION", None)
-        return status == None
-    
+        return run.info.status
+
     def get_parameter(self, key):
         run = mlflow.get_run(self._run_id)
         return run.data.params.get(key, None)
     
-    def finish_experiment(self, status = "FINISHED"):
-        mlflow.log_param("FINISH_CONDITION", status)
+
 
 
