@@ -61,11 +61,23 @@ with MLFlowHandler.start_run() as mlflow_handler:
             LaunchSpecification={
                 'ImageId': spot_parameters.ami_id,
                 'InstanceType': spot_parameters.instance_type,
-                'KeyName': 'r',  # Add this line
+                'KeyName': 'r',
+                'BlockDeviceMappings': [
+                    {
+                        'DeviceName': '/dev/xvda',
+                        'Ebs': {
+                            'VolumeSize': 30,  
+                            'DeleteOnTermination': True,
+                            'VolumeType': 'gp2',
+                        },
+                    },
+                ],
                 'UserData': base64.b64encode(f"""#!/bin/bash
-                            
 sudo yum update -y 
 sudo yum install -y git  
+sudo yum install -y python
+sudo yum install -y python3-pip
+
 git clone https://github.com/Digital-Defiance/llm-voice-chat.git
 cd llm-voice-chat
 git checkout {current_commit}
@@ -77,10 +89,18 @@ export MLFLOW_TRACKING_PASSWORD={MLFLOW_TRACKING_PASSWORD}
 export AWS_ACCESS_KEY_ID={spot_parameters.aws_access_key_id}
 export AWS_SECRET_ACCESS_KEY={spot_parameters.aws_secret_access_key}
 
+# Add the code to append to the bash profile
+echo 'export TRACKING_URL={mlflow_handler.TRACKING_URL}' >> ~/.bash_profile
+echo 'export EXPERIMENT_ID={mlflow_handler.EXPERIMENT_ID}' >> ~/.bash_profile
+echo 'export MLFLOW_TRACKING_USERNAME={MLFLOW_TRACKING_USERNAME}' >> ~/.bash_profile
+echo 'export MLFLOW_TRACKING_PASSWORD={MLFLOW_TRACKING_PASSWORD}' >> ~/.bash_profile
+echo 'export AWS_ACCESS_KEY_ID={spot_parameters.aws_access_key_id}' >> ~/.bash_profile
+echo 'export AWS_SECRET_ACCESS_KEY={spot_parameters.aws_secret_access_key}' >> ~/.bash_profile
+
 pip install -r .devcontainer/requirements.txt
 cd gpt_array_sorter
 python train_worker.py
-shutdown -h now
+# shutdown -h now
 
                 """.encode()).decode(),
             },
@@ -89,7 +109,8 @@ shutdown -h now
         spot_request_id = response['SpotInstanceRequests'][0]['SpotInstanceRequestId']
         logger.info(f"Spot request {spot_request_id} created")
         aws_spot.get_waiter('spot_instance_request_fulfilled').wait(SpotInstanceRequestIds=[spot_request_id])
-        
+
+
         logger.info(f"Spot request {spot_request_id} fulfilled")
         response = aws_spot.describe_spot_instance_requests(SpotInstanceRequestIds=[spot_request_id])
         instance_id = response['SpotInstanceRequests'][0]['InstanceId']
@@ -100,6 +121,7 @@ shutdown -h now
             aws_secret_access_key=spot_parameters.aws_secret_access_key,
             region_name=spot_parameters.region_name
         ).Instance(instance_id).wait_until_running()
+
 
         logger.info(f"Instance {instance_id} is running")
 
