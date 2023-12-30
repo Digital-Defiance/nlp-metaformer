@@ -2,13 +2,11 @@ import torch
 import mlflow
 import mlflow.pytorch
 import torch.nn as nn
-from data import generate_data
 from dotenv import load_dotenv
 from tqdm import tqdm
-from mlflow_handler import MLFlowHandler
 from model import NanoGPT
 from system_parameters import DEVICE
-from train_config import TrainConfiguration, ModelHandler
+from train_config import TrainConfiguration, ModelHandler, MLFlowHandler
 load_dotenv()
 torch.autograd.set_detect_anomaly(True)
 import torch
