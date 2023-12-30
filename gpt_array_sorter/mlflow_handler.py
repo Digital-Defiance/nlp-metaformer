@@ -42,6 +42,10 @@ class MLFlowHandler(BaseSettings):
         status = run.data.params.get("FINISH_CONDITION", None)
         return status == None
     
+    def get_parameter(self, key):
+        run = mlflow.get_run(self._run_id)
+        return run.data.params.get(key, None)
+    
     def finish_experiment(self, status = "FINISHED"):
         mlflow.log_param("FINISH_CONDITION", status)
 

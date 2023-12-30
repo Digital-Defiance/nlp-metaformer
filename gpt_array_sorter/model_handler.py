@@ -23,9 +23,6 @@ class ModelHandler(BaseSettings):
     words: int = 11
     number_of_blocks: int = 3
 
-    class Config:
-        env_file = ".env.model"
-
 
     @classmethod
     def export_parameters(cls):
@@ -43,4 +40,4 @@ class ModelHandler(BaseSettings):
         mlflow.log_param("words", params.words)
         mlflow.log_param("parameters", nanoGPT.count_parameters())
         mlflow.log_param("device", DEVICE)
-        yield  nanoGPT.to(DEVICE)
+        return nanoGPT.to(DEVICE)
