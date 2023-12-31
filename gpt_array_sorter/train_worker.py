@@ -130,8 +130,6 @@ with mlflow.start_run(
                 logger.error("Error:", error)
 
 
-            pause_training = True
-            break
         if pause_training:
             break
 
