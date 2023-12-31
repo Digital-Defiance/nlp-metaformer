@@ -7,7 +7,7 @@ import mlflow.pytorch
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 from contextlib import contextmanager
-from typing import Literal
+from typing import Literal, Optional
 import mlflow
 import torch
 
@@ -21,7 +21,7 @@ class PauseRunException(Exception):
 
 class MLFlowSettings(BaseSettings):
     experiment_id: int
-    run_id: str | None = None
+    run_id: Optional[str] = None
     tracking_url: str
     tracking_username: str
     tracking_password: str
