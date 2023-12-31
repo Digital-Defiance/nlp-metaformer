@@ -7,11 +7,17 @@ import mlflow.pytorch
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 from contextlib import contextmanager
-import os
 from typing import Literal
 import mlflow
+import torch
+from mlflow.entities import RunStatus
 
 load_dotenv()
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+class PauseRunException(Exception):
+    pass
 
 class MLFlowHandler(BaseSettings):
     EXPERIMENT_ID: int
@@ -32,19 +38,28 @@ class MLFlowHandler(BaseSettings):
 
     @classmethod
     @contextmanager
-    def continue_run(cls):
-        self = cls()
-        mlflow.set_tracking_uri(self.TRACKING_URL)
-        mlflow.enable_system_metrics_logging()
-        with mlflow.start_run(
-            run_id=os.environ.get("RUN_ID"),
-            log_system_metrics=self.LOG_SYSTEM_METRICS,
-        ) as run:
-            self._run_id = run.info.run_id
-            yield self
+    def continue_or_create_run(cls, run_id: str | None):
+        try:
+            if run_id is None:
+                with cls.start_run() as mlflow_handler:
+                    yield mlflow_handler
+                return
+            self = cls()
+            self._run_id = run_id
+            mlflow.set_tracking_uri(self.TRACKING_URL)
+            mlflow.enable_system_metrics_logging()
+            with mlflow.start_run(
+                run_id=run_id,
+                log_system_metrics=self.LOG_SYSTEM_METRICS,
+            ):
+                yield self
+        except PauseRunException:
+            client = mlflow.tracking.MlflowClient()
+            status = RunStatus.SCHEDULED
+            client.set_terminated(run_id, status=RunStatus.to_string(status))
 
 
-    def get_status(self) -> Literal["RUNNING", "FINISHED", "FAILED"]:
+    def get_status(self) -> Literal["RUNNING", "FINISHED", "FAILED", "SCHEDULED"]:
         run = mlflow.get_run(self._run_id)
         return run.info.status
 
@@ -65,12 +80,14 @@ class TrainConfiguration(BaseSettings):
         mlflow.log_param("loss_function", self.loss_function)
 
     @classmethod
-    def load_from_mlflow(cls):
+    def load_from_mlflow(cls) -> "TrainConfiguration":
+        run_id = mlflow.active_run().info.run_id
+        run = mlflow.get_run(run_id)
         return cls(
-            number_of_epochs=mlflow.get_parameter("epochs"),
-            number_of_batches=mlflow.get_parameter("batches"),
-            learning_rate=mlflow.get_parameter("learning_rate"),
-            loss_function=mlflow.get_parameter("loss_function"),
+            number_of_epochs= run.data.params.get("epochs", None),
+            number_of_batches= run.data.params.get("batches", None),
+            learning_rate= run.data.params.get("learning_rate", None),
+            loss_function= run.data.params.get("loss_function", None),
         )
 
 class ModelHandler(BaseSettings):
@@ -96,10 +113,12 @@ class ModelHandler(BaseSettings):
         mlflow.log_param("words", self.words)
     
     @classmethod
-    def load_from_mlflow(cls):
+    def load_from_mlflow(cls) -> "ModelHandler":
+        run_id = mlflow.active_run().info.run_id
+        run = mlflow.get_run(run_id)
         return cls(
-            number_of_blocks=mlflow.get_parameter("number_of_blocks"),
-            coordinates=mlflow.get_parameter("coordinates"),
-            tokens=mlflow.get_parameter("tokens"),
-            words=mlflow.get_parameter("words"),
+            number_of_blocks= run.data.params.get("number_of_blocks", None),
+            coordinates= run.data.params.get("coordinates", None),
+            tokens= run.data.params.get("tokens", None),
+            words= run.data.params.get("words", None),
         )
