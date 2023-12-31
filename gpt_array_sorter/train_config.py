@@ -10,7 +10,6 @@ from contextlib import contextmanager
 from typing import Literal
 import mlflow
 import torch
-from mlflow.entities import RunStatus
 
 load_dotenv()
 
@@ -19,56 +18,21 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class PauseRunException(Exception):
     pass
 
-class MLFlowHandler(BaseSettings):
-    EXPERIMENT_ID: int
-    TRACKING_URL: str
-    LOG_SYSTEM_METRICS: bool = True
 
-    _run_id: str = None
+class MLFlowSettings(BaseSettings):
+    experiment_id: int
+    run_id: str | None = None
+    tracking_url: str
+    tracking_username: str
+    tracking_password: str
+    log_system_metrics: bool = True
 
-    @classmethod
-    @contextmanager
-    def start_run(cls):
-        self = cls()
-        mlflow.set_tracking_uri(self.TRACKING_URL)
+    class Config:
+        env_prefix = "MLFLOW_"
 
-        with mlflow.start_run(experiment_id=self.EXPERIMENT_ID) as run:
-            self._run_id = run.info.run_id
-            yield self
-
-    @classmethod
-    @contextmanager
-    def continue_or_create_run(cls, run_id: str | None):
-        try:
-            if run_id is None:
-                with cls.start_run() as mlflow_handler:
-                    yield mlflow_handler
-                return
-            self = cls()
-            self._run_id = run_id
-            mlflow.set_tracking_uri(self.TRACKING_URL)
-            mlflow.enable_system_metrics_logging()
-            with mlflow.start_run(
-                run_id=run_id,
-                log_system_metrics=self.LOG_SYSTEM_METRICS,
-            ):
-                yield self
-        except PauseRunException:
-            client = mlflow.tracking.MlflowClient()
-            status = RunStatus.SCHEDULED
-            client.set_terminated(run_id, status=RunStatus.to_string(status))
-
-
-    def get_status(self) -> Literal["RUNNING", "FINISHED", "FAILED", "SCHEDULED"]:
-        run = mlflow.get_run(self._run_id)
-        return run.info.status
-
-    def get_parameter(self, key):
-        run = mlflow.get_run(self._run_id)
-        return run.data.params.get(key, None)
 
 class TrainConfiguration(BaseSettings):
-    number_of_epochs: int = 10
+    number_of_epochs: int = 20
     number_of_batches: int = 50
     learning_rate: float = 0.001
     loss_function: str = "CrossEntropyLoss"

@@ -7,7 +7,8 @@ import os
 import base64
 import logging
 from logging import getLogger
-from train_config import TrainConfiguration, ModelHandler, MLFlowHandler
+from train_config import TrainConfiguration, ModelHandler, MLFlowSettings
+import mlflow
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s",)
 
@@ -17,82 +18,92 @@ logger.setLevel(logging.INFO)
 MAX_ITERATIONS = 5
 AWS_EC2_STATUS_CODE_RUNNING = 16
 
-class AWSSpot(BaseSettings):
+class AWSSettings(BaseSettings):
     aws_access_key_id: str
     aws_secret_access_key: str
     region_name: str = "eu-west-2"
     ami_id: str = "ami-093cb9fb2d34920ad"
     instance_type: str = "c5n.xlarge"
 
-    def create_client(self):
-        return boto3.client(
-            'ec2',
-            aws_access_key_id=self.aws_access_key_id,
-            aws_secret_access_key=self.aws_secret_access_key,
-            region_name=self.region_name,
-        )
+    def to_launch_specification(self, user_data):
+        return {
+            'ImageId': self.ami_id,
+            'InstanceType': self.instance_type,
+            'KeyName': 'r',
+            'UserData': user_data,
+            'BlockDeviceMappings': [
+                {
+                    'DeviceName': '/dev/xvda',
+                    'Ebs': {
+                        'VolumeSize': 130,  
+                        'DeleteOnTermination': True,
+                        'VolumeType': 'gp2',
+                    },
+                },
 
-with MLFlowHandler.start_run() as mlflow_handler:
-    TrainConfiguration().save_to_mlflow(mlflow_handler)
-    ModelHandler().save_to_mlflow(mlflow_handler)
-    spot_parameters = AWSSpot()
-    aws_spot = spot_parameters.create_client()
+            ]
+        }
 
-    with open("user_data.sh", "r") as f:
-        bash_script_template = f.read()
+    
+aws_settings = AWSSettings()
+mlflow_settings = MLFlowSettings()
+mlflow.set_tracking_uri(mlflow_settings.TRACKING_URL)
+
+with open("user_data.sh", "r") as f:
+    bash_script_template = f.read()
+
+with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
+    TrainConfiguration().save_to_mlflow()
+    ModelHandler().save_to_mlflow()
 
     bash_script = bash_script_template.format(
         current_commit=subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('ascii'),
-        TRACKING_URL=mlflow_handler.TRACKING_URL,
-        EXPERIMENT_ID=mlflow_handler.EXPERIMENT_ID,
-        MLFLOW_TRACKING_USERNAME=os.environ.get("MLFLOW_TRACKING_USERNAME"),
-        MLFLOW_TRACKING_PASSWORD=os.environ.get("MLFLOW_TRACKING_PASSWORD"),
-        AWS_ACCESS_KEY_ID=spot_parameters.aws_access_key_id,
-        AWS_SECRET_ACCESS_KEY=spot_parameters.aws_secret_access_key,
-        RUN_ID=mlflow_handler._run_id
+        TRACKING_URL=mlflow_settings.TRACKING_URL,
+        EXPERIMENT_ID=mlflow_settings.EXPERIMENT_ID,
+        MLFLOW_TRACKING_USERNAME=mlflow_settings.MLFLOW_TRACKING_USERNAME,
+        MLFLOW_TRACKING_PASSWORD=mlflow_settings.MLFLOW_TRACKING_PASSWORD,
+        AWS_ACCESS_KEY_ID=aws_settings.aws_access_key_id,
+        AWS_SECRET_ACCESS_KEY=aws_settings.aws_secret_access_key,
+        RUN_ID=run.info.run_id,
     )
 
     user_data = base64.b64encode(bash_script.encode()).decode()
+    
+    aws_spot = boto3.client(
+        'ec2',
+        aws_access_key_id=aws_settings.aws_access_key_id,
+        aws_secret_access_key=aws_settings.aws_secret_access_key,
+        region_name=aws_settings.region_name,
+    )
+
+
+    def get_first_spot_req(description):
+        return description['SpotInstanceRequests'][0]
 
     for _ in range(MAX_ITERATIONS):
-        if mlflow_handler.get_status() == "FINISHED":
+    
+        if mlflow.get_run(run.info.run_id).info.status == "FINISHED":
             logger.info("MLFlow run is finished")
             break
 
-        spot_request_id = aws_spot.request_spot_instances(
+        response = aws_spot.request_spot_instances(
             InstanceCount=1,
             Type='one-time',
-            LaunchSpecification={
-                'ImageId': spot_parameters.ami_id,
-                'InstanceType': spot_parameters.instance_type,
-                'KeyName': 'r',
-                'UserData': user_data,
-                'BlockDeviceMappings': [
-                    {
-                        'DeviceName': '/dev/xvda',
-                        'Ebs': {
-                            'VolumeSize': 130,  
-                            'DeleteOnTermination': True,
-                            'VolumeType': 'gp2',
-                        },
-                    },
-
-                ],
-                
-            },
-        )['SpotInstanceRequests'][0]['SpotInstanceRequestId']
+            LaunchSpecification=aws_settings.to_launch_specification(user_data)
+        )
+        spot_request_id = get_first_spot_req(response)['SpotInstanceRequestId']
         logger.info(f"Spot request {spot_request_id} created. Waiting for fulfilment.")
 
         aws_spot \
             .get_waiter('spot_instance_request_fulfilled') \
             .wait(SpotInstanceRequestIds=[spot_request_id])
+
         logger.info(f"Spot request {spot_request_id} fulfilled. Waiting for instance creation.")
 
-        instance_id = aws_spot.describe_spot_instance_requests(SpotInstanceRequestIds=[spot_request_id])['SpotInstanceRequests'][0]['InstanceId']
+        response = aws_spot.describe_spot_instance_requests(SpotInstanceRequestIds=[spot_request_id])
+        instance_id = get_first_spot_req(response)['InstanceId']
         logger.info(f"Instance {instance_id} created. Waiting for running.")
-
         aws_spot.Instance(instance_id).wait_until_running()
-        logger.info(f"Instance {instance_id} is running. Waiting for instance status check.")
 
         try:
             while aws_spot.Instance(instance_id).state['Code'] == AWS_EC2_STATUS_CODE_RUNNING:

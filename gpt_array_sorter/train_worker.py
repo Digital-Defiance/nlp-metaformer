@@ -6,12 +6,14 @@ from tqdm import tqdm
 from model import NanoGPT
 import torch
 import logging
-import os
 from contextlib import contextmanager
-from train_config import TrainConfiguration, ModelHandler, MLFlowHandler, DEVICE, PauseRunException
+from train_config import TrainConfiguration, ModelHandler, DEVICE, MLFlowSettings
 import argparse
 import requests
+from mlflow.entities import RunStatus
 
+
+logging.getLogger("mlflow").setLevel(logging.DEBUG)
 torch.autograd.set_detect_anomaly(True)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -37,64 +39,43 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
+mlflow_settings = MLFlowSettings()
+mlflow.set_tracking_uri(mlflow_settings.tracking_url)
+logger.info(mlflow_settings)
 
-RUN_ID = os.environ.get("RUN_ID", None)
-if not RUN_ID and not args.create_run:
+if not mlflow_settings.run_id and not args.create_run:
     raise ValueError("RUN_ID environment variable is not set")
 
 
-def check_termination_notice():
-    """
-    Checks for EC2 Spot Instance termination notice
-    Returns True if termination notice is received, False otherwise
-    """
-    try:
-        response = requests.get('http://169.254.169.254/latest/meta-data/spot/termination-time')
-        response.raise_for_status()
-        return True
-    except requests.exceptions.HTTPError as errh:
-        print ("Http Error:",errh)
-    except requests.exceptions.ConnectionError as errc:
-        print ("Error Connecting:",errc)
-    except requests.exceptions.Timeout as errt:
-        print ("Timeout Error:",errt)
-    except requests.exceptions.RequestException as err:
-        print ("Something went wrong",err)
-    return False
 
-if args.is_local_run:
-    check_termination_notice = lambda : False
+with mlflow.start_run(
+    run_id=mlflow_settings.run_id,
+    experiment_id=mlflow_settings.experiment_id,
+    log_system_metrics=mlflow_settings.log_system_metrics,
+) as run:
+    logger.info(f"MLFlow run status is {mlflow.get_run(run.info.run_id).info.status}")
 
-with MLFlowHandler.continue_or_create_run(RUN_ID) as mlflow_handler:
-    logger.info(f"MLFlow run status is {mlflow_handler.get_status()}")
+    if not mlflow_settings.run_id:
+        mlflow_settings.run_id = run.info.run_id
+        for cls in [TrainConfiguration, ModelHandler]:
+            cls().save_to_mlflow()
+        del cls
 
-    if not RUN_ID:
-        model_params = ModelHandler()
-        train_params = TrainConfiguration()
-        model_params.save_to_mlflow()
-        train_params.save_to_mlflow()
-        del model_params
-        del train_params
-
-    model_params = ModelHandler.load_from_mlflow()
     train_params = TrainConfiguration.load_from_mlflow()
+    model_params = ModelHandler.load_from_mlflow()
     logging.info(f"Train parameters are {train_params}")    
     logging.info(f"Model parameters are {model_params}")
-
-    nanoGPT = NanoGPT(model_params).to(DEVICE)
-    run_id = mlflow.active_run().info.run_id
-    run = mlflow.get_run(run_id)
-    steps = run.data.metrics.get('step', [])
-
-    if steps:
-        last_epoch = max(steps)
+    
+    last_epoch = mlflow.get_run(run.info.run_id).data.metrics.get('epoch', None)
+    if last_epoch:
+        last_epoch = int(last_epoch)
         logger.debug("Last epoch is %s", last_epoch)
-        model_uri = f"runs:/{RUN_ID}/gpt_array_sorter_epoch_{last_epoch}"
-        state_dict = mlflow.pytorch.load_model(model_uri)
-        nanoGPT.load_state_dict(state_dict)
+        model_uri = f"runs:/{mlflow_settings.run_id}/nanogpt_{last_epoch}"
+        nanoGPT = mlflow.pytorch.load_model(model_uri).to(DEVICE)
         start_epoch = last_epoch + 1
         logger.info(f"Loaded model from {model_uri}")
     else:
+        nanoGPT = NanoGPT(model_params).to(DEVICE)
         start_epoch = 0
 
     optimizer = torch.optim.Adam(nanoGPT.parameters(), lr=train_params.learning_rate)
@@ -118,18 +99,45 @@ with MLFlowHandler.continue_or_create_run(RUN_ID) as mlflow_handler:
         yield
         optimizer.step()
 
+    pause_training = False
     for epoch in range(start_epoch, train_params.number_of_epochs):
-        data_generator = generate_data()
-        progress_bar = tqdm(data_generator, desc=f"Epoch {epoch}", leave=True)
-        for in_sequence_bw, true_out_sequence_bw in progress_bar:
+        data_gen = generate_data()
+        data_gen_progressbar = tqdm(data_gen, desc=f"Epoch {epoch}", leave=True)
+        for in_sequence_bw, true_out_sequence_bw in data_gen_progressbar:
+
             with zero_grad(optimizer):
                 out_sequence_bw = nanoGPT(in_sequence_bw)
                 out_sequence_wb = out_sequence_bw.transpose(-1, -2)
                 loss = loss_function(out_sequence_wb, true_out_sequence_bw)
                 loss.backward()
-            progress_bar.set_postfix(loss=loss.item())
-            if check_termination_notice():
-                raise PauseRunException()
+    
+            data_gen_progressbar.set_postfix(loss=loss.item())
 
-        mlflow.pytorch.log_model(nanoGPT, f"gpt_array_sorter_epoch_{epoch}")
+            if args.is_local_run:
+                continue
+
+            try:
+                response = requests.get('http://169.254.169.254/latest/meta-data/spot/termination-time')
+                response.raise_for_status()
+                continue
+            except requests.exceptions.HTTPError as errh:
+                logger.error("Http Error:",errh)
+            except requests.exceptions.ConnectionError as errc:
+                logger.error("Error Connecting:",errc)
+            except requests.exceptions.Timeout as errt:
+                logger.error("Timeout Error:",errt)
+            except requests.exceptions.RequestException as err:
+                logger.error("Something went wrong",err)
+
+            pause_training = True
+            break
+        if pause_training:
+            break
+
+        mlflow.pytorch.log_model(nanoGPT, f"nanogpt_{epoch}")
         mlflow.log_metric("loss", loss.item(), epoch)
+        mlflow.log_metric("epoch", epoch, epoch)
+
+if pause_training:
+    status = RunStatus.to_string(RunStatus.SCHEDULED)
+    mlflow.tracking.MlflowClient().set_terminated(mlflow_settings.run_id, status=status)
