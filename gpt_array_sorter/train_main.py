@@ -8,13 +8,16 @@ import logging
 from logging import getLogger
 from train_config import TrainConfiguration, ModelHandler, MLFlowSettings
 import mlflow
+from botocore.exceptions import ClientError
+
+
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s",)
 
 logger = getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-MAX_ITERATIONS = 5
+MAX_ITERATIONS = 1
 AWS_EC2_STATUS_CODE_RUNNING = 16
 
 class AWSSettings(BaseSettings):
@@ -83,6 +86,13 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
         region_name=aws_settings.region_name,
     )
 
+    cw_client = client = boto3.client(
+        'logs',
+        aws_access_key_id=aws_settings.aws_access_key_id,
+        aws_secret_access_key=aws_settings.aws_secret_access_key,
+        region_name=aws_settings.region_name,
+    )
+
 
     def get_first_spot_req(description):
         return description['SpotInstanceRequests'][0]
@@ -111,11 +121,32 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
         instance_id = get_first_spot_req(response)['InstanceId']
         logger.info(f"Instance {instance_id} created. Waiting for running.")
         ec2_resources.Instance(instance_id).wait_until_running()
+        logger.info("Instance is running")
 
         try:
+
+            logs = set()
             while ec2_resources.Instance(instance_id).state['Code'] == AWS_EC2_STATUS_CODE_RUNNING:
-                logger.info("Instance is running")
-                time.sleep(10)
+                time.sleep(1)
+
+                # Get the logs from CloudWatch
+
+                try:
+                    response = cw_client.get_log_events(
+                        logGroupName="/var/log/cloud-init-output.log",
+                        logStreamName=instance_id,
+                    )
+
+                    for event in response['events']:
+                        if event['message'] in logs:
+                            continue
+
+                        logs.add(event['message'])
+                        logger.info(event['message'])
+        
+                except ClientError:
+                    logger.info("Log group not found yet")
+
         finally:
             ec2_client.cancel_spot_instance_requests(SpotInstanceRequestIds=[spot_request_id])
             logger.info(f"Spot request {spot_request_id} cancelled. Waiting for instance termination.")
