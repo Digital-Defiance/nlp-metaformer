@@ -66,8 +66,6 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
         RUN_ID=run.info.run_id,
     )
 
-    print(bash_script)
-    raise SystemExit
 
     user_data = base64.b64encode(bash_script.encode()).decode()
     
