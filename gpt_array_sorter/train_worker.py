@@ -9,8 +9,10 @@ import logging
 from contextlib import contextmanager
 from train_config import TrainConfiguration, ModelHandler, DEVICE, MLFlowSettings
 import argparse
-import requests
+from typing import Optional
 from mlflow.entities import RunStatus
+import boto3
+from botocore.exceptions import BotoCoreError, BotoConnectionError
 
 
 logging.getLogger("mlflow").setLevel(logging.DEBUG)
@@ -117,17 +119,16 @@ with mlflow.start_run(
                 continue
 
             try:
-                response = requests.get('http://169.254.169.254/latest/meta-data/spot/termination-time')
-                response.raise_for_status()
-                continue
-            except requests.exceptions.HTTPError as errh:
-                logger.error("Http Error:",errh)
-            except requests.exceptions.ConnectionError as errc:
-                logger.error("Error Connecting:",errc)
-            except requests.exceptions.Timeout as errt:
-                logger.error("Timeout Error:",errt)
-            except requests.exceptions.RequestException as err:
-                logger.error("Something went wrong",err)
+                session = boto3.Session()
+                metadata = session.client('ec2-instance-metadata')
+                termination_time: Optional[str] = metadata.get('spot/termination-time')
+                if termination_time:
+                    logger.info("Received termination notice")
+                    pause_training = True
+                    break
+            except (BotoCoreError, BotoConnectionError) as error:
+                logger.error("Error:", error)
+
 
             pause_training = True
             break
