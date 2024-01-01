@@ -17,7 +17,7 @@ logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s",)
 logger = getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-MAX_ITERATIONS = 1
+MAX_ITERATIONS = 3
 AWS_EC2_STATUS_CODE_RUNNING = 16
 
 class AWSSettings(BaseSettings):
@@ -142,7 +142,7 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
                             continue
 
                         logs.add(event['message'])
-                        logger.info(f"{instance_id}> {event['message']}")
+                        print(f"{instance_id}> {event['message']}")
         
                 except ClientError:
                     logger.info("Log group not found yet")
