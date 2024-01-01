@@ -10,7 +10,6 @@ on:
         type: choice
         options:
           - 'CrossEntropy'
-
       number_of_blocks:
         description: 'The number of transformer blocks.'
         required: true
@@ -102,10 +101,10 @@ jobs:
         export MLFLOW_TRACKING_URL=${{ secrets.MLFLOW_TRACKING_URL }}}
         export MLFLOW_TRACKING_USERNAME=${{ secrets.MLFLOW_TRACKING_USERNAME }}
         export MLFLOW_TRACKING_PASSWORD=${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+        export MLFLOW_EXPERIMENT_ID=${{ secrets.MLFLOW_EXPERIMENT_ID }}
+      
         export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
         export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-
 
         export REGION_NAME=${{ github.event.inputs.region_name }}
         export AMI_ID=${{ github.event.inputs.ami_id }}
