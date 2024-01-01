@@ -1,0 +1,123 @@
+name: GPT Array Sorter Experiment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Loss Function'
+        required: true
+        default: 'CrossEntropyLoss'
+        type: choice
+        options:
+          - 'CrossEntropyLoss'
+      number_of_blocks:
+        description: 'The number of transformer blocks.'
+        required: true
+        type: string
+        default: '2'
+      coordinates:
+        description: 'The word embedding dimension.'
+        required: true
+        type: string
+        default: '9'
+      words:
+        description: 'The number of tokens in the input sequence.'
+        required: true
+        type: string
+        default: '11'
+      tokens:
+        description: 'The number of tokens in the vocab.'
+        required: true
+        type: string
+        default: '3'
+      number_of_batches:
+        description: 'The number of batches.'
+        required: true
+        type: string
+        default: '32'
+      number_of_epochs:
+        description: 'The number of epochs.'
+        required: true
+        type: string
+        default: '20'
+      learning_rate:
+        description: 'The learning rate (fixed).'
+        required: true
+        type: string
+        default: '0.001'
+      ami_id:
+        description: 'The ami id.'
+        required: true
+        type: string
+        default: 'ami-093cb9fb2d34920ad'
+      instance_type:
+        description: 'The instance type.'
+        required: true
+        type: string
+        default: 'c5n.xlarge'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'  
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install awscli boto3==1.34.8 pydantic==2.5.3 pydantic-settings==2.1.0 mlflow==2.9.2
+
+    - name: Print Inputs
+      run: |
+        echo "coordinates"
+        echo ${{ github.event.inputs.coordinates }}
+        echo "tokens"
+        echo ${{ github.event.inputs.tokens }}
+        echo "words"
+        echo ${{ github.event.inputs.words }}
+        echo "number_of_blocks"
+        echo ${{ github.event.inputs.number_of_blocks }}
+        echo "environment"
+        echo ${{ github.event.inputs.environment }}
+        echo "number_of_batches"
+        echo ${{ github.event.inputs.number_of_batches }}
+        echo "number_of_epochs"
+        echo ${{ github.event.inputs.number_of_epochs }}
+
+
+        
+    - name: Babysit Experiment
+      run: |
+        export MLFLOW_TRACKING_URL=${{ secrets.MLFLOW_TRACKING_URL }}
+        export MLFLOW_TRACKING_USERNAME=${{ secrets.MLFLOW_TRACKING_USERNAME }}
+        export MLFLOW_TRACKING_PASSWORD=${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+        export MLFLOW_EXPERIMENT_ID=${{ secrets.MLFLOW_EXPERIMENT_ID }}
+      
+        export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+        export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+        export REGION_NAME=eu-west-2
+        export AMI_ID=${{ github.event.inputs.ami_id }}
+        export INSTANCE_TYPE=${{ github.event.inputs.instance_type }}
+
+        export COORDINATES=${{ github.event.inputs.coordinates }}
+        export TOKENS=${{ github.event.inputs.tokens }}
+        export WORDS=${{ github.event.inputs.words }}
+        export NUMBER_OF_BLOCKS=${{ github.event.inputs.number_of_blocks }}
+        export LOSS_FUNCTION=${{ github.event.inputs.environment }}
+
+        export NUMBER_OF_BATCHES=${{ github.event.inputs.number_of_batches }}
+        export NUMBER_OF_EPOCHS=${{ github.event.inputs.number_of_epochs }}
+        export LEARNING_RATE=${{ github.event.inputs.learning_rate }}
+
+        cd gpt_shakespear
+        python train_main.py
