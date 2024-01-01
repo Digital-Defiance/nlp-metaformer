@@ -102,9 +102,7 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
 
     for _ in range(MAX_ITERATIONS):
     
-        if mlflow.get_run(run.info.run_id).info.status == "FINISHED":
-            logger.info("MLFlow run is finished")
-            break
+
 
         response = ec2_client.request_spot_instances(
             InstanceCount=1,
@@ -156,6 +154,12 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
             ec2_client.terminate_instances(InstanceIds=[instance_id])
             logger.info(f"Instance {instance_id} terminated.")
 
+        if mlflow.get_run(run.info.run_id).info.status == "FINISHED":
+            logger.info("MLFlow run is finished")
+            break
 
+        if mlflow.get_run(run.info.run_id).info.status == "FAILED":
+            logger.info("MLFlow run has failed")
+            break
 
 

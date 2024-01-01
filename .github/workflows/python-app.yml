@@ -6,10 +6,10 @@ on:
       environment:
         description: 'Loss Function'
         required: true
-        default: 'CrossEntropy'
+        default: 'CrossEntropyLoss'
         type: choice
         options:
-          - 'CrossEntropy'
+          - 'CrossEntropyLoss'
       number_of_blocks:
         description: 'The number of transformer blocks.'
         required: true
