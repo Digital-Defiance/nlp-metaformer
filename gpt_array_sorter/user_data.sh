@@ -76,6 +76,6 @@ source env/bin/activate
 pip install -r .devcontainer/requirements.txt
 cd gpt_array_sorter
 python train_worker.py
-# wait two minutes before shutting down, so that the logs can be sent to cloudwatch
+#wait two minutes before shutting down, so that the logs can be sent to cloudwatch
 shutdown -h +2
 

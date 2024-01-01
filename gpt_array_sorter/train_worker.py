@@ -12,8 +12,8 @@ import argparse
 from typing import Optional
 from mlflow.entities import RunStatus
 import boto3
-from botocore.exceptions import BotoCoreError, BotoConnectionError
-
+from botocore.exceptions import BotoCoreError
+import requests
 
 logging.getLogger("mlflow").setLevel(logging.DEBUG)
 torch.autograd.set_detect_anomaly(True)
@@ -118,17 +118,25 @@ with mlflow.start_run(
             if args.is_local_run:
                 continue
 
-            try:
-                session = boto3.Session()
-                metadata = session.client('ec2-instance-metadata')
-                termination_time: Optional[str] = metadata.get('spot/termination-time')
-                if termination_time:
-                    logger.info("Received termination notice")
-                    pause_training = True
-                    break
-            except (BotoCoreError, BotoConnectionError) as error:
-                logger.error("Error:", error)
+            token_response = requests.put(
+                "http://169.254.169.254/latest/api/token",
+                headers={"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
+            )
+            token_response.raise_for_status()
+            token = token_response.text
 
+            try:
+                instance_action_response = requests.get(
+                    "http://169.254.169.254/latest/meta-data/spot/instance-action",
+                    headers={"X-aws-ec2-metadata-token": token}
+                )
+                instance_action_response.raise_for_status()
+            except requests.exceptions.HTTPError as err:
+                if err.response.status_code == 404:
+                    continue
+
+            pause_training = True
+            break
 
         if pause_training:
             break

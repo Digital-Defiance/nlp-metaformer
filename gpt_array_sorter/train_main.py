@@ -142,7 +142,7 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
                             continue
 
                         logs.add(event['message'])
-                        logger.info(event['message'])
+                        logger.info(f"{instance_id}> {event['message']}")
         
                 except ClientError:
                     logger.info("Log group not found yet")
