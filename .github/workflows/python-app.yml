@@ -45,11 +45,6 @@ on:
         required: true
         type: string
         default: '0.001'
-      region_name:
-        description: 'The region name.'
-        required: true
-        type: string
-        default: 'eu-west-2'
       ami_id:
         description: 'The ami id.'
         required: true
@@ -111,7 +106,7 @@ jobs:
         export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
         export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-        export REGION_NAME=${{ github.event.inputs.region_name }}
+        export REGION_NAME=eu-west-2
         export AMI_ID=${{ github.event.inputs.ami_id }}
         export INSTANCE_TYPE=${{ github.event.inputs.instance_type }}
 
