@@ -1,4 +1,4 @@
-name: GPT Array Sorter Experiment
+name: Train GPT-Array-Sorter
 
 on:
   workflow_dispatch:
