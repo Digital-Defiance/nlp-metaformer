@@ -39,7 +39,12 @@ on:
         description: 'The number of epochs.'
         required: true
         type: string
-        default: '10'
+        default: '20'
+      learning_rate:
+        description: 'The learning rate (fixed).'
+        required: true
+        type: string
+        default: '0.001'
       region_name:
         description: 'The region name.'
         required: true
@@ -118,6 +123,7 @@ jobs:
 
         export NUMBER_OF_BATCHES=${{ github.event.inputs.number_of_batches }}
         export NUMBER_OF_EPOCHS=${{ github.event.inputs.number_of_epochs }}
+        export LEARNING_RATE=${{ github.event.inputs.learning_rate }}
 
         cd gpt_array_sorter
         python train_main.py
