@@ -1,19 +1,12 @@
 
-import mlflow.pytorch
 from pydantic_settings import BaseSettings
-from dotenv import load_dotenv
 import mlflow
-import mlflow.pytorch
-from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
-from contextlib import contextmanager
-from typing import Literal, Optional
+from typing import  Optional
 import mlflow
-import torch
 
 load_dotenv()
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class PauseRunException(Exception):
     pass

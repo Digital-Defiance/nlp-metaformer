@@ -1,14 +1,17 @@
 
-import time
-import boto3
-from pydantic_settings import BaseSettings
-import subprocess
 import base64
 import logging
+import subprocess
+import time
 from logging import getLogger
-from train_config import TrainConfiguration, ModelHandler, MLFlowSettings
+
+import boto3
 import mlflow
 from botocore.exceptions import ClientError
+
+from pydantic_settings import BaseSettings
+from train_config import TrainConfiguration, ModelHandler, MLFlowSettings
+
 
 
 

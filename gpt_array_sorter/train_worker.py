@@ -7,13 +7,19 @@ from model import NanoGPT
 import torch
 import logging
 from contextlib import contextmanager
-from train_config import TrainConfiguration, ModelHandler, DEVICE, MLFlowSettings
+from train_config import TrainConfiguration, ModelHandler, MLFlowSettings
 import argparse
 from typing import Optional
 from mlflow.entities import RunStatus
 import boto3
 from botocore.exceptions import BotoCoreError
 import requests
+
+
+import torch
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 logging.getLogger("mlflow").setLevel(logging.DEBUG)
 torch.autograd.set_detect_anomaly(True)
