@@ -39,12 +39,12 @@ on:
         description: 'The number of epochs.'
         required: true
         type: string
-        default: '10'
-      region_name:
-        description: 'The region name.'
+        default: '20'
+      learning_rate:
+        description: 'The learning rate (fixed).'
         required: true
         type: string
-        default: 'eu-west-2'
+        default: '0.001'
       ami_id:
         description: 'The ami id.'
         required: true
@@ -106,7 +106,7 @@ jobs:
         export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
         export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-        export REGION_NAME=${{ github.event.inputs.region_name }}
+        export REGION_NAME=eu-west-2
         export AMI_ID=${{ github.event.inputs.ami_id }}
         export INSTANCE_TYPE=${{ github.event.inputs.instance_type }}
 
@@ -118,6 +118,7 @@ jobs:
 
         export NUMBER_OF_BATCHES=${{ github.event.inputs.number_of_batches }}
         export NUMBER_OF_EPOCHS=${{ github.event.inputs.number_of_epochs }}
+        export LEARNING_RATE=${{ github.event.inputs.learning_rate }}
 
         cd gpt_array_sorter
         python train_main.py
