@@ -1,4 +1,4 @@
-name: Train GPT-Shakespear
+name: Train GPT-Shakespear on AWS
 
 on:
   workflow_dispatch:
@@ -60,7 +60,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  training:
     runs-on: ubuntu-latest
 
     steps:
