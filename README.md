@@ -6,3 +6,6 @@
 
 ![2024-01-01-040953_1478x706_scrot](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/19205fbb-5d43-45b3-9947-f8403e0ebfd6)
 
+![2024-01-01-045640_1483x757_scrot](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/d6fb75af-7e2e-40fc-9758-e1c93981cb47)
+
+
