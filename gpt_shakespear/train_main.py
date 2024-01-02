@@ -73,7 +73,6 @@ class AWSSettings(BaseSettings):
     
 aws_settings = AWSSettings()
 mlflow_settings = MLFlowSettings()
-mlflow.set_tracking_uri(mlflow_settings.tracking_url)
 
 with open("user_data.sh", "r") as f:
     bash_script_template = f.read()
@@ -84,7 +83,7 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
 
     bash_script = bash_script_template.format(
         current_commit=subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('ascii'),
-        TRACKING_URL=mlflow_settings.tracking_url,
+        TRACKING_URI=mlflow_settings.tracking_uri,
         EXPERIMENT_ID=mlflow_settings.experiment_id,
         MLFLOW_TRACKING_USERNAME=mlflow_settings.tracking_username,
         MLFLOW_TRACKING_PASSWORD=mlflow_settings.tracking_password,

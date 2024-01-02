@@ -13,7 +13,6 @@ class SelfAttentionParameters(Protocol):
 
 class SelfAttention(nn.Module):
     COORDINATES: int
-    norm: nn.LayerNorm
     attention_heads_dc: nn.Linear
     projection_1cc: nn.Linear
     BIAS_ww: Tensor
@@ -28,8 +27,7 @@ class SelfAttention(nn.Module):
         """
         super(SelfAttention, self).__init__()
         self.COORDINATES = params.coordinates
-        self.norm = nn.LayerNorm(params.coordinates)
-        
+
         # d = 3*c
         self.attention_heads_dc = nn.Linear(params.coordinates, 3*params.coordinates, bias=False)
         self.projection_1cc = nn.Linear(params.coordinates, params.coordinates, bias=False)
@@ -39,8 +37,6 @@ class SelfAttention(nn.Module):
             .tril(torch.ones(params.words, params.words))
             .view(1, 1, params.words, params.words)
         )
-        
-        
 
 
     def forward(self, in_sequence_bwc: Tensor) -> Tensor:
@@ -91,9 +87,7 @@ class SelfAttention(nn.Module):
 
 
 
-
-
-    def get_metric(self):
+    def _get_metric(self):
         """
         Computes the metric for the SelfAttention module.
 

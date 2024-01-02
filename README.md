@@ -8,4 +8,31 @@
 
 ![2024-01-01-045640_1483x757_scrot](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/d6fb75af-7e2e-40fc-9758-e1c93981cb47)
 
+## Tensor Notation Guidelines
+
+In our code, we use a specific notation to denote the shape of tensors. Here's how it works:
+
+- A tensor's shape is indicated by appending a suffix to the variable name. Each letter in the suffix corresponds to a dimension in the tensor's shape. For example, a tensor with shape `(a, b, c)` would be named `some_tensor_abc`:
+
+    ```python
+    a, b, c = 10, 3, 5
+    some_tensor_abc = torch.randn(a, b, c)
+    ```
+
+- If the dimensions of the tensor are not represented by single letters, we use their initials. For instance, a tensor with dimensions `batch_size` and `vocabolary_size` would be named `some_tensor_bv`:
+
+    ```python
+    batch_size, vocabolary_size = 32, 1024
+    some_tensor_bv = torch.randn(batch_size, vocabolary_size)
+    ```
+
+- If a dimension has an explicit value, we include that value in the suffix. For example, `some_tensor_b2ac` indicates that the tensor has a second dimension (`dim=1`) with a size of 2. We only include explicit values in the suffix if they have more than one digit.
+
+- We also extend this notation to functions. A function name like `some_function_tq` indicates that the function transforms dimension `q` into size `t`:
+
+    ```python
+    result_abct = some_function_tq(input_abcq)
+    ```
+
+This notation helps us keep track of tensor shapes throughout our code, making it easier to understand and debug.
 

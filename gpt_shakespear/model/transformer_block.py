@@ -6,6 +6,9 @@ from typing import Protocol
 from model.self_attention import SelfAttention
 from model.perceptron import Perceptron as MLP
 
+TensorInt = Tensor
+TensorFloat = Tensor
+
 class TransformerBlockParameters(Protocol):
     coordinates: int
     words: int
@@ -13,23 +16,25 @@ class TransformerBlockParameters(Protocol):
 
 class TransformerBlock(nn.Module):
 
-    norm1: nn.LayerNorm
-    attention: SelfAttention
+    layer_norm1_c: nn.LayerNorm
+    self_attention: SelfAttention
 
-    norm2: nn.LayerNorm
-    mlp: MLP
+    layer_norm2_c: nn.LayerNorm
+    perceptron_layer: MLP
 
 
     def __init__(self, params: TransformerBlockParameters):
         super(TransformerBlock, self).__init__()
-        self.attention = SelfAttention(params)
-        self.mlp = MLP(params)
-        self.norm1 = nn.LayerNorm(params.coordinates)
-        self.norm2 = nn.LayerNorm(params.coordinates)
 
-    def forward(self, in_sequence_bwc: Tensor):
-        sequence_bwc = self.norm1(in_sequence_bwc)
-        sequence_bwc = sequence_bwc + self.attention(sequence_bwc)
-        sequence_bwc = self.norm2(sequence_bwc)
-        out_sequence_bwc = sequence_bwc + self.mlp(sequence_bwc)
+        self.layer_norm1_c = nn.LayerNorm(params.coordinates)
+        self.self_attention = SelfAttention(params)
+
+        self.layer_norm2_c = nn.LayerNorm(params.coordinates)
+        self.perceptron_layer = MLP(params)
+
+    def forward(self, in_sequence_bwc: TensorFloat) -> TensorFloat:
+        sequence_bwc = self.layer_norm1_c(in_sequence_bwc)
+        sequence_bwc = sequence_bwc + self.self_attention(sequence_bwc)
+        sequence_bwc = self.layer_norm2_c(sequence_bwc)
+        out_sequence_bwc = sequence_bwc + self.perceptron_layer(sequence_bwc)
         return out_sequence_bwc

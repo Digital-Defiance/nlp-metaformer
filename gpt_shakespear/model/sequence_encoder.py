@@ -7,6 +7,10 @@ import torch.nn as nn
 from torch import Tensor
 from typing import Protocol
 
+
+TensorInt = Tensor
+TensorFloat = Tensor
+
 class SequenceEncoderParameters(Protocol):
     """
     Represents the parameters for a sequence encoder.
@@ -39,7 +43,7 @@ class SequenceEncoder(nn.Module):
 
     vocabolary_enconding_tc: nn.Embedding
     positional_encoding_wc: nn.Embedding
-    POSITION_INDICES_1w: Tensor
+    POSITION_INDICES_1w: TensorInt
     
     def __init__(self, params: SequenceEncoderParameters) -> None:
         """
@@ -56,7 +60,7 @@ class SequenceEncoder(nn.Module):
         self.positional_encoding_wc = nn.Embedding(params.words, params.coordinates)
         self.POSITION_INDICES_1w = torch.arange(0, params.words, dtype=torch.long).unsqueeze(0)
 
-    def forward(self, sequence_bw: Tensor) -> Tensor:
+    def forward(self, sequence_bw: TensorInt) -> TensorFloat:
         """
         Performs the forward pass of the SequenceEncoder.
 

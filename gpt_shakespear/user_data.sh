@@ -47,7 +47,7 @@ nohup ./send_logs_to_cloudwatch.sh &
 
 
 export MLFLOW_RUN_ID={RUN_ID}
-export MLFLOW_TRACKING_URL={TRACKING_URL}
+export MLFLOW_TRACKING_URI={TRACKING_URI}
 export MLFLOW_EXPERIMENT_ID={EXPERIMENT_ID}
 export MLFLOW_TRACKING_USERNAME={MLFLOW_TRACKING_USERNAME}
 export MLFLOW_TRACKING_PASSWORD={MLFLOW_TRACKING_PASSWORD}
@@ -74,7 +74,7 @@ git checkout {current_commit}
 python -m venv env
 source env/bin/activate
 pip install -r .devcontainer/requirements.txt
-cd gpt_array_sorter
+cd gpt_shakespear
 python train_worker.py
 #wait two minutes before shutting down, so that the logs can be sent to cloudwatch
 shutdown -h +2

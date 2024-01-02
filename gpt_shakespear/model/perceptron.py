@@ -1,18 +1,27 @@
 import torch.nn as nn
+from torch import Tensor
+from typing import Protocol
+
+
+TensorFloat = Tensor
+
+class PerceptronParameters(Protocol):
+    coordinates: int
 
 class Perceptron(nn.Module):
+    linear_expansion_dc: nn.Linear
+    gelu_activation: nn.GELU
+    linear_projections_cd: nn.Linear
 
-    def __init__(self, model_parameters):
+    def __init__(self, params: PerceptronParameters):
         super().__init__()
-        self.expand_linear = nn.Linear(model_parameters.coordinates, 4 * model_parameters.coordinates, bias=False)
+        self.linear_expansion_dc = nn.Linear(params.coordinates, 4 * params.coordinates, bias=False)
         self.gelu_activation = nn.GELU()
-        self.project_linear = nn.Linear(4 * model_parameters.coordinates, model_parameters.coordinates, bias=False)
-        self.norm = nn.LayerNorm(model_parameters.coordinates)
+        self.linear_projections_cd = nn.Linear(4 * params.coordinates, params.coordinates, bias=False)
 
 
-    def forward(self, input_tensor):
-        input_tensor = self.norm(input_tensor)
-        expanded_features = self.expand_linear(input_tensor)
-        activated_features = self.gelu_activation(expanded_features)
-        projected_features = self.project_linear(activated_features)
-        return projected_features
+    def forward(self, in_sequence_bwc: TensorFloat) -> TensorFloat:
+        sequence_bwd = self.linear_expansion_dc(in_sequence_bwc)
+        sequence_bwd = self.gelu_activation(sequence_bwd)
+        out_sequence_bwc = self.linear_projections_cd(sequence_bwd)
+        return out_sequence_bwc

@@ -97,7 +97,7 @@ jobs:
         
     - name: Babysit Experiment
       run: |
-        export MLFLOW_TRACKING_URL=${{ secrets.MLFLOW_TRACKING_URL }}
+        export MLFLOW_TRACKING_URL=${{ secrets.MLFLOW_TRACKING_URI }}
         export MLFLOW_TRACKING_USERNAME=${{ secrets.MLFLOW_TRACKING_USERNAME }}
         export MLFLOW_TRACKING_PASSWORD=${{ secrets.MLFLOW_TRACKING_PASSWORD }}
         export MLFLOW_EXPERIMENT_ID=${{ secrets.MLFLOW_EXPERIMENT_ID }}

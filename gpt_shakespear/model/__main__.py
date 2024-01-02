@@ -1,9 +1,14 @@
 
 import torch
+from torch import Tensor
 import torch.nn as nn
 from model.sequence_encoder import SequenceEncoder
 from model.transformer_block import TransformerBlock
 from typing import Protocol
+
+
+TensorInt = Tensor
+TensorFloat = Tensor
 
 
 class ModelParameters(Protocol):
@@ -29,30 +34,22 @@ class NanoGPT(nn.Module):
         params (ModelParameters): The parameters for the model.
     """
     sequence_encoder: SequenceEncoder
-    transformers: nn.Sequential
-    norm: nn.LayerNorm
-    lm_weights: nn.Linear
+    transformer_blocks: nn.Sequential
+    layer_norm_c: nn.LayerNorm
+    language_model_weights_tc: nn.Linear
 
     def __init__(self, params: ModelParameters):
         super(NanoGPT, self).__init__()
+
         self.sequence_encoder = SequenceEncoder(params)
-        transformers_generator = (TransformerBlock(params) for _ in range(params.number_of_blocks))
-        self.transformers = nn.Sequential(*transformers_generator)
-        self.norm = nn.LayerNorm(params.coordinates)
-        self.lm_weights = nn.Linear(params.coordinates, params.tokens, bias=False)
 
-    def count_parameters(self) -> int:
-        """
-        Count the total number of parameters in the model.
-        
-        Returns:
-            int: The total number of parameters.
-        """
-        n_params = sum(p.numel() for p in self.parameters())
-        n_params -= self.sequence_encoder.positional_encoding_wc.weight.numel()
-        return n_params
+        transformer_blocks = [TransformerBlock(params) for _ in range(params.number_of_blocks)]
+        self.transformer_blocks = nn.Sequential(*transformer_blocks)
 
-    def forward(self, in_sequence_bw: torch.Tensor) -> torch.Tensor:
+        self.layer_norm_c = nn.LayerNorm(params.coordinates)
+        self.language_model_weights_tc = nn.Linear(params.coordinates, params.tokens, bias=False)
+
+    def forward(self, in_sequence_bw: TensorInt) -> TensorFloat:
         """
         Forward pass of the model.
         
@@ -63,9 +60,9 @@ class NanoGPT(nn.Module):
             torch.Tensor: The output logits tensor of shape (batch_size, sequence_length, num_tokens).
         """
         sequence_bwc = self.sequence_encoder(in_sequence_bw)
-        sequence_bwc = self.transformers(sequence_bwc)
-        sequence_bwc = self.norm(sequence_bwc)
-        logits_bw = self.lm_weights(sequence_bwc)
-        return logits_bw
+        sequence_bwc = self.transformer_blocks(sequence_bwc)
+        sequence_bwc = self.layer_norm_c(sequence_bwc)
+        logits_bwt = self.language_model_weights_tc(sequence_bwc)
+        return logits_bwt
 
 

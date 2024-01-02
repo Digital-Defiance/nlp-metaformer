@@ -10,7 +10,7 @@ load_dotenv()
 class MLFlowSettings(BaseSettings):
     experiment_id: int
     run_id: Optional[str] = None
-    tracking_url: str
+    tracking_uri: str
     tracking_username: str
     tracking_password: str
     log_system_metrics: bool = True

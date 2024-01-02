@@ -1,4 +1,6 @@
 
+
+
 import tiktoken
 import numpy as np
 
@@ -18,6 +20,4 @@ val_ids = np.array(val_ids, dtype=np.uint16)
 np.save("train.bin", train_ids)
 np.save("val.bin", val_ids)
 print(enc.max_token_value)
-
-
 

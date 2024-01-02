@@ -1,5 +1,5 @@
 
 
-from model.__main__ import NanoGPT, ModelParameters
+from model.__main__ import NanoGPT
 
-__all__ = [NanoGPT, ModelParameters]
+__all__ = [NanoGPT]
