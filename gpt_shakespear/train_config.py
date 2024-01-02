@@ -4,8 +4,13 @@ import mlflow
 from dotenv import load_dotenv
 from typing import  Optional
 import mlflow
+import tiktoken
 
 load_dotenv()
+
+
+enc = tiktoken.get_encoding("gpt2")
+
 
 class MLFlowSettings(BaseSettings):
     experiment_id: int
@@ -20,8 +25,8 @@ class MLFlowSettings(BaseSettings):
 
 
 class TrainConfiguration(BaseSettings):
-    number_of_epochs: int = 20
-    number_of_batches: int = 50
+    number_of_epochs: int = 100
+    number_of_batches: int = 10
     learning_rate: float = 0.001
     loss_function: str = "CrossEntropyLoss"
 
@@ -53,10 +58,10 @@ class ModelHandler(BaseSettings):
         number_of_blocks (int): The number of blocks in the model.
     """
 
-    coordinates: int = 3*3
-    tokens: int = 3
-    words: int = 11
-    number_of_blocks: int = 3
+    coordinates: int = 3*100
+    tokens: int = enc.max_token_value
+    words: int = 100
+    number_of_blocks: int = 10
 
     def save_to_mlflow(self):
         mlflow.log_param("number_of_blocks", self.number_of_blocks)

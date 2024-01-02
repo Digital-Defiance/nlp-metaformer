@@ -147,7 +147,6 @@ with exception_controlled_run() as run:
 
     train_params = TrainConfiguration.load_from_mlflow()
     model_params = ModelHandler.load_from_mlflow()
-    model_params.tokens = enc.max_token_value
 
     if train_params.loss_function == "CrossEntropyLoss":
         loss_function = nn.CrossEntropyLoss()
