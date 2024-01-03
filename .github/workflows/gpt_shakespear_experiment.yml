@@ -3,13 +3,7 @@ name: Train GPT-Shakespear on AWS
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Loss Function'
-        required: true
-        default: 'CrossEntropyLoss'
-        type: choice
-        options:
-          - 'CrossEntropyLoss'
+
       number_of_heads:
         description: 'The number of attention heads per self attention module.'
         required: true
@@ -55,11 +49,6 @@ on:
         required: true
         type: string
         default: '20'
-      ami_id:
-        description: 'The ami id.'
-        required: true
-        type: string
-        default: 'ami-093cb9fb2d34920ad'
       instance_type:
         description: 'The instance type.'
         required: true
@@ -98,14 +87,12 @@ jobs:
         export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
         export REGION_NAME=eu-west-2
-        export AMI_ID=${{ github.event.inputs.ami_id }}
         export INSTANCE_TYPE=${{ github.event.inputs.instance_type }}
 
         export COORDINATES=${{ github.event.inputs.coordinates }}
         export TOKENS=${{ github.event.inputs.tokens }}
         export WORDS=${{ github.event.inputs.words }}
         export NUMBER_OF_BLOCKS=${{ github.event.inputs.number_of_blocks }}
-        export LOSS_FUNCTION=${{ github.event.inputs.environment }}
         export NUMBER_OF_HEADS=${{ github.event.inputs.number_of_heads }}
         export BIAS=${{ github.event.inputs.bias }}
 
