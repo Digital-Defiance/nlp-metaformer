@@ -38,3 +38,19 @@ In our code, we use a specific notation to denote the shape of tensors. Here's h
 
 This notation helps us keep track of tensor shapes throughout our code, making it easier to understand and debug.
 
+
+
+
+## preliminary results
+
+
+modified self attention, metric tensor heads
+
+![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/5f17ae14-a627-4c0d-9a44-6b60e69f3774)
+
+![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/3bec2b7d-a47b-48bf-a7e0-b8a7c293a9e9)
+
+
+![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/b8026426-9d97-4379-8e08-f6c5a4722206)
+
+
