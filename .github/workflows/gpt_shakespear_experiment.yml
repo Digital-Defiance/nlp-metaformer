@@ -24,16 +24,11 @@ on:
         required: true
         type: string
         default: '11'
-      tokens:
-        description: 'The number of tokens in the vocab.'
-        required: true
-        type: string
-        default: '3'
       bias:
         description: 'Whether to use bias in the linear layers.'
         required: true
         type: string
-        default: 'True'
+        default: 'False'
       batch_size:
         description: 'The batch size.'
         required: true
@@ -90,7 +85,6 @@ jobs:
         export INSTANCE_TYPE=${{ github.event.inputs.instance_type }}
 
         export COORDINATES=${{ github.event.inputs.coordinates }}
-        export TOKENS=${{ github.event.inputs.tokens }}
         export WORDS=${{ github.event.inputs.words }}
         export NUMBER_OF_BLOCKS=${{ github.event.inputs.number_of_blocks }}
         export NUMBER_OF_HEADS=${{ github.event.inputs.number_of_heads }}

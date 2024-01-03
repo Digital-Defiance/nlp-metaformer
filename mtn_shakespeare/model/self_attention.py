@@ -13,6 +13,11 @@ class SelfAttentionParameters(Protocol):
     words: int
     number_of_heads: int
 
+
+
+
+
+
 class SelfAttention(nn.Module):
     attention_heads_dc: nn.Linear
     projection_cc: nn.Linear
@@ -28,9 +33,11 @@ class SelfAttention(nn.Module):
 
         self.COORDINATES = params.coordinates
         self.NUMBER_OF_HEADS = params.number_of_heads
-        # d = 3*coordinates
-        dimension = 3 * params.coordinates
-    
+
+        dimension = 2 * params.coordinates
+
+
+
         self.attention_heads_dc = nn.Linear(
             params.coordinates,
             dimension,

@@ -15,6 +15,7 @@ from pydantic_settings import BaseSettings
 from typing import Literal, Iterator
 import tiktoken
 import numpy as np
+from typing import Optional
 
 
 
@@ -164,7 +165,7 @@ with exception_controlled_run() as run:
         raise ValueError(f"Unknown loss function {train_params.loss_function}")
 
     # ----------------- LOAD MODEL ----------------- #
-    last_epoch: float | None = mlflow.get_run(run.info.run_id).data.metrics.get('epoch', None)
+    last_epoch: Optional[float] = mlflow.get_run(run.info.run_id).data.metrics.get('epoch', None)
     if last_epoch is not None:
         last_epoch = int(last_epoch)
         logger.debug("Last epoch is %s", last_epoch)
