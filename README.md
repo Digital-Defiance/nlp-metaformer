@@ -53,4 +53,7 @@ modified self attention, metric tensor heads
 
 ![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/b8026426-9d97-4379-8e08-f6c5a4722206)
 
+loss graph comparison between transformer and metric tensor network
+
+![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/f780a8a0-f793-4f2b-9326-ea015feec294)
 
