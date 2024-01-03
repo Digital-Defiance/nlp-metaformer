@@ -220,7 +220,13 @@ with exception_controlled_run() as run:
         # Save the model and log the loss
 
         mlflow.pytorch.log_model(nanoGPT, f"nanogpt_{epoch}")
-        mlflow.log_metric("loss", loss.item(), epoch)
+        mlflow.log_metric("loss/train", loss.item(), epoch)
+        with torch.no_grad():
+            in_sequence_bw, out_sequence_bwv = generate_batch(val_ids)
+            pred_logits_btw = pred_logits_bwt.transpose(-1, -2)
+            val_loss = loss_function(pred_logits_btw, out_sequence_bw)
+            mlflow.log_metric("loss/val", val_loss.item(), epoch)
+    
         mlflow.log_metric("epoch", epoch, epoch)
  
     
