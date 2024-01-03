@@ -1,39 +1,15 @@
-"""
-
-
-
-import mlflow
-
-mlflow.set_tracking_uri("http://3.10.55.109:8000")
-
-train_dataset = mlflow.data.from_numpy(train_ids, name="shakespeare", source = input_file_path)
-val_dataset = mlflow.data.from_numpy(val_ids, name="shakespeare", source = input_file_path)
-
-
-with mlflow.start_run():
-    mlflow.log_input(train_dataset, context="training")
-    mlflow.log_input(val_dataset, context="validation")
-    mlflow.log_artifact(input_file_path, artifact_path="dataset")
-    mlflow.log_artifact("train.bin", artifact_path="dataset")
-    mlflow.log_artifact("val.bin", artifact_path="dataset")
-"""
-
-
 
 import base64
 import logging
 import subprocess
 import time
 from logging import getLogger
-
 import boto3
 import mlflow
 from botocore.exceptions import ClientError
 
 from pydantic_settings import BaseSettings
 from train_config import TrainConfiguration, ModelHandler, MLFlowSettings
-
-
 
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s",)
@@ -77,6 +53,7 @@ mlflow_settings = MLFlowSettings()
 with open("user_data.sh", "r") as f:
     bash_script_template = f.read()
 
+
 with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
     TrainConfiguration().save_to_mlflow()
     ModelHandler().save_to_mlflow()
@@ -92,62 +69,49 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
         RUN_ID=run.info.run_id,
     )
 
-
     user_data = base64.b64encode(bash_script.encode()).decode()
+
+    boto_kwargs = {
+        "aws_access_key_id": aws_settings.aws_access_key_id,
+        "aws_secret_access_key": aws_settings.aws_secret_access_key,
+        "region_name": aws_settings.region_name,
+    }   
     
-    ec2_client = boto3.client(
-        'ec2',
-        aws_access_key_id=aws_settings.aws_access_key_id,
-        aws_secret_access_key=aws_settings.aws_secret_access_key,
-        region_name=aws_settings.region_name,
-    )
+    ec2_client = boto3.client('ec2', **boto_kwargs)
+    cw_client = boto3.client('logs', **boto_kwargs)
+    ec2_resources = boto3.resource('ec2', **boto_kwargs)
 
-    ec2_resources = boto3.resource(
-        'ec2',
-        aws_access_key_id=aws_settings.aws_access_key_id,
-        aws_secret_access_key=aws_settings.aws_secret_access_key,
-        region_name=aws_settings.region_name,
-    )
-
-    cw_client = client = boto3.client(
-        'logs',
-        aws_access_key_id=aws_settings.aws_access_key_id,
-        aws_secret_access_key=aws_settings.aws_secret_access_key,
-        region_name=aws_settings.region_name,
-    )
-
-
-    def get_first_spot_req(description):
-        return description['SpotInstanceRequests'][0]
 
     for _ in range(MAX_ITERATIONS):
-    
-
 
         response = ec2_client.request_spot_instances(
             InstanceCount=1,
             Type='one-time',
             LaunchSpecification=aws_settings.to_launch_specification(user_data)
         )
-        spot_request_id = get_first_spot_req(response)['SpotInstanceRequestId']
+        spot_request_id = response['SpotInstanceRequests'][0]['SpotInstanceRequestId']
         logger.info(f"Spot request {spot_request_id} created. Waiting for fulfilment.")
 
-        ec2_client \
-            .get_waiter('spot_instance_request_fulfilled') \
-            .wait(SpotInstanceRequestIds=[spot_request_id])
+        spot_request_waiter = ec2_client.get_waiter('spot_instance_request_fulfilled')
+        spot_request_waiter.wait(SpotInstanceRequestIds=[spot_request_id])
 
         logger.info(f"Spot request {spot_request_id} fulfilled. Waiting for instance creation.")
 
         response = ec2_client.describe_spot_instance_requests(SpotInstanceRequestIds=[spot_request_id])
-        instance_id = get_first_spot_req(response)['InstanceId']
+        instance_id = response['SpotInstanceRequests'][0]['InstanceId']
         logger.info(f"Instance {instance_id} created. Waiting for running.")
-        ec2_resources.Instance(instance_id).wait_until_running()
+
+        def fetch_instance():
+            return ec2_resources.Instance(instance_id)
+
+        fetch_instance().wait_until_running()
         logger.info("Instance is running")
 
         try:
 
-            logs = set()
-            while ec2_resources.Instance(instance_id).state['Code'] == AWS_EC2_STATUS_CODE_RUNNING:
+            logs_history = set()
+
+            while fetch_instance().state['Code'] == AWS_EC2_STATUS_CODE_RUNNING:
                 time.sleep(1)
 
                 # Get the logs from CloudWatch
@@ -159,10 +123,10 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
                     )
 
                     for event in response['events']:
-                        if event['message'] in logs:
+                        if event['message'] in logs_history:
                             continue
 
-                        logs.add(event['message'])
+                        logs_history.add(event['message'])
                         print(f"{instance_id}> {event['message']}")
         
                 except ClientError:

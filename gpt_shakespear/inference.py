@@ -1,59 +1,39 @@
 from train_config import ModelHandler
 import torch
-import torch.nn as nn
 import mlflow.pytorch
 import mlflow
-import os
 import tiktoken
-import numpy as np
 import torch.nn.functional as F
+from tqdm import tqdm
 
-enc = tiktoken.get_encoding("gpt2")
-
-
-logged_model = 'runs:/e951f26c18964b5ba58d7a562cac5b32/nanogpt_10'
-nanoGPT = mlflow.pytorch.load_model(logged_model)
+gpt2_encoder = tiktoken.get_encoding("gpt2")
+DEVICE = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
+logged_model = 'runs:/e6c3f9464f1b4701a2251468046a482b/nanogpt_180'
+nanoGPT = mlflow.pytorch.load_model(logged_model, map_location=DEVICE)
 nanoGPT = nanoGPT.to('cpu')
 nanoGPT.eval()
 
-model_params = ModelHandler()
+model_params = ModelHandler(words = 1024)
 
 @torch.no_grad()
-def generate(temperature=1.0, top_k=None):
-    """
-    Take a conditioning sequence of indices idx (LongTensor of shape (b,t)) and complete
-    the sequence max_new_tokens times, feeding the predictions back into the model each time.
-    Most likely you'll want to make sure to be in model.eval() mode of operation for this.
-    """
+def generate(sequence_s = "The meaning of life is", max_new_tokens = 400):
+    sequence_s = gpt2_encoder.encode(sequence_s)
+    sequence_1s = torch.tensor([sequence_s], dtype=torch.long, device=DEVICE)
+    so_far = sequence_1s[0].tolist()
 
-    sequence_s = "To be, or not to be, that is the question"
-    sequence_s = enc.encode(sequence_s)
-    sequence_1s = torch.tensor([sequence_s], dtype=torch.long, device='cpu')
-    print(sequence_1s)
+    for _ in tqdm(range(max_new_tokens), leave=True):
 
-    max_new_tokens = 10
-    for _ in range(max_new_tokens):
-        # if the sequence context is growing too long we must crop it at block_size
         if sequence_1s.size(1) > model_params.words:
             sequence_1s = sequence_1s[:, -model_params.words:]
 
-        # forward the model to get the logits for the index in the sequence
         logits_1st = nanoGPT(sequence_1s)
-        logits_1ts = logits_1st.transpose(-1, -2)
-        # pluck the logits at the final step and scale by desired temperature
-        logits_1s = logits_1ts[:, -1, :] / temperature
-        # optionally crop the logits to only the top k options
-
-        # apply softmax to convert logits to (normalized) probabilities
-        probs_1s = F.softmax(logits_1s, dim=-1)
-        # sample from the distribution
+        logits_1t = logits_1st[:, -1, :]
+        probs_1s = F.softmax(logits_1t, dim=-1)
         next_token_11 = torch.multinomial(probs_1s, num_samples=1)
-        # append sampled index to the running sequence and continue
         sequence_1s = torch.cat((sequence_1s, next_token_11), dim=1)
+        so_far.append(next_token_11.item())
     
-
-    print(sequence_1s)
-    return enc.decode(sequence_1s[0].tolist())
+    return gpt2_encoder.decode(so_far, errors="replace")
 
 res = generate()
 print(res)
