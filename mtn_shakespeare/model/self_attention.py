@@ -35,7 +35,8 @@ class SelfAttention(nn.Module):
 
         dimension = 2 * params.coordinates
 
-        self.projections_cd = nn.Linear(
+        # TODO need to zero out some values here
+        self.projections_dc = nn.Linear(
             self.COORDINATES,
             dimension,
             bias = params.bias
@@ -59,7 +60,8 @@ class SelfAttention(nn.Module):
         batch, words, coordinates = in_sequence_bwc.size()
 
         # vectors are projected twice into two same dimensional spaces
-        all_projections_bwd = self.self.projections_cd(in_sequence_bwc)
+        all_projections_bwd = self.projections_dc(in_sequence_bwc)
+
 
         in_projections_bwc, out_projections_bwc =  all_projections_bwd.split(self.COORDINATES, dim=-1)
 
