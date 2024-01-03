@@ -19,9 +19,8 @@ class SelfAttentionParameters(Protocol):
 
 
 class SelfAttention(nn.Module):
-    attention_heads_dc: nn.Linear
+    projections_cd: nn.Linear
     projection_cc: nn.Linear
-
 
     MASK_ww: Tensor
     NUMBER_OF_HEADS: int
@@ -36,12 +35,10 @@ class SelfAttention(nn.Module):
 
         dimension = 2 * params.coordinates
 
-
-
-        self.attention_heads_dc = nn.Linear(
-            params.coordinates,
+        self.projections_cd = nn.Linear(
+            self.COORDINATES,
             dimension,
-            bias=params.bias
+            bias = params.bias
         )
 
         self.projection_cc = nn.Linear(
@@ -59,47 +56,33 @@ class SelfAttention(nn.Module):
 
 
     def forward(self, in_sequence_bwc: Tensor) -> Tensor:
- 
-
         batch, words, coordinates = in_sequence_bwc.size()
 
+        # vectors are projected twice into two same dimensional spaces
+        all_projections_bwd = self.self.projections_cd(in_sequence_bwc)
 
-        all_attention_vectors_bwd = self.attention_heads_dc(in_sequence_bwc)
-        
-        # split projections into three matrices
-        #   - q_bwc contains all q vectors for the three heads
-        #   - k_bwc contains all k vectors for the three heads
-        #   - v_bwc contains all v vectors for the three heads
-        q_bwc, k_bwc, v_bwc = all_attention_vectors_bwd.split(coordinates, dim=-1)
-        
-        
-        # prepare for matrix multiplication
+        in_projections_bwc, out_projections_bwc =  all_projections_bwd.split(self.COORDINATES, dim=-1)
+
         k_dimension = coordinates // self.NUMBER_OF_HEADS
-        q_b3wk = q_bwc.view(batch, words, self.NUMBER_OF_HEADS, k_dimension).transpose(1, 2)
-        k_b3wk = k_bwc.view(batch, words, self.NUMBER_OF_HEADS, k_dimension).transpose(1, 2)
-        v_b3wk = v_bwc.view(batch, words, self.NUMBER_OF_HEADS, k_dimension).transpose(1, 2)
-      
-        # perform matrix multiplication
-        attention_scores_b3ww = q_b3wk @ k_b3wk.transpose(-1, -2)
-        
-        # prepare attention scores, scaling -> masking -> softmax
-        attention_scores_b3ww = attention_scores_b3ww / math.sqrt(k_dimension)
-        attention_scores_b3ww = attention_scores_b3ww.masked_fill(self.MASK_ww[:,:,:words,:words] == 0, float('-inf'))
-        attention_scores_b3ww = F.softmax(attention_scores_b3ww, dim=-1)
-        
-        # produce the output sequence and shape it to the correct form
-        out_sequence_b3wk = attention_scores_b3ww @ v_b3wk
-        out_sequence_bw3k = out_sequence_b3wk.transpose(1, 2).contiguous()
-        out_sequence_bwc = out_sequence_bw3k.view(batch, words, coordinates)
-        
-        # projection to mix the values 
-        out_sequence_bwc = self.projection_cc(out_sequence_bwc)
+        in_projections_bnwk = in_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, k_dimension).transpose(1, 2)
+        out_projections_bnwk = out_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, k_dimension).transpose(1, 2)
+
+        all_dot_products_bnww = in_projections_bnwk @ in_projections_bnwk.transpose(-1, -2)
+        all_dot_products_bnww = all_dot_products_bnww / math.sqrt(k_dimension)
+        all_dot_products_bnww = all_dot_products_bnww.masked_fill(self.MASK_ww[:,:,:words,:words] == 0, 0)
+
+        nudged_vectors_bnwk = all_dot_products_bnww @ out_projections_bnwk
+        nudged_vectors_bwnk = nudged_vectors_bnwk.transpose(1, 2).contiguous()
+        nudged_vectors_bwc = nudged_vectors_bwnk.view(batch, words, coordinates)
+
+        out_sequence_bwc = self.projection_cc(nudged_vectors_bwc)
 
         return out_sequence_bwc
 
 
 
     def _get_metric(self) -> Tensor:
+        raise NotImplementedError
         coordinates = self.COORDINATES
         WQ, WK, _ = self.attention_heads_dc.weight.transpose(-1, -2).split(coordinates , dim=-1)
         k_dimension = coordinates // self.NUMBER_OF_HEADS

@@ -30,6 +30,7 @@ class SelfAttention(nn.Module):
         self.NUMBER_OF_HEADS = params.number_of_heads
         # d = 3*coordinates
         dimension = 3 * params.coordinates
+        
     
         self.attention_heads_dc = nn.Linear(
             params.coordinates,
