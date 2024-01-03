@@ -4,6 +4,37 @@
 
 [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml)
 
+
+Speak with a language model.
+
+## Roadmap
+
+phase 1 - exploratory
+
+- [x] implement and train a simple gpt that sorts tokens
+- [x] use simpler implementation to contruct the MLOps infra
+- [x] train a larger gpt on shakespeare
+- [ ] experiment with transformer modifications (i.e. mtn)
+- [ ] write report on comparison between transformer and metric tensor network (might focus more on this depending on the results)
+- [ ] fine tune gpt2
+- [ ] setup whisper
+
+phase 2 - development
+
+- [ ] write webapp (traefik - go + htmx + tmpl - fastapi + models)
+- [ ] deploy webapp
+- [ ] release first version
+
+phase 3 - exploratory 2
+
+- TBD
+
+
+
+
+## The setup
+
+
 ![2024-01-01-035433_406x944_scrot](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/bbb1fee1-78b2-4d0f-8c8b-f06e5a1a1b70)
 
 ![2024-01-01-040953_1478x706_scrot](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/19205fbb-5d43-45b3-9947-f8403e0ebfd6)
@@ -40,27 +71,23 @@ This notation helps us keep track of tensor shapes throughout our code, making i
 
 
 
+# Preliminary Results
 
-# preliminary results
-
-
-## modified self attention, metric tensor heads
+## Modified Self Attention, Metric Tensor Heads
 
 ![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/5f17ae14-a627-4c0d-9a44-6b60e69f3774)
 
 ![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/3bec2b7d-a47b-48bf-a7e0-b8a7c293a9e9)
 
-
 ![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/b8026426-9d97-4379-8e08-f6c5a4722206)
 
-## loss graph comparison between transformer and metric tensor network
+## Loss Graph Comparison between Transformer and Metric Tensor Network
 
 ![2024-01-03-052123_571x464_scrot](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/94534309-d07b-4ad2-9a87-9dcd23f012a2)
 
+## Output Comparison
 
-## output comparison
-
-### transformer:
+### Transformer:
 
 ```
 The meaning of life is full of me:
