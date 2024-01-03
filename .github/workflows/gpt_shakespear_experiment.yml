@@ -55,11 +55,6 @@ on:
         required: true
         type: string
         default: '20'
-      learning_rate:
-        description: 'The learning rate (fixed).'
-        required: true
-        type: string
-        default: '0.001'
       ami_id:
         description: 'The ami id.'
         required: true
@@ -117,7 +112,6 @@ jobs:
         export BATCH_SIZE=${{ github.event.inputs.batch_size }}
         export NUMBER_OF_BATCHES=${{ github.event.inputs.number_of_batches }}
         export NUMBER_OF_EPOCHS=${{ github.event.inputs.number_of_epochs }}
-        export LEARNING_RATE=${{ github.event.inputs.learning_rate }}
 
         cd gpt_shakespear
         python train_main.py
