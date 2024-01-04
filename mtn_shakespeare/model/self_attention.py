@@ -44,6 +44,12 @@ class MetricSelfAttention(nn.Module):
             ),
         )
 
+
+
+        self.transforms_nkk = nn.Parameter(
+            torch.randn(self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION),
+        )
+
         self.mixer_cc = nn.Linear(
             params.coordinates,
             params.coordinates,
@@ -74,6 +80,7 @@ class MetricSelfAttention(nn.Module):
         all_dot_products_bnww = all_dot_products_bnww * self.MASK_11ww[:,:,:words,:words]
 
         nudged_vectors_bnwk = all_dot_products_bnww @ all_projections_bnwk
+        nudged_vectors_bnwk = nudged_vectors_bnwk @ self.transforms_nkk
         nudged_vectors_bwnk = nudged_vectors_bnwk.transpose(1, 2).contiguous()
         nudged_vectors_bwc = nudged_vectors_bwnk.view(batch, words, coordinates)
 
