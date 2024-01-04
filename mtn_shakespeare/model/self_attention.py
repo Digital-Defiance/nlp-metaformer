@@ -44,7 +44,7 @@ class MetricSelfAttention(nn.Module):
             ),
         )
 
-        self.projection_cc = nn.Linear(
+        self.mixer_cc = nn.Linear(
             params.coordinates,
             params.coordinates,
             bias=params.bias
@@ -77,7 +77,7 @@ class MetricSelfAttention(nn.Module):
         nudged_vectors_bwnk = nudged_vectors_bnwk.transpose(1, 2).contiguous()
         nudged_vectors_bwc = nudged_vectors_bwnk.view(batch, words, coordinates)
 
-        out_sequence_bwc = self.projection_cc(nudged_vectors_bwc)
+        out_sequence_bwc = self.mixer_cc(nudged_vectors_bwc)
 
         return out_sequence_bwc
 
