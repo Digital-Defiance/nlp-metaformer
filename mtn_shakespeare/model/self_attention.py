@@ -40,9 +40,9 @@ class MetricSelfAttention(nn.Module):
             bias = params.bias
         )
 
-        self.pre_metric_tensors_nww = nn.Parameter(
+        self.pre_metric_tensors_ncc = nn.Parameter(
             torch.tril(
-                torch.ones(self.NUMBER_OF_HEADS, params.words, params.words)
+                torch.ones(self.NUMBER_OF_HEADS, params.coordinates, params.coordinates)
             ),
         )
 
@@ -55,24 +55,25 @@ class MetricSelfAttention(nn.Module):
         self.register_buffer(
             "MASK_11ww",
             torch
-            .tril(torch.ones(1, 1, params.words, params.words))
+            .tril(torch.ones(params.words, params.words))
             .view(1, 1, params.words, params.words)
         )
+
+        self.K_DIMENSION = self.COORDINATES // self.NUMBER_OF_HEADS
 
 
     def forward(self, in_sequence_bwc: Tensor) -> Tensor:
         batch, words, coordinates = in_sequence_bwc.size()
-        k_dimension = coordinates // self.NUMBER_OF_HEADS
-        pre_metric_tensors_nww = self.pre_metric_tensors_nww.masked_fill(self.MASK_ww[:,:,:words,:words] == 0, 0)
-        metric_tensors_nww = pre_metric_tensors_nww @ pre_metric_tensors_nww.transpose(-1, -2)  # ensures symmetry and positive definiteness
+        pre_metric_tensors_nkk = self.pre_metric_tensors_nkk * self.MASK_11ww[0, :, self.K_DIMENSION, self.K_DIMENSION]
+        metric_tensors_nkk = pre_metric_tensors_nkk @ pre_metric_tensors_nkk.transpose(-1, -2)  # ensures symmetry and positive definiteness
 
 
         all_projections_bwc = self.projections_cc(in_sequence_bwc)
-        all_projections_bnwk = all_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, k_dimension).transpose(1, 2)
+        all_projections_bnwk = all_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, self.K_DIMENSION).transpose(1, 2)
 
-        all_dot_products_bnww = all_projections_bnwk.transpose(-1, -2) @ metric_tensors_nww @ all_projections_bnwk
-        all_dot_products_bnww = all_dot_products_bnww / math.sqrt(k_dimension)
-        all_dot_products_bnww = all_dot_products_bnww.masked_fill(self.MASK_11ww[:,:,:words,:words] == 0, 0)
+        all_dot_products_bnww = all_projections_bnwk @ metric_tensors_nkk @ all_projections_bnwk.transpose(-1, -2)
+        all_dot_products_bnww = all_dot_products_bnww / math.sqrt(self.K_DIMENSION)
+        all_dot_products_bnww = all_dot_products_bnww * self.MASK_11ww[:,:,:words,:words]
 
         nudged_vectors_bnwk = all_dot_products_bnww @ all_projections_bnwk
         nudged_vectors_bwnk = nudged_vectors_bnwk.transpose(1, 2).contiguous()
