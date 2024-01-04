@@ -4,11 +4,10 @@ import torch.nn as nn
 from model.sequence_encoder import SequenceEncoder
 from model.transformer_block import TransformerBlock
 from typing import Protocol
-
+from model.l2_norm import L2Normalization
 
 TensorInt = Tensor
 TensorFloat = Tensor
-
 
 class ModelParameters(Protocol):
     coordinates: int
@@ -18,22 +17,22 @@ class ModelParameters(Protocol):
     number_of_heads: int
     bias: bool
 
-class NanoGPT(nn.Module):
+class MetricTensorNetwork(nn.Module):
 
     sequence_encoder: SequenceEncoder
     transformer_blocks: nn.Sequential
-    layer_norm_c: nn.LayerNorm
+    layer_norm_c: L2Normalization
     language_model_weights_tc: nn.Linear
 
     def __init__(self, params: ModelParameters):
-        super(NanoGPT, self).__init__()
+        super(MetricTensorNetwork, self).__init__()
 
         self.sequence_encoder = SequenceEncoder(params)
 
         transformer_blocks = [TransformerBlock(params) for _ in range(params.number_of_blocks)]
         self.transformer_blocks = nn.Sequential(*transformer_blocks)
 
-        self.layer_norm_c = nn.LayerNorm(params.coordinates)
+        self.layer_norm_c = L2Normalization(params)
         self.language_model_weights_tc = nn.Linear(params.coordinates, params.tokens, bias=params.bias)
 
     def forward(self, in_sequence_bw: TensorInt) -> TensorFloat:

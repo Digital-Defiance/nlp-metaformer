@@ -3,8 +3,10 @@ import torch.nn as nn
 from torch import Tensor
 from typing import Protocol
 
-from model.self_attention import SelfAttention
+from model.self_attention import MetricSelfAttention
 from model.perceptron import Perceptron as MLP
+from model.l2_norm import L2Normalization
+
 
 TensorInt = Tensor
 TensorFloat = Tensor
@@ -16,20 +18,20 @@ class TransformerBlockParameters(Protocol):
 
 class TransformerBlock(nn.Module):
 
-    layer_norm1_c: nn.LayerNorm
-    self_attention: SelfAttention
+    layer_norm1_c: L2Normalization
+    self_attention: MetricSelfAttention
 
-    layer_norm2_c: nn.LayerNorm
+    layer_norm2_c: L2Normalization
     perceptron_layer: MLP
 
 
     def __init__(self, params: TransformerBlockParameters):
         super(TransformerBlock, self).__init__()
 
-        self.layer_norm1_c = nn.LayerNorm(params.coordinates)
-        self.self_attention = SelfAttention(params)
+        self.layer_norm1_c = L2Normalization(params)
+        self.self_attention = MetricSelfAttention(params)
 
-        self.layer_norm2_c = nn.LayerNorm(params.coordinates)
+        self.layer_norm2_c = L2Normalization(params)
         self.perceptron_layer = MLP(params)
 
     def forward(self, in_sequence_bwc: TensorFloat) -> TensorFloat:

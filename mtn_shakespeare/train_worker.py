@@ -3,7 +3,7 @@ import mlflow
 import mlflow.pytorch
 import torch.nn as nn
 from tqdm import tqdm
-from model import NanoGPT
+from model import MetricTensorNetwork
 import torch
 import logging
 from contextlib import contextmanager
@@ -169,12 +169,12 @@ with exception_controlled_run() as run:
         last_epoch = int(last_epoch)
         logger.debug("Last epoch is %s", last_epoch)
         model_uri = f"runs:/{mlflow_settings.run_id}/nanogpt_{last_epoch}"
-        nanoGPT: NanoGPT = mlflow.pytorch.load_model(model_uri)
-        nanoGPT: NanoGPT = nanoGPT.to(DEVICE)
+        nanoGPT: MetricTensorNetwork = mlflow.pytorch.load_model(model_uri)
+        nanoGPT: MetricTensorNetwork = nanoGPT.to(DEVICE)
         start_epoch = last_epoch + 1
         logger.info(f"Loaded model from {model_uri}")
     else:
-        nanoGPT = NanoGPT(model_params)
+        nanoGPT = MetricTensorNetwork(model_params)
         nanoGPT.to(DEVICE)
         start_epoch = 0
 
@@ -216,7 +216,7 @@ with exception_controlled_run() as run:
 
             if instance_will_terminate():
                 raise PauseTraining                   
-        
+
         # Save the model and log the loss
 
         mlflow.pytorch.log_model(nanoGPT, f"nanogpt_{epoch}")

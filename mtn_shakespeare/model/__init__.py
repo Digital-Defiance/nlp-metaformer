@@ -1,5 +1,5 @@
 
 
-from model.__main__ import NanoGPT
+from model.__main__ import MetricTensorNetwork
 
-__all__ = [NanoGPT]
+__all__ = [MetricTensorNetwork]
