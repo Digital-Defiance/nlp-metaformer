@@ -81,7 +81,9 @@ class MetricSelfAttention(nn.Module):
 
         all_dot_products_bnww = all_projections_bnwk @ metric_tensors_nkk @ all_projections_bnwk.transpose(-1, -2)
         all_dot_products_bnww = all_dot_products_bnww / math.sqrt(self.K_DIMENSION)
-        all_dot_products_bnww = all_dot_products_bnww * self.MASK_11ww[:,:,:words,:words]
+        all_dot_products_bnww = all_dot_products_bnww.masked_fill(self.MASK_ww[:,:,:words,:words] == 0, float('-inf'))
+        all_dot_products_bnww = F.softmax(all_dot_products_bnww, dim=-1)
+        # all_dot_products_bnww = all_dot_products_bnww * self.MASK_11ww[:,:,:words,:words]
 
         nudged_vectors_bnwk = all_dot_products_bnww @ all_out_projections_bnwk
         nudged_vectors_bwnk = nudged_vectors_bnwk.transpose(1, 2).contiguous()
