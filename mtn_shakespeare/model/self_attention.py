@@ -53,9 +53,9 @@ class MetricSelfAttention(nn.Module):
         )
 
         self.register_buffer(
-            "MASK_ww",
+            "MASK_11ww",
             torch
-            .tril(torch.ones(params.words, params.words))
+            .tril(torch.ones(1, 1, params.words, params.words))
             .view(1, 1, params.words, params.words)
         )
 
@@ -72,7 +72,7 @@ class MetricSelfAttention(nn.Module):
 
         all_dot_products_bnww = all_projections_bnwk.transpose(-1, -2) @ metric_tensors_nww @ all_projections_bnwk
         all_dot_products_bnww = all_dot_products_bnww / math.sqrt(k_dimension)
-        all_dot_products_bnww = all_dot_products_bnww.masked_fill(self.MASK_ww[:,:,:words,:words] == 0, 0)
+        all_dot_products_bnww = all_dot_products_bnww.masked_fill(self.MASK_11ww[:,:,:words,:words] == 0, 0)
 
         nudged_vectors_bnwk = all_dot_products_bnww @ all_projections_bnwk
         nudged_vectors_bwnk = nudged_vectors_bnwk.transpose(1, 2).contiguous()
