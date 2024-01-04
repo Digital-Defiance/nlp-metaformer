@@ -30,19 +30,17 @@ class MetricSelfAttention(nn.Module):
 
         self.COORDINATES = params.coordinates
         self.NUMBER_OF_HEADS = params.number_of_heads
+        self.K_DIMENSION = self.COORDINATES // self.NUMBER_OF_HEADS
 
-        dimension = 2 * params.coordinates
-
-        # TODO need to zero out some values here
         self.projections_cc = nn.Linear(
             self.COORDINATES,
             self.COORDINATES,
             bias = params.bias
         )
 
-        self.pre_metric_tensors_ncc = nn.Parameter(
+        self.pre_metric_tensors_nkk = nn.Parameter(
             torch.tril(
-                torch.ones(self.NUMBER_OF_HEADS, params.coordinates, params.coordinates)
+                torch.ones(self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION)
             ),
         )
 
@@ -59,7 +57,7 @@ class MetricSelfAttention(nn.Module):
             .view(1, 1, params.words, params.words)
         )
 
-        self.K_DIMENSION = self.COORDINATES // self.NUMBER_OF_HEADS
+        
 
 
     def forward(self, in_sequence_bwc: Tensor) -> Tensor:
