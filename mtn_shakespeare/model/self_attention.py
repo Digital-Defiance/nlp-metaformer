@@ -45,9 +45,7 @@ class MetricSelfAttention(nn.Module):
         )
 
         self.pre_metric_tensors_nkk = nn.Parameter(
-            torch.tril(
-                torch.randn(self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION)
-            ),
+            torch.randn(self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION)
         )
 
 
