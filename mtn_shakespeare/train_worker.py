@@ -169,16 +169,16 @@ with exception_controlled_run() as run:
         last_epoch = int(last_epoch)
         logger.debug("Last epoch is %s", last_epoch)
         model_uri = f"runs:/{mlflow_settings.run_id}/nanogpt_{last_epoch}"
-        nanoGPT: MetricTensorNetwork = mlflow.pytorch.load_model(model_uri)
-        nanoGPT: MetricTensorNetwork = nanoGPT.to(DEVICE)
+        model: MetricTensorNetwork = mlflow.pytorch.load_model(model_uri)
+        model: MetricTensorNetwork = model.to(DEVICE)
         start_epoch = last_epoch + 1
         logger.info(f"Loaded model from {model_uri}")
     else:
-        nanoGPT = MetricTensorNetwork(model_params)
-        nanoGPT.to(DEVICE)
+        model = MetricTensorNetwork(model_params)
+        model.to(DEVICE)
         start_epoch = 0
 
-    parameters = nanoGPT.parameters()
+    parameters = model.parameters()
     optimizer = torch.optim.Adam(parameters, lr=train_params.learning_rate)
 
     mlflow.log_param("n_parameters", sum(p.numel() for p in parameters))
@@ -203,7 +203,7 @@ with exception_controlled_run() as run:
 
             
             with zero_grad(optimizer):
-                pred_logits_bwt = nanoGPT(in_sequence_bw)
+                pred_logits_bwt = model(in_sequence_bw)
                 # cross entropy expects (batch, classes, sequence)
                 pred_logits_btw = pred_logits_bwt.transpose(-1, -2)
                 loss = loss_function(pred_logits_btw, out_sequence_bw)
@@ -219,7 +219,7 @@ with exception_controlled_run() as run:
 
         # Save the model and log the loss
 
-        mlflow.pytorch.log_model(nanoGPT, f"nanogpt_{epoch}")
+        mlflow.pytorch.log_model(model, f"mtn_{epoch}")
         mlflow.log_metric("loss", loss.item(), epoch)
         mlflow.log_metric("epoch", epoch, epoch)
  

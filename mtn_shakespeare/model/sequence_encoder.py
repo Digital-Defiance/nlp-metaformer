@@ -11,6 +11,9 @@ from typing import Protocol
 TensorInt = Tensor
 TensorFloat = Tensor
 
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 class SequenceEncoderParameters(Protocol):
     """
     Represents the parameters for a sequence encoder.
@@ -65,6 +68,6 @@ class SequenceEncoder(nn.Module):
 
         _, words = sequence_bw.size()
         sentence_tokens_bwc = self.vocabolary_enconding_tc(sequence_bw) # t = sequence_bw
-        sentence_position_1wc = self.positional_encoding_wc(torch.arange(0, words, dtype=torch.long).unsqueeze(0)) # w = self.position_indices_1w
+        sentence_position_1wc = self.positional_encoding_wc(torch.arange(0, words, dtype=torch.long).unsqueeze(0).to(DEVICE)) # w = self.position_indices_1w
         out_sequence_bwc = sentence_tokens_bwc + sentence_position_1wc  
         return out_sequence_bwc
