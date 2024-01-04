@@ -68,7 +68,7 @@ class MetricSelfAttention(nn.Module):
 
     def forward(self, in_sequence_bwc: Tensor) -> Tensor:
         batch, words, coordinates = in_sequence_bwc.size()
-        pre_metric_tensors_nkk = self.pre_metric_tensors_nkk * self.MASK_11ww[0, :, self.K_DIMENSION, self.K_DIMENSION]
+        pre_metric_tensors_nkk = self.pre_metric_tensors_nkk # * self.MASK_11ww[0, :, self.K_DIMENSION, self.K_DIMENSION]
         metric_tensors_nkk = pre_metric_tensors_nkk @ pre_metric_tensors_nkk.transpose(-1, -2)  # ensures symmetry and positive definiteness
 
 
