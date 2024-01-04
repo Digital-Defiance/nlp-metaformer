@@ -46,7 +46,9 @@ class MetricSelfAttention(nn.Module):
 
         self.pre_metric_tensors_nkk = nn.Parameter(
             torch.randn(self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION)
+            + torch.eye(self.K_DIMENSION) * 0.01
         )
+
 
 
 
@@ -77,13 +79,14 @@ class MetricSelfAttention(nn.Module):
 
 
         all_projections_bnwk = all_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, self.K_DIMENSION).transpose(1, 2)
+        all_projections_bnwk = F.normalize(all_projections_bnwk, p=2, dim=-1)
         # all_out_projections_bnwk = all_out_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, self.K_DIMENSION).transpose(1, 2)
 
         all_dot_products_bnww = all_projections_bnwk @ metric_tensors_nkk @ all_projections_bnwk.transpose(-1, -2)
         all_dot_products_bnww = all_dot_products_bnww / math.sqrt(self.K_DIMENSION)
-        all_dot_products_bnww = all_dot_products_bnww.masked_fill(self.MASK_11ww[:,:,:words,:words] == 0, float('-inf'))
-        all_dot_products_bnww = F.softmax(all_dot_products_bnww, dim=-1)
-        # all_dot_products_bnww = all_dot_products_bnww * self.MASK_11ww[:,:,:words,:words]
+        # all_dot_products_bnww = all_dot_products_bnww.masked_fill(self.MASK_11ww[:,:,:words,:words] == 0, float('-inf'))
+        # all_dot_products_bnww = F.softmax(all_dot_products_bnww, dim=-1)
+        all_dot_products_bnww = all_dot_products_bnww * self.MASK_11ww[:,:,:words,:words]
 
         nudged_vectors_bnwk = all_dot_products_bnww @ all_projections_bnwk
         nudged_vectors_bwnk = nudged_vectors_bnwk.transpose(1, 2).contiguous()
