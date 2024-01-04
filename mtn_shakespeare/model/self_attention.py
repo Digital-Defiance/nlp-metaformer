@@ -73,11 +73,11 @@ class MetricSelfAttention(nn.Module):
 
 
         all_projections_bwc = self.projections_cc(in_sequence_bwc)
-        all_out_projections_bwc = self.out_projections_cc(in_sequence_bwc)
+        # all_out_projections_bwc = self.out_projections_cc(in_sequence_bwc)
 
 
         all_projections_bnwk = all_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, self.K_DIMENSION).transpose(1, 2)
-        all_out_projections_bnwk = all_out_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, self.K_DIMENSION).transpose(1, 2)
+        # all_out_projections_bnwk = all_out_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, self.K_DIMENSION).transpose(1, 2)
 
         all_dot_products_bnww = all_projections_bnwk @ metric_tensors_nkk @ all_projections_bnwk.transpose(-1, -2)
         all_dot_products_bnww = all_dot_products_bnww / math.sqrt(self.K_DIMENSION)
@@ -85,7 +85,7 @@ class MetricSelfAttention(nn.Module):
         all_dot_products_bnww = F.softmax(all_dot_products_bnww, dim=-1)
         # all_dot_products_bnww = all_dot_products_bnww * self.MASK_11ww[:,:,:words,:words]
 
-        nudged_vectors_bnwk = all_dot_products_bnww @ all_out_projections_bnwk
+        nudged_vectors_bnwk = all_dot_products_bnww @ all_projections_bwc
         nudged_vectors_bwnk = nudged_vectors_bnwk.transpose(1, 2).contiguous()
         nudged_vectors_bwc = nudged_vectors_bwnk.view(batch, words, coordinates)
 
