@@ -72,7 +72,7 @@ class MetricSelfAttention(nn.Module):
         batch, words, coordinates = in_sequence_bwc.size()
         # pre_metric_tensors_nkk = self.pre_metric_tensors_nkk * self.MASK_11ww[0, :, :self.K_DIMENSION, :self.K_DIMENSION]
         pre_metric_tensors_nkk = self.pre_metric_tensors_nkk.masked_fill(self.MASK_11ww[:,:,:self.K_DIMENSION,:self.K_DIMENSION] == 0, float('-inf'))
-        pre_metric_tensors_nkk = F.softmax(pre_metric_tensors_nkk, dim=-1)
+        pre_metric_tensors_nkk = F.softmax(pre_metric_tensors_nkk / math.sqrt(self.K_DIMENSION), dim=-1)
         metric_tensors_nkk = pre_metric_tensors_nkk @ pre_metric_tensors_nkk.transpose(-1, -2)  # ensures symmetry and positive definiteness
         
         all_projections_bwc = self.projections_cc(in_sequence_bwc)
