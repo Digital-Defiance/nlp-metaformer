@@ -59,8 +59,8 @@ class MetricSelfAttention(nn.Module):
             .view(1, 1, params.words, params.words)
         )
 
-        self.generators_1nww = nn.Parameter(        
-            torch.randn(1, self.NUMBER_OF_HEADS, params.words, params.words)
+        self.generators_1nwk = nn.Parameter(        
+            torch.randn(1, self.NUMBER_OF_HEADS, params.words, self.K_DIMENSION)
             
         )
 
