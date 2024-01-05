@@ -44,7 +44,7 @@ $$z_{bwk}^{(n)} = x_{bwc} A_{ck}^{(n)} $$
 
 The heart of the mechanism lies in the metric tensor $G^{(n)} _ {kk}$, initialized as a product of a learnable tensor $P ^{(n)} _ {kk}$ and its transpose. This ensures that $G^{(n)} _ {kk}$ is symmetric and positive definite:
 $$G^{(n)}_{kk} = P ^{(n)} _ {kk} (P ^{(n)} _ {kk})^T$$
-This introduces a geometric structure into the attention mechanism. Attention scores are computed using the metric tensor $G^{(n)} _ {kk}$ and the transformed features $Z^{(n)} _ {bwk}$ 
+This introduces a geometric structure into the attention mechanism. Attention scores are computed using the metric tensor $G^{(n)} _ {kk}$ and the transformed features $z^{(n)} _ {bwk}$ 
 
 $$
 S^{(n)}_ {bww} =
@@ -55,7 +55,7 @@ $$
 
 Here, $S^{(n)} _ {bww}$ represents the attention scores, quantifying the influence of each word in the sequence on every other word, with $w'$ indexing the sequence length. Once the attention scores are obtained, they are used to compute the output for each head. The output for head $n$, $O^{(n)}_{bwk}$, is a weighted sum of the transformed features:
 
-$$O^{(n)}_ {bwk} = S^{(n)} _{bww} Z^{(n)} _{bwk}$$
+$$O^{(n)}_ {bwk} = S^{(n)} _{bww} z^{(n)} _{bwk}$$
 
 Finally, the outputs from all heads are concatenated and passed through another linear transformation $B_{ij}$ to yield the final output $Y_{bwi}$:
 
