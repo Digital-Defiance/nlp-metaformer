@@ -76,7 +76,8 @@ class MetricSelfAttention(nn.Module):
         all_projections_bwc = self.projections_cc(in_sequence_bwc)
         all_projections_bnwk = all_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, self.K_DIMENSION).transpose(1, 2)
         all_metric_tensors_1nkk = all_projections_bnwk.transpose(-1, -2) @ self.generators_1nwk[:,:,:words,:]
-        all_metric_tensors_1nkk = all_metric_tensors_1nkk * self.MASK_11ww[:, :, :self.K_DIMENSION, :self.K_DIMENSION]
+        all_metric_tensors_1nkk = all_metric_tensors_1nkk.masked_fill(self.MASK_11ww[:,:,:words,:words] == 0, float('-inf'))
+        all_metric_tensors_1nkk = F.softmax(all_metric_tensors_1nkk, dim=-2)
         all_metric_tensors_1nkk = all_metric_tensors_1nkk @ all_metric_tensors_1nkk.transpose(-1, -2)
 
         all_dot_products_bnww = all_projections_bnwk @ all_metric_tensors_1nkk @ all_projections_bnwk.transpose(-1, -2)
