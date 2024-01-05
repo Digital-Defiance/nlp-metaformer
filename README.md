@@ -32,6 +32,9 @@ phase 3 - exploratory 2
 ## The reasoning behind modifying transformers self attention 
 
 NOTE: WIP
+
+NOTE2: this is not the usual index notation, see next section for explanation
+
 In the proposed self-attention mechanism, we consider a sequence input represented by a tensor $x_{bwc}$, where $b$ indexes the batch size, $w$ the sequence length, and $c$ the feature dimensions. The mechanism leverages a metric tensor to enhance the geometric understanding of the attention process proposed in 2017.
 
 The first step involves a series of linear transformation of $x_{bwc}$ to lower-dimensional spaces. For each head $n$, this is achieved using a weight tensor $A_{ck}^{(n)}$ where $k$ represents the reduced dimensions for each head. The transformation is given by:
