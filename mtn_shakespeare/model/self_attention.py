@@ -59,8 +59,8 @@ class MetricSelfAttention(nn.Module):
             .view(1, 1, params.words, params.words)
         )
 
-        self.generators_1nkk = nn.Parameter(        
-            torch.randn(1, self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION)
+        self.generators_1nww = nn.Parameter(        
+            torch.randn(1, self.NUMBER_OF_HEADS, params.words, params.words)
             
         )
 
@@ -75,8 +75,8 @@ class MetricSelfAttention(nn.Module):
 
         all_projections_bwc = self.projections_cc(in_sequence_bwc)
         all_projections_bnwk = all_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, self.K_DIMENSION).transpose(1, 2)
-        all_metric_tensors_1nkk = all_projections_bnwk @ self.generators_1nkk
-        all_metric_tensors_1nkk = all_metric_tensors_1nkk * self.MASK_11ww[0, :, :self.K_DIMENSION, :self.K_DIMENSION]
+        all_metric_tensors_1nkk = all_projections_bnwk @ self.generators_1nww[:,:,:words,:words]
+        all_metric_tensors_1nkk = all_metric_tensors_1nkk * self.MASK_11ww[:, :, :self.K_DIMENSION, :self.K_DIMENSION]
         all_metric_tensors_1nkk = all_metric_tensors_1nkk @ all_metric_tensors_1nkk.transpose(-1, -2)
 
         all_dot_products_bnww = all_projections_bnwk @ all_metric_tensors_1nkk @ all_projections_bnwk.transpose(-1, -2)
