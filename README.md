@@ -32,37 +32,34 @@ phase 3 - exploratory 2
 ## The reasoning behind modifying transformers self attention 
 
 NOTE: WIP
+In the proposed self-attention mechanism, we consider a sequence input represented by a tensor $x_{bwc}$, where $b$ indexes the batch size, $w$ the sequence length, and $c$ the feature dimensions. The mechanism leverages a metric tensor to enhance the geometric understanding of the attention process proposed in 2017.
 
-In the proposed self-attention mechanism, we consider a sequence input represented by a tensor $X_{bwi}$, where $b$ indexes the batch size, $w$ the sequence length, and $i$ the feature dimensions. The mechanism leverages a metric tensor to enhance the geometric understanding of the attention process.
+The first step involves a series of linear transformation of $x_{bwc}$ to lower-dimensional spaces. For each head $n$, this is achieved using a weight tensor $A_{ck}^{(n)}$ where $k$ represents the reduced dimensions for each head. The transformation is given by:
 
-The first step involves a linear transformation of $X_{bwj}$ to a lower-dimensional space. This is achieved using a weight matrix $A_{jj}$. The transformation is given by:
+$$z_{bwk}^{(n)} = x_{bwc} A_{ck}^{(n)} $$
 
-$$Z_{bwj} = A_{ij} X_{bwj}$$
-
-Following this, the transformed features $Z_{bwj}$ are split into different 'heads' for multi-head attention. For each head $n$, we consider a portion of the transformed features, denoted as $Z^{(n)}_{bwk}$, where $k$ represents the reduced dimensions for each head. Thus, the matrix $A _ {ij}$ not only performs a linear transformation but also projects the input features onto a lower-dimensional space, facilitating more efficient computation and potentially capturing more relevant features for attention.
 
 The heart of the mechanism lies in the metric tensor $G^{(n)} _ {kk}$, initialized as a product of a learnable tensor $P ^{(n)} _ {kk}$ and its transpose. This ensures that $G^{(n)} _ {kk}$ is symmetric and positive definite:
 $$G^{(n)}_{kk} = P ^{(n)} _ {kk} (P ^{(n)} _ {kk})^T$$
-This metric tensor introduces a geometric structure into the attention mechanism, influencing how attention scores are calculated.
-
-Attention scores are computed using the metric tensor $G^{(n)} _ {kk}$ and the transformed features $Z^{(n)} _ {bwk}$ 
+This introduces a geometric structure into the attention mechanism. Attention scores are computed using the metric tensor $G^{(n)} _ {kk}$ and the transformed features $Z^{(n)} _ {bwk}$ 
 
 $$
-S^{(n)}_ {bww'} =
-\text{softmax}\left( \frac{Z^{(n)} _ {bwk}
-G^{(n)} _ {kk} ( Z^{(n)} _ {bwk} ) ^T
+S^{(n)}_ {bww} =
+\text{softmax}\left( \frac{z^{(n)} _ {bwk}
+G^{(n)} _ {kk} ( z^{(n)} _ {bwk} ) ^T
 }{\sqrt{K}} \right)
 $$
 
-Here, $S^{(n)} _ {bww'}$ represents the attention scores, quantifying the influence of each word in the sequence on every other word, with $w'$ indexing the sequence length. Once the attention scores are obtained, they are used to compute the output for each head. The output for head $n$, $O^{(n)}_{bwk}$, is a weighted sum of the transformed features:
+Here, $S^{(n)} _ {bww}$ represents the attention scores, quantifying the influence of each word in the sequence on every other word, with $w'$ indexing the sequence length. Once the attention scores are obtained, they are used to compute the output for each head. The output for head $n$, $O^{(n)}_{bwk}$, is a weighted sum of the transformed features:
 
-$$O^{(n)}_ {bwk} = S^{(n)} _{bww'} Z^{(n)} _{bw'k}$$
+$$O^{(n)}_ {bwk} = S^{(n)} _{bww} Z^{(n)} _{bwk}$$
 
 Finally, the outputs from all heads are concatenated and passed through another linear transformation $B_{ij}$ to yield the final output $Y_{bwi}$:
 
 $$Y _{bwi} = B _{ij} \left[ O^{(1)} _ {bwj}, O^{(2)} _{bwj}, \ldots, O^{(N)} _{bwj} \right]$$
 
 This mechanism, through the use of the metric tensor $G^{(n)}_{kk}$, provides a novel approach to compute attention, offering a geometric perspective to the understanding and processing of sequences in neural networks.
+
 
 
 ## The setup
