@@ -59,21 +59,27 @@ class MetricSelfAttention(nn.Module):
             .view(1, 1, params.words, params.words)
         )
 
+        self.generators_1nkk = nn.Parameter(        
+            torch.randn(1, self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION)
+            
+        )
+
         
 
 
     def forward(self, in_sequence_bwc: Tensor) -> Tensor:
 
         batch, words, coordinates = in_sequence_bwc.size()
-        pre_metric_tensors_nkk = self.pre_metric_tensors_nkk * self.MASK_11ww[0, :, :self.K_DIMENSION, :self.K_DIMENSION]
-        metric_tensors_nkk = pre_metric_tensors_nkk @ pre_metric_tensors_nkk.transpose(-1, -2)  # ensures symmetry and positive definiteness
+        # pre_metric_tensors_nkk = self.pre_metric_tensors_nkk * self.MASK_11ww[0, :, :self.K_DIMENSION, :self.K_DIMENSION]
+        # metric_tensors_nkk = pre_metric_tensors_nkk @ pre_metric_tensors_nkk.transpose(-1, -2)  # ensures symmetry and positive definiteness
 
         all_projections_bwc = self.projections_cc(in_sequence_bwc)
-
         all_projections_bnwk = all_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, self.K_DIMENSION).transpose(1, 2)
-        # all_projections_bnwk = F.normalize(all_projections_bnwk, p=2, dim=-1)
+        all_metric_tensors_1nkk = all_projections_bnwk @ self.generators_1nkk
+        all_metric_tensors_1nkk = all_metric_tensors_1nkk* self.MASK_11ww[:, :, :self.K_DIMENSION, :self.K_DIMENSION]
+        all_metric_tensors_1nkk = all_metric_tensors_1nkk @ all_metric_tensors_1nkk.transpose(-1, -2)
 
-        all_dot_products_bnww = all_projections_bnwk @ metric_tensors_nkk @ all_projections_bnwk.transpose(-1, -2)
+        all_dot_products_bnww = all_projections_bnwk @ all_metric_tensors_1nkk @ all_projections_bnwk.transpose(-1, -2)
         all_dot_products_bnww = all_dot_products_bnww / math.sqrt(self.K_DIMENSION)
         all_dot_products_bnww = all_dot_products_bnww.masked_fill(self.MASK_11ww[:,:,:words,:words] == 0, float('-inf'))
         all_dot_products_bnww = F.softmax(all_dot_products_bnww, dim=-1)
