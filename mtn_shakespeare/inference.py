@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 gpt2_encoder = tiktoken.get_encoding("gpt2")
 DEVICE = torch.device('cpu' if not torch.cuda.is_available() else 'cuda')
-logged_model = 'runs:/e6c3f9464f1b4701a2251468046a482b/nanogpt_180'
+logged_model = 'runs:/0dd2b64253584cd39c52fc1482c035ae/nanogpt_180'
 nanoGPT = mlflow.pytorch.load_model(logged_model, map_location=DEVICE)
 nanoGPT = nanoGPT.to('cpu')
 nanoGPT.eval()
