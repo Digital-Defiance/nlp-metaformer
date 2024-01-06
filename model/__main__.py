@@ -3,6 +3,7 @@ import torch.nn as nn
 import tiktoken
 from pydantic_settings import BaseSettings
 
+from core.constants import DEVICE
 from core.mixins import MyBaseSettingsMixin
 from model.sequence_encoder import SequenceEncoder
 from model.transformer_block import TransformerBlock
@@ -18,7 +19,7 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
     number_of_heads: int = 3
     bias: bool = False
 
-    def make_model(self) -> nn.Module:
+    def create_model(self) -> nn.Module:
         model = nn.Sequential()
         model.add_module("sequence_encoder", SequenceEncoder(self))
     
@@ -27,5 +28,8 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
 
         model.add_module("layer_norm_c", nn.LayerNorm(self.coordinates))
         model.add_module("language_model_weights_tc", nn.Linear(self.coordinates, self.tokens, bias=self.bias))
-        return model
+        return model.to(DEVICE)
+    
+
+    
 
