@@ -31,7 +31,11 @@ phase 3 - exploratory 2
 
 ## some literature
 
+- https://paperswithcode.com/method/strided-attention
+- https://paperswithcode.com/method/fixed-factorized-attention
+- https://paperswithcode.com/method/dot-product-attention
 - https://paperswithcode.com/method/scaled
+
 
 ## The reasoning behind modifying transformers self attention 
 
