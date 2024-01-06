@@ -4,7 +4,7 @@ import subprocess
 import time
 import mlflow
 from botocore.exceptions import ClientError
-from train.config import TrainingLoopSettings, MLFlowSettings, AWSFactory
+from train.config import TrainingLoopFactory, MLFlowSettings, AWSFactory
 from model import ModelFactory
 from core.constants import AWS_EC2_STATUS_CODE_RUNNING, MAX_ITERATIONS
 from core.logger import get_logger
@@ -28,7 +28,7 @@ ec2_client, cw_client, ec2_resources = aws_factory.create_clients()
 
 exports = {
     **ModelFactory().to_exports(),
-    **TrainingLoopSettings().to_exports(),
+    **TrainingLoopFactory().to_exports(),
     **mlflow_settings.to_exports(),
     **aws_factory.to_exports(),
 
