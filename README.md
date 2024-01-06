@@ -29,6 +29,10 @@ phase 3 - exploratory 2
 
 - TBD
 
+## some literature
+
+- https://paperswithcode.com/method/scaled
+
 ## The reasoning behind modifying transformers self attention 
 
 NOTE: WIP
