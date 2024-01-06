@@ -29,6 +29,14 @@ phase 3 - exploratory 2
 
 - TBD
 
+## some literature
+
+- https://paperswithcode.com/method/strided-attention
+- https://paperswithcode.com/method/fixed-factorized-attention
+- https://paperswithcode.com/method/dot-product-attention
+- https://paperswithcode.com/method/scaled
+
+
 ## The reasoning behind modifying transformers self attention 
 
 NOTE: WIP
@@ -37,19 +45,23 @@ NOTE2: this is not the usual index notation, see next section for explanation
 
 In the proposed self-attention mechanism, we consider a sequence input represented by a tensor $x_{bwc}$, where $b$ indexes the batch size, $w$ the sequence length, and $c$ the feature dimensions. The mechanism leverages a metric tensor to enhance the geometric understanding of the attention process proposed in 2017.
 
-The first step involves a series of linear transformation of $x_{bwc}$ to lower-dimensional spaces. For each head $n$, this is achieved using a weight tensor $A_{ck}^{(n)}$ where $k$ represents the reduced dimensions for each head. The transformation is given by:
+The first step involves a series of linear transformation of $x_{bwc}$ to $n$ lower-dimensional spaces. For each head $n$, this is achieved using a weight tensor $A_{ck}^{(n)}$ where $k = c / n$ represents the reduced dimensions for each head. The transformation is given by:
 
 $$z_{bwk}^{(n)} = x_{bwc} A_{ck}^{(n)} $$
 
 
-The heart of the mechanism lies in the metric tensor $G^{(n)} _ {kk}$, initialized as a product of a learnable tensor $P ^{(n)} _ {kk}$ and its transpose. This ensures that $G^{(n)} _ {kk}$ is symmetric and positive definite:
+The heart of the mechanism lies in the metric tensor $G^{(n)} _ {kk}$, initialized as a product of a learnable, lower triangular tensor $P ^{(n)} _ {kk}$ and its transpose. This ensures that $G^{(n)} _ {kk}$ is symmetric and semi-positive definite:
 $$G^{(n)}_{kk} = P ^{(n)} _ {kk} (P ^{(n)} _ {kk})^T$$
-This introduces a geometric structure into the attention mechanism. Attention scores are computed using the metric tensor $G^{(n)} _ {kk}$ and the transformed features $z^{(n)} _ {bwk}$ 
+This introduces a geometric structure into the attention mechanism. The tensor $G^{(n)} _ {kk}$ allowes the network to construct custom dot products which can be calculated via the usual quadratic form,
+
+$$ \textrm{dot}_{kw}^{(n)}(z^{(n)} _ {bwk}, z^{(n)} _ {bwk}) = z^{(n)} _ {bwk} G^{(n)} _ {kk} ( z^{(n)} _ {bwk} ) ^T$$
+
+We use this custom metric to replace the $W_qW_k^T$ shown in the original 2017 publication,
 
 $$
 S^{(n)}_ {bww} =
-\text{softmax}\left( \frac{z^{(n)} _ {bwk}
-G^{(n)} _ {kk} ( z^{(n)} _ {bwk} ) ^T
+\text{softmax}\left( \frac{
+\textrm{dot}_{kw}^{(n)}(z^{(n)} _ {bwk}, z^{(n)} _ {bwk})
 }{\sqrt{K}} \right)
 $$
 
