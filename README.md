@@ -14,7 +14,8 @@ phase 1 - exploratory
 - [x] implement and train a simple gpt that sorts tokens
 - [x] use simpler implementation to contruct the MLOps infra
 - [x] train a larger gpt on shakespeare
-- [ ] experiment with transformer modifications (i.e. mtn)
+- [x] experiment with transformer modifications (i.e. mtn)
+- [ ] perform systematic comparison between mtn and transformer
 - [ ] write report on comparison between transformer and metric tensor network (might focus more on this depending on the results)
 - [ ] fine tune gpt2
 - [ ] setup whisper
