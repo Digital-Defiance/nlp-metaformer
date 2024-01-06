@@ -103,6 +103,7 @@ with exception_controlled_run() as run:
     mlflow.log_param("n_parameters", sum(p.numel() for p in parameters))
     optimizer = training_loop_factory.create_optimizer(parameters)
     loss_function = training_loop_factory.create_loss_function()
+    create_training_batch, create_validation_batch, create_epoch_data = training_loop_factory.create_data_handlers()
 
 
     # ----------------- TRAINING LOOP ----------------- #
@@ -118,7 +119,7 @@ with exception_controlled_run() as run:
 
     for epoch in range(start_epoch, training_loop_factory.number_of_epochs):
 
-        data_gen = training_loop_factory.create_epoch_data()
+        data_gen = create_epoch_data()
 
         for in_sequence_bw, out_sequence_bw in tqdm(data_gen, desc=f"Epoch {epoch}", leave=True):
             with zero_grad(optimizer):
@@ -136,7 +137,7 @@ with exception_controlled_run() as run:
 
 
         with torch.no_grad():
-            in_sequence_bw, out_sequence_bw = training_loop_factory.create_validation_batch()
+            in_sequence_bw, out_sequence_bw = create_validation_batch()
             pred_logits_bwt = model(in_sequence_bw)
             # cross entropy expects (batch, classes, sequence)
             pred_logits_btw = pred_logits_bwt.transpose(-1, -2)

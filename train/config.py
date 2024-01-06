@@ -14,62 +14,18 @@ import mlflow
 import mlflow.pytorch
 
 
-gpt2_encoder = tiktoken.get_encoding("gpt2")
-input_file_path = "raw_data.txt"
 
-with open(input_file_path, 'r') as file:
-    text: str = file.read()
-
-size_of_text = len(text)
-thresh_size = int(size_of_text * 0.9)
-train_data, val_data = text[:thresh_size], text[thresh_size:]
-
-train_ids = gpt2_encoder.encode_ordinary(train_data)
-train_ids = np.array(train_ids, dtype=np.int32)
-train_ids = torch.from_numpy(train_ids).to(DEVICE)
-
-val_ids = gpt2_encoder.encode_ordinary(val_data)
-val_ids = np.array(val_ids, dtype=np.int32)
-val_ids = torch.from_numpy(val_ids).to(DEVICE)
-
-
-
+    
 class TrainingLoopFactory(BaseSettings, MyBaseSettingsMixin):
     number_of_epochs: int = 100
     number_of_batches: int = 10
     batch_size: int = 32
     learning_rate: float = 0.001
     loss_function: str = "CrossEntropyLoss"
+    input_file_path: str = "raw_data.txt"
 
     class Config:
         env_prefix = "TRAIN_"
-
-    def _create_batch(self, data_s: torch.Tensor, max_size_of_sequence: int):
-
-        shape = (self.batch_size,)
-        start_indices_b = torch.randint(0, len(data_s) - max_size_of_sequence, shape).to(DEVICE)
-        end_indices_b = start_indices_b + max_size_of_sequence
-
-        shape = (self.batch_size, max_size_of_sequence)
-        in_sequence_bw = torch.zeros(shape, dtype=torch.int64, device=DEVICE)
-        out_sequence_bw = torch.zeros(shape, dtype=torch.int64, device=DEVICE)
-
-        for i in range(self.batch_size):
-            start, end = start_indices_b[i], end_indices_b[i]
-            in_sequence_bw[i] = data_s[start:end]
-            out_sequence_bw[i] = data_s[start + 1:end + 1]
-
-        return in_sequence_bw, out_sequence_bw
-    
-    def create_validation_batch(self):
-        return self._create_batch(val_ids, 1000)
-
-    def create_training_batch(self):
-        return self._create_batch(train_ids, 1000)
-
-    def create_epoch_data(self) -> Iterator[tuple[torch.Tensor, torch.Tensor]]:
-        for _ in range(self.number_of_batches):
-            yield self.generate_batch(train_ids)
 
     def create_loss_function(self):
         if self.loss_function == "CrossEntropyLoss":
@@ -78,6 +34,56 @@ class TrainingLoopFactory(BaseSettings, MyBaseSettingsMixin):
     
     def create_optimizer(self, parameters):
         return torch.optim.Adam(parameters, lr=self.learning_rate)
+    
+    def create_data_handlers(self):
+        """ overengeneered it a bit, i just wanted this out of the way"""
+
+        gpt2_encoder = tiktoken.get_encoding("gpt2")
+        input_file_path = "raw_data.txt"
+
+        with open(input_file_path, 'r') as file:
+            text: str = file.read()
+
+        size_of_text = len(text)
+        thresh_size = int(size_of_text * 0.9)
+        train_data, val_data = text[:thresh_size], text[thresh_size:]
+
+        train_ids = gpt2_encoder.encode_ordinary(train_data)
+        train_ids = np.array(train_ids, dtype=np.int32)
+        train_ids = torch.from_numpy(train_ids).to(DEVICE)
+
+        val_ids = gpt2_encoder.encode_ordinary(val_data)
+        val_ids = np.array(val_ids, dtype=np.int32)
+        val_ids = torch.from_numpy(val_ids).to(DEVICE)
+    
+        def create_batch(data_s: torch.Tensor, max_size_of_sequence: int):
+
+            shape = (self.batch_size,)
+            start_indices_b = torch.randint(0, len(data_s) - max_size_of_sequence, shape).to(DEVICE)
+            end_indices_b = start_indices_b + max_size_of_sequence
+
+            shape = (self.batch_size, max_size_of_sequence)
+            in_sequence_bw = torch.zeros(shape, dtype=torch.int64, device=DEVICE)
+            out_sequence_bw = torch.zeros(shape, dtype=torch.int64, device=DEVICE)
+
+            for i in range(self.batch_size):
+                start, end = start_indices_b[i], end_indices_b[i]
+                in_sequence_bw[i] = data_s[start:end]
+                out_sequence_bw[i] = data_s[start + 1:end + 1]
+
+            return in_sequence_bw, out_sequence_bw
+
+        def create_validation_batch():
+            return create_batch(val_ids, 1000)
+
+        def create_training_batch():
+            return create_batch(train_ids, 1000)
+
+        def create_epoch_data() -> Iterator[tuple[torch.Tensor, torch.Tensor]]:
+            for _ in range(self.number_of_batches):
+                yield self.generate_batch(train_ids)
+
+        return create_training_batch, create_validation_batch, create_epoch_data
 
 
 
