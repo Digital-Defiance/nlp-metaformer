@@ -9,7 +9,7 @@ import mlflow
 from botocore.exceptions import ClientError
 
 from pydantic_settings import BaseSettings
-from train_config import TrainConfiguration, ModelHandler, MLFlowSettings
+from train.config import TrainConfiguration, ModelHandler, MLFlowSettings
 
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s",)

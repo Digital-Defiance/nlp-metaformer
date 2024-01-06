@@ -1,21 +1,17 @@
 
 import torch.nn as nn
-from torch import Tensor
 from typing import Protocol, Literal, Union
+from core.types import TensorFloat
 
-from models.layers.self_attention import MetricSelfAttention, ScaledDotProductAttention
-from models.layers.perceptron import Perceptron as MLP
+from model.self_attention import MetricSelfAttention, ScaledDotProductAttention
+from model.perceptron import Perceptron as MLP
 
-
-TensorInt = Tensor
-TensorFloat = Tensor
 
 
 class TransformerBlockParameters(Protocol):
     coordinates: int
     words: int
     tokens: int
-
     attention: Literal["metric", "scaled_dot_product"]
 
 
@@ -30,7 +26,6 @@ class TransformerBlock(nn.Module):
 
     def __init__(self, params: TransformerBlockParameters):
         super(TransformerBlock, self).__init__()
-
 
         self.layer_norm1_c = nn.LayerNorm(params)
 

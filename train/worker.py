@@ -7,7 +7,7 @@ from model import MetricTensorNetwork
 import torch
 import logging
 from contextlib import contextmanager
-from train_config import TrainConfiguration, ModelHandler, MLFlowSettings
+from train.config import TrainConfiguration, ModelHandler, MLFlowSettings
 from mlflow.entities import RunStatus
 import requests
 import torch

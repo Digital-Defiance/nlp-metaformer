@@ -1,12 +1,11 @@
 import torch.nn as nn
-from torch import Tensor
 from typing import Protocol
+from core.types import TensorFloat
 
-
-TensorFloat = Tensor
 
 class PerceptronParameters(Protocol):
     coordinates: int
+    bias: bool
 
 class Perceptron(nn.Module):
     linear_expansion_dc: nn.Linear
@@ -15,9 +14,10 @@ class Perceptron(nn.Module):
 
     def __init__(self, params: PerceptronParameters):
         super().__init__()
-        self.linear_expansion_dc = nn.Linear(params.coordinates, 4 * params.coordinates, bias=False)
+        dimension = 4 * params.coordinates
+        self.linear_expansion_dc = nn.Linear(params.coordinates, dimension, bias=params.bias)
         self.gelu_activation = nn.GELU()
-        self.linear_projections_cd = nn.Linear(4 * params.coordinates, params.coordinates, bias=False)
+        self.linear_projections_cd = nn.Linear(dimension, params.coordinates, bias=params.bias)
 
 
     def forward(self, in_sequence_bwc: TensorFloat) -> TensorFloat:
