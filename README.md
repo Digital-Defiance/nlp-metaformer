@@ -55,14 +55,14 @@ The heart of the mechanism lies in the metric tensor $G^{(n)} _ {kk}$, initializ
 $$G^{(n)}_{kk} = P ^{(n)} _ {kk} (P ^{(n)} _ {kk})^T$$
 This introduces a geometric structure into the attention mechanism. The tensor $G^{(n)} _ {kk}$ allowes the network to construct custom dot products which can be calculated via the usual quadratic form,
 
-$$ \textrm{dot}_{kw}^{(n)}(z^{(n)} _ {bwk}, z^{(n)} _ {bwk}) = z^{(n)} _ {bwk} G^{(n)} _ {kk} ( z^{(n)} _ {bwk} ) ^T$$
+$$ \textrm{dot}^{(n)}(z^{(n)} _ {bwk}, z^{(n)} _ {bwk}) = z^{(n)} _ {bwk} G^{(n)} _ {kk} ( z^{(n)} _ {bwk} ) ^T$$
 
 We use this custom metric to replace the $W_qW_k^T$ shown in the original 2017 publication,
 
 $$
 S^{(n)}_ {bww} =
 \text{softmax}\left( \frac{
-\textrm{dot}_{kw}^{(n)}(z^{(n)} _ {bwk}, z^{(n)} _ {bwk})
+\textrm{dot}^{(n)}(z^{(n)} _ {bwk}, z^{(n)} _ {bwk})
 }{\sqrt{K}} \right)
 $$
 

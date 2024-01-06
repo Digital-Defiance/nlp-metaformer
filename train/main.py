@@ -12,16 +12,11 @@ from core.logger import get_logger
 logger = get_logger(__name__)
 
 
-
-
-
 # Load the settings from the environment variables and create the AWS clients
 
 aws_factory = AWSFactory()
 mlflow_settings = MLFlowSettings(is_local=False)
 ec2_client, cw_client, ec2_resources = aws_factory.create_clients()
-
-
 
 
 # build up user data script as far as possible without the run id
@@ -50,10 +45,11 @@ def create_user_data(run_id: str) -> str:
     return user_data_exports + f"export MLFLOW_RUN_ID={run_id}\n" + user_data_body
 
 
-
 # Create the MLFlow run and start the training loop with the user data
 
 with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
+
+    mlflow.log_params("commit", exports["COMMIT"])
 
     launch_specification = aws_factory.create_launch_specification()
     launch_specification['UserData'] = create_user_data(run.info.run_id)
