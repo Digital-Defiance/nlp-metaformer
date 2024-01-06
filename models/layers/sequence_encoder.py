@@ -68,6 +68,7 @@ class SequenceEncoder(nn.Module):
 
         _, words = sequence_bw.size()
         sentence_tokens_bwc = self.vocabolary_enconding_tc(sequence_bw) # t = sequence_bw
-        sentence_position_1wc = self.positional_encoding_wc(torch.arange(0, words, dtype=torch.long).unsqueeze(0).to(DEVICE)) # w = self.position_indices_1w
+        # w = self.position_indices_1w
+        sentence_position_1wc = self.positional_encoding_wc(torch.arange(0, words, dtype=torch.long).unsqueeze(0).to(DEVICE)) 
         out_sequence_bwc = sentence_tokens_bwc + sentence_position_1wc  
         return out_sequence_bwc

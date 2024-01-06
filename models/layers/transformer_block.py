@@ -1,37 +1,45 @@
 
 import torch.nn as nn
 from torch import Tensor
-from typing import Protocol
+from typing import Protocol, Literal, Union
 
-from model.self_attention import MetricSelfAttention
-from model.perceptron import Perceptron as MLP
-from model.l2_norm import L2Normalization
+from models.layers.self_attention import MetricSelfAttention, ScaledDotProductAttention
+from models.layers.perceptron import Perceptron as MLP
 
 
 TensorInt = Tensor
 TensorFloat = Tensor
+
 
 class TransformerBlockParameters(Protocol):
     coordinates: int
     words: int
     tokens: int
 
+    attention: Literal["metric", "scaled_dot_product"]
+
+
 class TransformerBlock(nn.Module):
 
-    layer_norm1_c: L2Normalization
-    self_attention: MetricSelfAttention
+    layer_norm1_c: nn.LayerNorm
+    self_attention: Union[MetricSelfAttention, ScaledDotProductAttention]
 
-    layer_norm2_c: L2Normalization
-    perceptron_layer: MLP
+    layer_norm2_c: nn.LayerNorm
+    perceptron_layer: nn.LayerNorm
 
 
     def __init__(self, params: TransformerBlockParameters):
         super(TransformerBlock, self).__init__()
 
-        self.layer_norm1_c = L2Normalization(params)
-        self.self_attention = MetricSelfAttention(params)
 
-        self.layer_norm2_c = L2Normalization(params)
+        self.layer_norm1_c = nn.LayerNorm(params)
+
+        if params.attention == "metric":
+            self.self_attention = MetricSelfAttention(params)
+        elif params.attention == "scaled_dot_product":
+            self.self_attention = ScaledDotProductAttention(params)
+
+        self.layer_norm2_c = nn.LayerNorm(params)
         self.perceptron_layer = MLP(params)
 
     def forward(self, in_sequence_bwc: TensorFloat) -> TensorFloat:
