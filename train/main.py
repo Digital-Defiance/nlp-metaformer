@@ -1,117 +1,86 @@
 
 import base64
-import logging
 import subprocess
 import time
-from logging import getLogger
-import boto3
 import mlflow
 from botocore.exceptions import ClientError
+from train.config import TrainConfiguration, MLFlowSettings, AWSFactory
+from model import ModelFactory
+from core.constants import AWS_EC2_STATUS_CODE_RUNNING, MAX_ITERATIONS
+from logger import get_logger
 
-from pydantic_settings import BaseSettings
-from train.config import TrainConfiguration, ModelHandler, MLFlowSettings
+logger = get_logger(__name__)
 
 
-logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s",)
 
-logger = getLogger(__name__)
-logger.setLevel(logging.INFO)
 
-MAX_ITERATIONS = 3
-AWS_EC2_STATUS_CODE_RUNNING = 16
 
-class AWSSettings(BaseSettings):
-    aws_access_key_id: str
-    aws_secret_access_key: str
-    region_name: str = "eu-west-2"
-    ami_id: str = "ami-093cb9fb2d34920ad"
-    instance_type: str = "c5n.xlarge"
+# Load the settings from the environment variables and create the AWS clients
 
-    def to_launch_specification(self, user_data):
-        return {
-            'ImageId': self.ami_id,
-            'InstanceType': self.instance_type,
-            'KeyName': 'r',
-            'UserData': user_data,
-            'BlockDeviceMappings': [
-                {
-                    'DeviceName': '/dev/xvda',
-                    'Ebs': {
-                        'VolumeSize': 130,  
-                        'DeleteOnTermination': True,
-                        'VolumeType': 'gp2',
-                    },
-                },
+aws_factory = AWSFactory()
+mlflow_settings = MLFlowSettings(is_local=False)
+ec2_client, cw_client, ec2_resources = aws_factory.create_clients()
 
-            ]
-        }
 
-    
-aws_settings = AWSSettings()
-mlflow_settings = MLFlowSettings()
+
+
+# build up user data script as far as possible without the run id
+
+exports = {
+    **ModelFactory().to_exports(),
+    **TrainConfiguration().to_exports(),
+    **mlflow_settings.to_exports(),
+    **aws_factory.to_exports(),
+
+    # other exports
+    "COMMIT": subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('ascii'),
+}
+
+user_data_exports = ""
+
+for key, value in exports.items():
+    user_data_exports += f"export {key}={value}\n"
 
 with open("user_data.sh", "r") as f:
-    bash_script_template = f.read()
+    user_data_body = f.read()
 
+def create_user_data(run_id: str) -> str:
+    user_data = user_data_exports + user_data_body
+    user_data = base64.b64encode(user_data.encode()).decode()
+    return user_data_exports + f"export MLFLOW_RUN_ID={run_id}\n" + user_data_body
+
+
+
+# Create the MLFlow run and start the training loop with the user data
 
 with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
-    TrainConfiguration().save_to_mlflow()
-    ModelHandler().save_to_mlflow()
 
-    bash_script = bash_script_template.format(
-        current_commit=subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('ascii'),
-        TRACKING_URI=mlflow_settings.tracking_uri,
-        EXPERIMENT_ID=mlflow_settings.experiment_id,
-        MLFLOW_TRACKING_USERNAME=mlflow_settings.tracking_username,
-        MLFLOW_TRACKING_PASSWORD=mlflow_settings.tracking_password,
-        AWS_ACCESS_KEY_ID=aws_settings.aws_access_key_id,
-        AWS_SECRET_ACCESS_KEY=aws_settings.aws_secret_access_key,
-        RUN_ID=run.info.run_id,
-    )
-
-    user_data = base64.b64encode(bash_script.encode()).decode()
-
-    boto_kwargs = {
-        "aws_access_key_id": aws_settings.aws_access_key_id,
-        "aws_secret_access_key": aws_settings.aws_secret_access_key,
-        "region_name": aws_settings.region_name,
-    }   
-    
-    ec2_client = boto3.client('ec2', **boto_kwargs)
-    cw_client = boto3.client('logs', **boto_kwargs)
-    ec2_resources = boto3.resource('ec2', **boto_kwargs)
-
+    launch_specification = aws_factory.create_launch_specification()
+    launch_specification['UserData'] = create_user_data(run.info.run_id)
 
     for _ in range(MAX_ITERATIONS):
 
-        response = ec2_client.request_spot_instances(
+        logger.info(f"Creating request and waiting for fulfilment.")
+
+        spot_request_id = ec2_client.request_spot_instances(
             InstanceCount=1,
             Type='one-time',
-            LaunchSpecification=aws_settings.to_launch_specification(user_data)
-        )
-        spot_request_id = response['SpotInstanceRequests'][0]['SpotInstanceRequestId']
-        logger.info(f"Spot request {spot_request_id} created. Waiting for fulfilment.")
+            LaunchSpecification=launch_specification
+        )['SpotInstanceRequests'][0]['SpotInstanceRequestId']
+        ec2_client.get_waiter('spot_instance_request_fulfilled').wait(SpotInstanceRequestIds=[spot_request_id])
 
-        spot_request_waiter = ec2_client.get_waiter('spot_instance_request_fulfilled')
-        spot_request_waiter.wait(SpotInstanceRequestIds=[spot_request_id])
 
         logger.info(f"Spot request {spot_request_id} fulfilled. Waiting for instance creation.")
-
-        response = ec2_client.describe_spot_instance_requests(SpotInstanceRequestIds=[spot_request_id])
-        instance_id = response['SpotInstanceRequests'][0]['InstanceId']
-        logger.info(f"Instance {instance_id} created. Waiting for running.")
-
-        def fetch_instance():
-            return ec2_resources.Instance(instance_id)
-
-        fetch_instance().wait_until_running()
-        logger.info("Instance is running")
+        instance_id = ec2_client.describe_spot_instance_requests(
+            SpotInstanceRequestIds=[spot_request_id]
+        )['SpotInstanceRequests'][0]['InstanceId']
+        ec2_resources.Instance(instance_id).wait_until_running()
 
         try:
 
             logs_history = set()
 
-            while fetch_instance().state['Code'] == AWS_EC2_STATUS_CODE_RUNNING:
+            while ec2_resources.Instance(instance_id).state['Code'] == AWS_EC2_STATUS_CODE_RUNNING:
                 time.sleep(1)
 
                 # Get the logs from CloudWatch
@@ -121,20 +90,17 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
                         logGroupName="/var/log/cloud-init-output.log",
                         logStreamName=instance_id,
                     )
-
                     for event in response['events']:
                         if event['message'] in logs_history:
                             continue
-
                         logs_history.add(event['message'])
                         print(f"{instance_id}> {event['message']}")
-        
                 except ClientError:
                     logger.info("Log group not found yet")
+                    time.sleep(4)
 
         finally:
             ec2_client.cancel_spot_instance_requests(SpotInstanceRequestIds=[spot_request_id])
-            logger.info(f"Spot request {spot_request_id} cancelled. Waiting for instance termination.")
             ec2_client.terminate_instances(InstanceIds=[instance_id])
             logger.info(f"Instance {instance_id} terminated.")
 

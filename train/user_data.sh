@@ -1,11 +1,6 @@
 #!/bin/bash
 
 
-export AWS_ACCESS_KEY_ID={AWS_ACCESS_KEY_ID}
-export AWS_SECRET_ACCESS_KEY={AWS_SECRET_ACCESS_KEY}
-sudo yum install amazon-cloudwatch-agent -y
-
-
 
 cat << 'EOF' > send_logs_to_cloudwatch.sh
 #!/bin/bash
@@ -46,36 +41,20 @@ nohup ./send_logs_to_cloudwatch.sh &
 
 
 
-export MLFLOW_RUN_ID={RUN_ID}
-export MLFLOW_TRACKING_URI={TRACKING_URI}
-export MLFLOW_EXPERIMENT_ID={EXPERIMENT_ID}
-export MLFLOW_TRACKING_USERNAME={MLFLOW_TRACKING_USERNAME}
-export MLFLOW_TRACKING_PASSWORD={MLFLOW_TRACKING_PASSWORD}
 
-sudo mkdir /larger_tmp
-export TMPDIR=/larger_tmp
-
-sudo fallocate -l 30G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile1
-sudo swapon /swapfile
 
 sudo yum update -y 
 sudo yum install -y git  
 sudo yum install -y python
 sudo yum install -y python3-pip
-
 git clone https://github.com/Digital-Defiance/llm-voice-chat.git
 cd llm-voice-chat
-git checkout {current_commit}
-
-
-
+git checkout $COMMIT
 python -m venv env
 source env/bin/activate
 pip install -r .devcontainer/requirements.txt
 cd gpt_shakespear
 python train_worker.py
-#wait two minutes before shutting down, so that the logs can be sent to cloudwatch
-shutdown -h +2
+#wait \ minutes before shutting down, so that the logs can be sent to cloudwatch
+shutdown -h +1
 

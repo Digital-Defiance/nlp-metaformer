@@ -3,18 +3,17 @@ import mlflow
 import mlflow.pytorch
 import torch.nn as nn
 from tqdm import tqdm
-from model import MetricTensorNetwork
 import torch
-import logging
 from contextlib import contextmanager
-from train.config import TrainConfiguration, ModelHandler, MLFlowSettings
+from train.config import TrainConfiguration, MLFlowSettings
+from model import ModelFactory, gpt2_encoder
 from mlflow.entities import RunStatus
 import requests
 import torch
-from pydantic_settings import BaseSettings
-from typing import Literal, Iterator
+from typing import Iterator
 import tiktoken
 import numpy as np
+from logger import get_logger
 
 
 
@@ -22,37 +21,19 @@ import numpy as np
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.autograd.set_detect_anomaly(True)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+
+
+logger = get_logger(__name__)
 logger.info(f"Using device {DEVICE}")
 logger.info(f"Using torch version {torch.__version__}")
 logger.info(f"Using mlflow version {mlflow.__version__}")
 
 
-
-# ----------------- ENVIRONMENT ----------------- #
-
-class EnvironmentSettings(BaseSettings):
-    environment: Literal["local", "aws"] = "aws"
-    create_run: bool = False
-
-    class Config:
-        env_prefix = "MACHINE_"
-
-
-environment_settings = EnvironmentSettings()
 mlflow_settings = MLFlowSettings()
+model_factory = ModelFactory()
+train_configuration = TrainConfiguration()
 
-if not mlflow_settings.run_id and not environment_settings.create_run:
-    raise ValueError("MLFLOW_RUN_ID environment variable is not set")
-
-if environment_settings.create_run:    
-    with mlflow.start_run() as run:
-        mlflow_settings.run_id = run.info.run_id
-        TrainConfiguration().save_to_mlflow()
-        ModelHandler().save_to_mlflow()
-
-if environment_settings.environment == "aws":
+if not mlflow_settings.is_local:
     # Get the token for the metadata service (AWS)
     url = "http://169.254.169.254/latest/api/token"
     headers={"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
@@ -155,8 +136,6 @@ with exception_controlled_run() as run:
 
     # ----------------- INIT SETTINGS ----------------- #
 
-    train_params = TrainConfiguration.load_from_mlflow()
-    model_params = ModelHandler.load_from_mlflow()
 
     if train_params.loss_function == "CrossEntropyLoss":
         loss_function = nn.CrossEntropyLoss()
@@ -211,7 +190,7 @@ with exception_controlled_run() as run:
     
             data_gen_progressbar.set_postfix(loss=loss.item())
 
-            if environment_settings.environment == "local":
+            if mlflow_settings.is_local:
                 continue
 
             if instance_will_terminate():

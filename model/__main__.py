@@ -3,13 +3,13 @@ import torch.nn as nn
 import tiktoken
 from pydantic_settings import BaseSettings
 
-from core.mixins import MLFlowSaveAndLoadMixin
+from core.mixins import MyBaseSettingsMixin
 from model.sequence_encoder import SequenceEncoder
 from model.transformer_block import TransformerBlock
 
 gpt2_encoder = tiktoken.get_encoding("gpt2")
 
-class ModelFactory(BaseSettings, MLFlowSaveAndLoadMixin):
+class ModelFactory(BaseSettings, MyBaseSettingsMixin):
 
     coordinates: int = 3*100
     tokens: int = gpt2_encoder.max_token_value
