@@ -11,7 +11,7 @@ from mlflow.entities import RunStatus
 import requests
 import torch
 from typing import Iterator
-from logger import get_logger
+from core.logger import get_logger
 from core.constants import DEVICE
 
 

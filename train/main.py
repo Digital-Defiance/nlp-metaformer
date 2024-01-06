@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError
 from train.config import TrainingLoopSettings, MLFlowSettings, AWSFactory
 from model import ModelFactory
 from core.constants import AWS_EC2_STATUS_CODE_RUNNING, MAX_ITERATIONS
-from logger import get_logger
+from core.logger import get_logger
 
 logger = get_logger(__name__)
 
