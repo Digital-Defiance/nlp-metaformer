@@ -30,6 +30,10 @@ phase 3 - exploratory 2
 
 - TBD
 
+## possible dependencies
+
+- https://github.com/mozilla/TTS
+
 ## some literature
 
 - https://paperswithcode.com/method/strided-attention
