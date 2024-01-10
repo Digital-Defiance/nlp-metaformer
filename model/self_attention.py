@@ -24,7 +24,8 @@ class SelfAttention(ABC):
     COORDINATES: int
     K_DIMENSION: int
 
-    def set_common_parameters(self, params: SelfAttentionParameters):
+
+    def set_common_parameters(self: nn.Module, params: SelfAttentionParameters):
         self.COORDINATES = params.coordinates
         self.NUMBER_OF_HEADS = params.number_of_heads
         self.K_DIMENSION = self.COORDINATES // self.NUMBER_OF_HEADS
@@ -32,8 +33,8 @@ class SelfAttention(ABC):
         self.register_buffer(
             "MASK_11ww",
             torch
-            .tril(torch.ones(params.words, params.words))
-            .view(1, 1, params.words, params.words)
+              .tril(torch.ones(params.words, params.words))
+              .view(1, 1, params.words, params.words)
         )
 
     @abstractmethod
@@ -55,25 +56,29 @@ class SelfAttention(ABC):
 
 
 class MetricSelfAttention(nn.Module, SelfAttention):
-    projections_cd: nn.Linear
-    projection_cc: nn.Linear
-
 
     def __init__(self, params: SelfAttentionParameters):
         super(MetricSelfAttention, self).__init__()
 
         self.set_common_parameters(params)
 
-        self.projections_cc = nn.Linear(
-            self.COORDINATES,
-            self.COORDINATES,
-            bias = params.bias
+        self.projection_1nck = nn.Parameter(
+            torch.randn(
+                1,
+                self.NUMBER_OF_HEADS,
+                self.K_DIMENSION,
+                self.COORDINATES
+            )
         )
 
-        self.pre_metric_tensors_nkk = nn.Parameter(
-            torch.randn(self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION)
-            + torch.eye(self.K_DIMENSION) * 0.01
+        self.halves = nn.Parameter(
+            torch.randn(
+                self.NUMBER_OF_HEADS,
+                self.K_DIMENSION*(self.K_DIMENSION + 1) // 2 - self.K_DIMENSION
+            )
         )
+
+        self.diagonals = nn.Parameter(torch.randn(self.NUMBER_OF_HEADS, self.K_DIMENSION))
 
         self.mixer_cc = nn.Linear(
             params.coordinates,
@@ -81,37 +86,38 @@ class MetricSelfAttention(nn.Module, SelfAttention):
             bias=params.bias
         )
 
+        self.register_buffer(
+            "INDICES",
+            torch.triu_indices(row=self.K_DIMENSION, col=self.K_DIMENSION, offset=1)
+        )
+
+
+    def get_metric(self) -> Tensor:
+        metric_tensors_nkk = torch.zeros(self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION)
+        metric_tensors_nkk[:, self.INDICES[0], self.INDICES[1]] = self.halves
+        return metric_tensors_nkk + metric_tensors_nkk.t() + torch.diag(self.diagonals_nk)
+
 
     def forward(self, in_sequence_bwc: Tensor) -> Tensor:
         batch, words, coordinates = in_sequence_bwc.size()
-    
-        # pre_metric_tensors_nkk = self.pre_metric_tensors_nkk * self.MASK_11ww[0, :, :self.K_DIMENSION, :self.K_DIMENSION]
-        pre_metric_tensors_nkk = self.pre_metric_tensors_nkk.masked_fill(self.MASK_11ww[:,:,:self.K_DIMENSION,:self.K_DIMENSION] == 0, float('-inf'))
-        pre_metric_tensors_nkk = F.softmax(pre_metric_tensors_nkk / math.sqrt(self.K_DIMENSION), dim=-1)
-        metric_tensors_nkk = pre_metric_tensors_nkk @ pre_metric_tensors_nkk.transpose(-1, -2)  # ensures symmetry and positive definiteness
-        
-        all_projections_bwc = self.projections_cc(in_sequence_bwc)
-        all_projections_bnwk = all_projections_bwc.view(batch, words, self.NUMBER_OF_HEADS, self.K_DIMENSION).transpose(1, 2)
+        metric_tensors_nkk = self.get_metric()
+
+        in_sequence_b1wc = in_sequence_bwc.unsqueeze(1)
+        all_projections_bnwk = in_sequence_b1wc @ self.projection_1nck
 
         all_dot_products_bnww = all_projections_bnwk @ metric_tensors_nkk @ all_projections_bnwk.transpose(-1, -2)
-        all_dot_products_bnww = all_dot_products_bnww / math.sqrt(self.K_DIMENSION)
-        all_dot_products_bnww = all_dot_products_bnww.masked_fill(self.MASK_11ww[:,:,:words,:words] == 0, float('-inf'))
-        all_dot_products_bnww = F.softmax(all_dot_products_bnww, dim=-1)
+        all_scaled_dot_products_bnww = all_dot_products_bnww / math.sqrt(self.K_DIMENSION)
+        all_scaled_dot_products_bnww = all_scaled_dot_products_bnww.masked_fill(self.MASK_11ww[:,:,:words,:words] == 0, float('-inf'))
+        all_scaled_dot_products_bnww = F.softmax(all_scaled_dot_products_bnww, dim=-1)
 
         nudged_vectors_bnwk = all_dot_products_bnww @ all_projections_bnwk
         nudged_vectors_bwnk = nudged_vectors_bnwk.transpose(1, 2).contiguous()
         nudged_vectors_bwc = nudged_vectors_bwnk.view(batch, words, coordinates)
 
         out_sequence_bwc = self.mixer_cc(nudged_vectors_bwc)
-
         return out_sequence_bwc
 
 
-    def get_metric(self) -> Tensor:
-        raise NotImplementedError
-        pre_metric_tensors_nkk = self.pre_metric_tensors_nkk * self.MASK_11ww[0, :, self.K_DIMENSION, self.K_DIMENSION]
-        metric_tensors_nkk = pre_metric_tensors_nkk @ pre_metric_tensors_nkk.transpose(-1, -2)  # ensures symmetry and positive definiteness
-        return metric_tensors_nkk
 
 
 

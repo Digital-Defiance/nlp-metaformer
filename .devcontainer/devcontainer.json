@@ -14,7 +14,8 @@
                 "ms-python.python",
                 "GitHub.copilot",
                 "ms-azuretools.vscode-docker",
-                "github.vscode-github-actions"
+                "github.vscode-github-actions",
+                "mathematic.vscode-pdf"
             ]
         }
     }

@@ -19,6 +19,9 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
     number_of_heads: int = 3
     bias: bool = False
 
+    class Config:
+        env_prefix = "MODEL_"
+
     def create_model(self) -> nn.Module:
         model = nn.Sequential()
         model.add_module("sequence_encoder", SequenceEncoder(self))

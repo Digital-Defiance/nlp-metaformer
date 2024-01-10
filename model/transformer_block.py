@@ -21,7 +21,7 @@ class TransformerBlock(nn.Module):
     self_attention: Union[MetricSelfAttention, ScaledDotProductAttention]
 
     layer_norm2_c: nn.LayerNorm
-    perceptron_layer: nn.LayerNorm
+    perceptron_layer: MLP
 
 
     def __init__(self, params: TransformerBlockParameters):

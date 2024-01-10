@@ -61,7 +61,7 @@ We use this custom metric to replace the $W_qW_k^T$ shown in the original 2017 p
 
 $$
 S^{(n)}_ {bww} =
-\text{softmax}\left( \frac{
+\text{softmax}_k\left( \frac{
 \textrm{dot}^{(n)}(z^{(n)} _ {bwk}, z^{(n)} _ {bwk})
 }{\sqrt{K}} \right)
 $$

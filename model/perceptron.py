@@ -13,7 +13,7 @@ class Perceptron(nn.Module):
     linear_projections_cd: nn.Linear
 
     def __init__(self, params: PerceptronParameters):
-        super().__init__()
+        super(Perceptron, self).__init__()
         dimension = 4 * params.coordinates
         self.linear_expansion_dc = nn.Linear(params.coordinates, dimension, bias=params.bias)
         self.gelu_activation = nn.GELU()
