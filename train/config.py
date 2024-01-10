@@ -39,7 +39,7 @@ class TrainingLoopFactory(BaseSettings, MyBaseSettingsMixin):
         """ overengeneered it a bit, i just wanted this out of the way"""
 
         gpt2_encoder = tiktoken.get_encoding("gpt2")
-        input_file_path = "raw_data.txt"
+        input_file_path = "train/static/raw_data.txt"
 
         with open(input_file_path, 'r') as file:
             text: str = file.read()
@@ -81,7 +81,7 @@ class TrainingLoopFactory(BaseSettings, MyBaseSettingsMixin):
 
         def create_epoch_data() -> Iterator[tuple[torch.Tensor, torch.Tensor]]:
             for _ in range(self.number_of_batches):
-                yield self.generate_batch(train_ids)
+                yield create_training_batch()
 
         return create_training_batch, create_validation_batch, create_epoch_data
 

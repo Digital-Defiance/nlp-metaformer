@@ -7,17 +7,19 @@ from core.constants import DEVICE
 from core.mixins import MyBaseSettingsMixin
 from model.sequence_encoder import SequenceEncoder
 from model.transformer_block import TransformerBlock
+from typing import Literal
 
 gpt2_encoder = tiktoken.get_encoding("gpt2")
 
 class ModelFactory(BaseSettings, MyBaseSettingsMixin):
 
-    coordinates: int = 3*100
+    coordinates: int = 3*400
     tokens: int = gpt2_encoder.max_token_value
-    words: int = 100
+    words: int = 1000
     number_of_blocks: int = 10
-    number_of_heads: int = 3
+    number_of_heads: int = 300
     bias: bool = False
+    attention: Literal["metric", "scaled_dot_product"] = "scaled_dot_product"
 
     class Config:
         env_prefix = "MODEL_"

@@ -27,14 +27,14 @@ class TransformerBlock(nn.Module):
     def __init__(self, params: TransformerBlockParameters):
         super(TransformerBlock, self).__init__()
 
-        self.layer_norm1_c = nn.LayerNorm(params)
+        self.layer_norm1_c = nn.LayerNorm(params.coordinates)
 
         if params.attention == "metric":
             self.self_attention = MetricSelfAttention(params)
         elif params.attention == "scaled_dot_product":
             self.self_attention = ScaledDotProductAttention(params)
 
-        self.layer_norm2_c = nn.LayerNorm(params)
+        self.layer_norm2_c = nn.LayerNorm(params.coordinates)
         self.perceptron_layer = MLP(params)
 
     def forward(self, in_sequence_bwc: TensorFloat) -> TensorFloat:

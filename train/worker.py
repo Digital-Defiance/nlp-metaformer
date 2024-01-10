@@ -1,7 +1,6 @@
 import torch
 import mlflow
 import mlflow.pytorch
-import torch.nn as nn
 from tqdm import tqdm
 import torch
 from contextlib import contextmanager
@@ -62,9 +61,11 @@ def exception_controlled_run() -> Iterator[mlflow.ActiveRun]:
 
     run_kwargs = {
         "run_id": mlflow_settings.run_id,
-        "experiment_id": mlflow_settings.experiment_id,
+        "experiment_id": 5,
         "log_system_metrics": mlflow_settings.log_system_metrics,
     }
+
+    logger.info(f"Starting run with kwargs {run_kwargs}")
 
     def set_status(status: RunStatus):
         status = RunStatus.to_string(status)
@@ -72,6 +73,7 @@ def exception_controlled_run() -> Iterator[mlflow.ActiveRun]:
 
     try:
         with mlflow.start_run(**run_kwargs) as run:
+            mlflow_settings.run_id = run.info.run_id
             yield run
     except PauseTraining:
         set_status(RunStatus.SCHEDULED)
@@ -96,12 +98,15 @@ with exception_controlled_run() as run:
         start_epoch = epoch + 1
     else:
         model = model_factory.create_model()
+        model_factory.save_to_mlflow()
+        training_loop_factory.save_to_mlflow()
         start_epoch = 0
 
 
     parameters = model.parameters()
     mlflow.log_param("n_parameters", sum(p.numel() for p in parameters))
-    optimizer = training_loop_factory.create_optimizer(parameters)
+    
+    optimizer = training_loop_factory.create_optimizer(model.parameters())
     loss_function = training_loop_factory.create_loss_function()
     create_training_batch, create_validation_batch, create_epoch_data = training_loop_factory.create_data_handlers()
 
