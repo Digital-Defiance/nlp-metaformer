@@ -18,7 +18,6 @@ aws_factory = AWSFactory()
 mlflow_settings = MLFlowSettings(is_local=False)
 ec2_client, cw_client, ec2_resources = aws_factory.create_clients()
 
-
 # build up user data script as far as possible without the run id
 
 exports = {
@@ -36,20 +35,21 @@ user_data_exports = ""
 for key, value in exports.items():
     user_data_exports += f"export {key}={value}\n"
 
-with open("user_data.sh", "r") as f:
+with open("train/static/user_data.sh", "r") as f:
     user_data_body = f.read()
 
 def create_user_data(run_id: str) -> str:
     user_data = user_data_exports + user_data_body
+    user_data = user_data_exports + f"export MLFLOW_RUN_ID={run_id}\n" + user_data_body
     user_data = base64.b64encode(user_data.encode()).decode()
-    return user_data_exports + f"export MLFLOW_RUN_ID={run_id}\n" + user_data_body
+    return user_data
 
 
 # Create the MLFlow run and start the training loop with the user data
 
 with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
 
-    mlflow.log_params("commit", exports["COMMIT"])
+    mlflow.log_param("commit", exports["COMMIT"])
 
     launch_specification = aws_factory.create_launch_specification()
     launch_specification['UserData'] = create_user_data(run.info.run_id)
@@ -107,5 +107,4 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
         if mlflow.get_run(run.info.run_id).info.status == "FAILED":
             logger.info("MLFlow run has failed")
             break
-
 

@@ -105,21 +105,11 @@ with exception_controlled_run() as run:
 
     parameters = model.parameters()
     mlflow.log_param("n_parameters", sum(p.numel() for p in parameters))
-    
     optimizer = training_loop_factory.create_optimizer(model.parameters())
     loss_function = training_loop_factory.create_loss_function()
     create_training_batch, create_validation_batch, create_epoch_data = training_loop_factory.create_data_handlers()
 
-
     # ----------------- TRAINING LOOP ----------------- #
-
-    @contextmanager
-    def zero_grad(optimizer: torch.optim.Optimizer) -> Iterator[None]:
-        """ Ensures that I don't forget to zero the gradients :)"""
-
-        optimizer.zero_grad()
-        yield
-        optimizer.step()
 
 
     for epoch in range(start_epoch, training_loop_factory.number_of_epochs):
@@ -127,27 +117,23 @@ with exception_controlled_run() as run:
         data_gen = create_epoch_data()
 
         for in_sequence_bw, out_sequence_bw in tqdm(data_gen, desc=f"Epoch {epoch}", leave=True):
-            with zero_grad(optimizer):
-                pred_logits_bwt = model(in_sequence_bw)
-                # cross entropy expects (batch, classes, sequence)
-                pred_logits_btw = pred_logits_bwt.transpose(-1, -2)
-                loss_train = loss_function(pred_logits_btw, out_sequence_bw)
-                loss_train.backward()
+    
+            optimizer.zero_grad()
+            pred_logits_bwt = model(in_sequence_bw)
+            pred_logits_btw = pred_logits_bwt.transpose(-1, -2)
+            loss_train = loss_function(pred_logits_btw, out_sequence_bw)
+            loss_train.backward()
+            optimizer.step()
 
-            if mlflow_settings.is_local:
-                continue
-
-            if instance_will_terminate():
-                raise PauseTraining                   
-
+            if not mlflow_settings.is_local:
+                if instance_will_terminate():
+                    raise PauseTraining                   
 
         with torch.no_grad():
             in_sequence_bw, out_sequence_bw = create_validation_batch()
             pred_logits_bwt = model(in_sequence_bw)
-            # cross entropy expects (batch, classes, sequence)
             pred_logits_btw = pred_logits_bwt.transpose(-1, -2)
             loss_val = loss_function(pred_logits_btw, out_sequence_bw)
-
 
         mlflow.pytorch.log_model(model, f"mtn_{epoch}")
         mlflow.log_metric("loss/train", loss_train.item(), epoch)
@@ -155,5 +141,3 @@ with exception_controlled_run() as run:
         mlflow.log_metric("epoch", epoch, epoch)
  
     
-
-

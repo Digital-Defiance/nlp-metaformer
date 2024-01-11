@@ -146,7 +146,7 @@ class AWSFactory(BaseSettings, MyBaseSettingsMixin):
         boto_kwargs = {
             "aws_access_key_id": self.access_key_id,
             "aws_secret_access_key": self.secret_access_key,
-            "default_region_name": self.region_name,
+            "region_name": self.default_region_name,
         }
 
         ec2_client = boto3.client('ec2', **boto_kwargs)

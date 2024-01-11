@@ -18,6 +18,10 @@ class SelfAttentionParameters(Protocol):
     number_of_heads: int
 
 
+def create_parameter(*shape: tuple[int, ...], requires_grad: bool = True) -> nn.Parameter:
+    return nn.Parameter(torch.randn(*shape), requires_grad=requires_grad)
+
+
 class SelfAttention(ABC):
     MASK_ww: Tensor
     NUMBER_OF_HEADS: int
@@ -25,16 +29,17 @@ class SelfAttention(ABC):
     K_DIMENSION: int
 
 
+    def create_parameter(self, shape: tuple[int, ...], requires_grad: bool = True) -> nn.Parameter:
+        return nn.Parameter(torch.randn(*shape), requires_grad=requires_grad)
+
+
     def set_common_parameters(self: nn.Module, params: SelfAttentionParameters):
         self.COORDINATES = params.coordinates
         self.NUMBER_OF_HEADS = params.number_of_heads
         self.K_DIMENSION = self.COORDINATES // self.NUMBER_OF_HEADS
         self.SQRT_K_DIMENSION = math.sqrt(self.K_DIMENSION)
-        self.mixer_cc = nn.Linear(
-            params.coordinates,
-            params.coordinates,
-            bias=params.bias
-        )
+
+        self.mixer_cc = nn.Linear(params.coordinates, params.coordinates, bias=params.bias)
 
         self.register_buffer(
             "MASK_11ww",
@@ -62,36 +67,33 @@ class SelfAttention(ABC):
 
 
 class MetricSelfAttention(nn.Module, SelfAttention):
+    MASK_ww: Tensor
+    NUMBER_OF_HEADS: int
+    COORDINATES: int
+    K_DIMENSION: int
 
     def __init__(self, params: SelfAttentionParameters):
         super(MetricSelfAttention, self).__init__()
 
         self.set_common_parameters(params)
 
-        self.projection_1nck = nn.Parameter(
-            torch.randn(
-                1,
-                self.NUMBER_OF_HEADS,
-                self.COORDINATES,
-                self.K_DIMENSION,
-            )
-        )
+        buffers = {
+            "INDICES": torch.triu_indices(row=self.K_DIMENSION, col=self.K_DIMENSION, offset=1),
+        }
 
-        self.halves = nn.Parameter(
-            torch.randn(
-                self.NUMBER_OF_HEADS,
-                self.K_DIMENSION*(self.K_DIMENSION + 1) // 2 - self.K_DIMENSION
-            )
-        )
+        learnable_parameters = {
+            "projection_1nck": torch.randn(1, self.NUMBER_OF_HEADS, self.COORDINATES, self.K_DIMENSION),
+            "halves": torch.randn(self.NUMBER_OF_HEADS, self.K_DIMENSION*(self.K_DIMENSION + 1) // 2 - self.K_DIMENSION),
+            "diagonals_nk": torch.randn(self.NUMBER_OF_HEADS, self.K_DIMENSION),
+        }
 
+        for name, tensor in buffers.items():
+            self.register_buffer(name, tensor)
 
-        self.diagonals_nk = nn.Parameter(torch.randn(self.NUMBER_OF_HEADS, self.K_DIMENSION))
+        for name, tensor in learnable_parameters.items():
+            self.register_parameter(name, nn.Parameter(tensor))
 
-        self.register_buffer(
-            "INDICES",
-            torch.triu_indices(row=self.K_DIMENSION, col=self.K_DIMENSION, offset=1)
-        )   
-
+   
     def get_metric(self) -> Tensor:
         metric_tensors_nkk = torch.zeros(self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION)
         metric_tensors_nkk[:, self.INDICES[0], self.INDICES[1]] = self.halves
@@ -126,18 +128,30 @@ class MetricSelfAttention(nn.Module, SelfAttention):
 
 
 class ScaledDotProductAttention(nn.Module, SelfAttention):
+    MASK_ww: Tensor
+    NUMBER_OF_HEADS: int
+    COORDINATES: int
+    K_DIMENSION: int
+    D_DIMENSION: int
+
+    projection_cc: nn.Parameter
+    attention_heads_cd: nn.Parameter
 
     def __init__(self, params: SelfAttentionParameters):
         super(ScaledDotProductAttention, self).__init__()
         self.set_common_parameters(params)
         self.D_DIMENSION = 3 * params.coordinates
-        self.attention_heads_cd = nn.Parameter(torch.randn(params.coordinates, self.D_DIMENSION))
-        self.projection_cc = nn.Parameter(torch.randn(params.coordinates, params.coordinates,))
-
+        learnable_parameters = {
+            "attention_heads_cd": torch.randn(params.coordinates, self.D_DIMENSION),
+            "projection_cc": torch.randn(params.coordinates, params.coordinates),
+        }
+    
+        for name, tensor in learnable_parameters.items():
+            self.register_parameter(name, nn.Parameter(tensor))
 
     def forward(self, in_sequence_bwc: Tensor) -> Tensor:
  
-        batch, words, coordinates = in_sequence_bwc.size()
+        batch, words, _ = in_sequence_bwc.size()
 
         all_attention_vectors_bwd = in_sequence_bwc @ self.attention_heads_cd
         
@@ -145,7 +159,7 @@ class ScaledDotProductAttention(nn.Module, SelfAttention):
         #   - q_bwc contains all q vectors for the three heads
         #   - k_bwc contains all k vectors for the three heads
         #   - v_bwc contains all v vectors for the three heads
-        q_bwc, k_bwc, v_bwc = all_attention_vectors_bwd.split(coordinates, dim=-1)
+        q_bwc, k_bwc, v_bwc = all_attention_vectors_bwd.split(self.COORDINATES, dim=-1)
         
         
         # prepare for matrix multiplication by splitting the heads
@@ -164,11 +178,10 @@ class ScaledDotProductAttention(nn.Module, SelfAttention):
         # produce the output sequence and shape it to the correct form
         out_sequence_bnwk = scaled_attention_scores_bnww @ v_bnwk
         out_sequence_bwnk = out_sequence_bnwk.transpose(1, 2).contiguous()
-        out_sequence_bwc = out_sequence_bwnk.view(batch, words, coordinates)
+        out_sequence_bwc = out_sequence_bwnk.view(batch, words, self.COORDINATES)
         
         # projection to mix the values 
         out_sequence_bwc = self.mixer_cc(out_sequence_bwc)
-
         return out_sequence_bwc
 
 

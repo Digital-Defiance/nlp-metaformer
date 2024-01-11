@@ -54,7 +54,7 @@ python -m venv env
 source env/bin/activate
 pip install -r .devcontainer/requirements.txt
 cd gpt_shakespear
-python train_worker.py
+python -m train.worker
 #wait \ minutes before shutting down, so that the logs can be sent to cloudwatch
 shutdown -h +1
 

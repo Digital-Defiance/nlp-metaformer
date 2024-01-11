@@ -2,10 +2,7 @@
 import torch.nn as nn
 from typing import Protocol, Literal, Union
 from core.types import TensorFloat
-
 from model.self_attention import MetricSelfAttention, ScaledDotProductAttention
-from model.perceptron import Perceptron as MLP
-
 
 
 class TransformerBlockParameters(Protocol):
@@ -17,29 +14,22 @@ class TransformerBlockParameters(Protocol):
 
 class TransformerBlock(nn.Module):
 
-    layer_norm1_c: nn.LayerNorm
-    self_attention: Union[MetricSelfAttention, ScaledDotProductAttention]
-
-    layer_norm2_c: nn.LayerNorm
-    perceptron_layer: MLP
-
-
     def __init__(self, params: TransformerBlockParameters):
         super(TransformerBlock, self).__init__()
 
-        self.layer_norm1_c = nn.LayerNorm(params.coordinates)
+        self.attention_layer = nn.Sequential(
+            nn.LayerNorm(params.coordinates),
+            MetricSelfAttention(params) if params.attention == "metric" else ScaledDotProductAttention(params),
+        )
 
-        if params.attention == "metric":
-            self.self_attention = MetricSelfAttention(params)
-        elif params.attention == "scaled_dot_product":
-            self.self_attention = ScaledDotProductAttention(params)
+        self.perceptron_layer = nn.Sequential(
+            nn.LayerNorm(params.coordinates),
+            nn.Linear(params.coordinates, 4*params.coordinates),
+            nn.GELU(),
+            nn.Linear(4*params.coordinates, params.coordinates),
+        )
 
-        self.layer_norm2_c = nn.LayerNorm(params.coordinates)
-        self.perceptron_layer = MLP(params)
-
-    def forward(self, in_sequence_bwc: TensorFloat) -> TensorFloat:
-        sequence_bwc = self.layer_norm1_c(in_sequence_bwc)
-        sequence_bwc = sequence_bwc + self.self_attention(sequence_bwc)
-        sequence_bwc = self.layer_norm2_c(sequence_bwc)
-        out_sequence_bwc = sequence_bwc + self.perceptron_layer(sequence_bwc)
-        return out_sequence_bwc
+    def forward(self, sequence_bwc: TensorFloat) -> TensorFloat:
+        sequence_bwc = sequence_bwc + self.attention_layer(sequence_bwc)
+        sequence_bwc = sequence_bwc + self.perceptron_layer(sequence_bwc)
+        return sequence_bwc
