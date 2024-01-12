@@ -4,15 +4,12 @@ from typing import  Optional
 from core.mixins import MyBaseSettingsMixin
 from core.constants import DEVICE
 import boto3
-from typing import Iterator
 import torch
 import tiktoken
 import numpy as np
 import torch.nn as nn
-import numpy as np
 import mlflow
 import mlflow.pytorch
-from pathlib import Path
 from pydantic import FilePath
 from pydantic import BeforeValidator
 
@@ -115,9 +112,9 @@ class AWSFactory(BaseSettings, MyBaseSettingsMixin):
     access_key_id: str
     secret_access_key: str
     default_region_name: str = "eu-west-2"
-    ami_id: str = "ami-093cb9fb2d34920ad"
-    instance_type: str = "c5n.xlarge"
     user_data: FilePath = "train/static/user_data.sh"
+    ami_id: str = "ami-0338002ad7a4a92e1"
+    instance_type: str = "c5n.xlarge"
 
     class Config:
         env_prefix = "AWS_"

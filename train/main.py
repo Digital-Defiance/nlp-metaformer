@@ -19,14 +19,11 @@ aws_factory = AWSFactory()
 
 mlflow_settings = MLFlowSettings(
     is_local=False,
-    experiment_id=5
 )
 
 model_factory = ModelFactory.create_variant(variant="NanoGPT")
 
 training_loop_factory = TrainingLoopFactory()
-
-
 
 exports = {
     **model_factory.to_exports(),
@@ -50,7 +47,6 @@ with open("train/static/user_data.sh", "r") as f:
 def create_user_data(run_id: str) -> str:
     user_data = user_data_exports + user_data_body
     user_data = "#!/bin/bash\n" + user_data_exports + f"export MLFLOW_RUN_ID={run_id}\n" + user_data_body
-    print(user_data)
     user_data = base64.b64encode(user_data.encode()).decode()
     return user_data
 
@@ -64,6 +60,9 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
 
     ec2_client, cw_client, ec2_resources = aws_factory.create_clients()
     launch_specification = aws_factory.create_launch_specification()
+
+    logger.info(launch_specification)
+
     launch_specification['UserData'] = create_user_data(run.info.run_id)
 
     for _ in range(MAX_ITERATIONS):
@@ -75,6 +74,7 @@ with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
             Type='one-time',
             LaunchSpecification=launch_specification
         )['SpotInstanceRequests'][0]['SpotInstanceRequestId']
+        logger.info(f"Spot request {spot_request_id} created.")
         ec2_client.get_waiter('spot_instance_request_fulfilled').wait(SpotInstanceRequestIds=[spot_request_id])
 
 

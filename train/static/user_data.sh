@@ -1,6 +1,9 @@
 #!/bin/bash
 
 
+
+rm send_logs_to_cloudwatch.sh
+
 cat << 'EOF' > send_logs_to_cloudwatch.sh
 #!/bin/bash
 
@@ -38,17 +41,16 @@ EOF
 chmod +x send_logs_to_cloudwatch.sh
 nohup ./send_logs_to_cloudwatch.sh &
 
-yum update -y 
-yum install -y git  
-yum install -y python
-yum install -y python3-pip
-git clone https://github.com/Digital-Defiance/llm-voice-chat.git
-cd llm-voice-chat
+# yum update -y 
+# yum install -y git python python3-pip
+# yum install -y 
+# yum install -y 
+# git clone https://github.com/Digital-Defiance/llm-voice-chat.git
+cd /llm-voice-chat
 git checkout $COMMIT
-python -m venv env
+# python -m venv env
 source env/bin/activate
-pip install -r .devcontainer/requirements.txt
-cd gpt_shakespear
+# pip install -r .devcontainer/requirements.txt
 python -m train.worker
 #wait \ minutes before shutting down, so that the logs can be sent to cloudwatch
 shutdown -h +1

@@ -57,16 +57,25 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
     
     @classmethod
     def create_variant(cls, variant: str = "NanoGPT") -> nn.Module:
-        assert variant in  ["NanoGPT"] , f"Unknown variant {variant}"
+        assert variant in  ["NanoGPT", "NanoMTN"] , f"Unknown variant {variant}"
 
         if variant == "NanoGPT":
             return cls(
-                words=1000,
-                coordinates=400,
-                number_of_blocks=10,
-                number_of_heads=20,
+                words=100,
+                coordinates=300,
+                number_of_blocks=3,
+                number_of_heads=3,
                 bias = False,
                 attention="scaled_dot_product"
             )
 
+        if variant == "NanoMTN":
+            return cls(
+                words=100,
+                coordinates=300,
+                number_of_blocks=3,
+                number_of_heads=3,
+                bias = False,
+                attention="metric"
+            )
 
