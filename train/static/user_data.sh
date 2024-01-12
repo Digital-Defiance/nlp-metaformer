@@ -1,7 +1,6 @@
 #!/bin/bash
 
 
-
 cat << 'EOF' > send_logs_to_cloudwatch.sh
 #!/bin/bash
 
@@ -39,14 +38,10 @@ EOF
 chmod +x send_logs_to_cloudwatch.sh
 nohup ./send_logs_to_cloudwatch.sh &
 
-
-
-
-
-sudo yum update -y 
-sudo yum install -y git  
-sudo yum install -y python
-sudo yum install -y python3-pip
+yum update -y 
+yum install -y git  
+yum install -y python
+yum install -y python3-pip
 git clone https://github.com/Digital-Defiance/llm-voice-chat.git
 cd llm-voice-chat
 git checkout $COMMIT

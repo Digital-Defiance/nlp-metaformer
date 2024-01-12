@@ -12,21 +12,47 @@ from core.logger import get_logger
 logger = get_logger(__name__)
 
 
+MODEL_VARIANTS = {
+    "nanoGPT": ModelFactory(
+        words=50,
+        coordinates=100,
+        number_of_blocks=3,
+        number_of_heads=5,
+        bias = False,
+        attention="scaled_dot_product"
+    ),
+}
+
 # Load the settings from the environment variables and create the AWS clients
 
 aws_factory = AWSFactory()
-mlflow_settings = MLFlowSettings(is_local=False)
-ec2_client, cw_client, ec2_resources = aws_factory.create_clients()
 
-# build up user data script as far as possible without the run id
+mlflow_settings = MLFlowSettings(
+    is_local=False,
+    experiment_id=5
+)
+
+model_factory = ModelFactory(
+    words=1000,
+    coordinates=300,
+    number_of_blocks=3,
+    number_of_heads=5,
+    bias = False,
+    attention="metric"
+)
+
+training_loop_factory = TrainingLoopFactory()
+
+
 
 exports = {
-    **ModelFactory().to_exports(),
-    **TrainingLoopFactory().to_exports(),
+    **model_factory.to_exports(),
+    **training_loop_factory.to_exports(),
     **mlflow_settings.to_exports(),
     **aws_factory.to_exports(),
 
     # other exports
+
     "COMMIT": subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('ascii'),
 }
 
@@ -40,7 +66,8 @@ with open("train/static/user_data.sh", "r") as f:
 
 def create_user_data(run_id: str) -> str:
     user_data = user_data_exports + user_data_body
-    user_data = user_data_exports + f"export MLFLOW_RUN_ID={run_id}\n" + user_data_body
+    user_data = "#!/bin/bash\n" + user_data_exports + f"export MLFLOW_RUN_ID={run_id}\n" + user_data_body
+    print(user_data)
     user_data = base64.b64encode(user_data.encode()).decode()
     return user_data
 
@@ -49,8 +76,10 @@ def create_user_data(run_id: str) -> str:
 
 with mlflow.start_run(experiment_id=mlflow_settings.experiment_id) as run:
 
+
     mlflow.log_param("commit", exports["COMMIT"])
 
+    ec2_client, cw_client, ec2_resources = aws_factory.create_clients()
     launch_specification = aws_factory.create_launch_specification()
     launch_specification['UserData'] = create_user_data(run.info.run_id)
 

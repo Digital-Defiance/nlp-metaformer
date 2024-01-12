@@ -3,6 +3,9 @@ import torch.nn as nn
 from typing import Protocol, Literal, Union
 from core.types import TensorFloat
 from model.self_attention import MetricSelfAttention, ScaledDotProductAttention
+from core.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class TransformerBlockParameters(Protocol):

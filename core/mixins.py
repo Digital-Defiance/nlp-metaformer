@@ -18,7 +18,7 @@ class MyBaseSettingsMixin:
     def to_exports(self) -> dict:
         env_prefix = self.Config.env_prefix
         return {
-            env_prefix + key: str(value)
+            (env_prefix + key).upper(): str(value)
             for key, value in self.dict().items()
         }
 

@@ -172,7 +172,7 @@ class ScaledDotProductAttention(nn.Module, SelfAttention):
         
         # prepare attention scores, scaling -> masking -> softmax
         scaled_attention_scores_bnww = attention_scores_bnww / self.SQRT_K_DIMENSION
-        scaled_attention_scores_bnww = scaled_attention_scores_bnww.masked_fill(self.MASK_ww[:,:,:words,:words] == 0, float('-inf'))
+        scaled_attention_scores_bnww = scaled_attention_scores_bnww.masked_fill(self.MASK_11ww[:,:,:words,:words] == 0, float('-inf'))
         scaled_attention_scores_bnww = F.softmax(scaled_attention_scores_bnww, dim=-1)
 
         # produce the output sequence and shape it to the correct form

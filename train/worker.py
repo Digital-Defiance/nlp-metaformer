@@ -14,6 +14,8 @@ from core.logger import get_logger
 from core.constants import DEVICE
 
 
+
+
 # ----------------- SETTINGS ----------------- #
 
 torch.autograd.set_detect_anomaly(True)
@@ -23,9 +25,12 @@ logger.info(f"Using device {DEVICE}")
 logger.info(f"Using torch version {torch.__version__}")
 logger.info(f"Using mlflow version {mlflow.__version__}")
 
+
 mlflow_settings = MLFlowSettings()
 training_loop_factory = TrainingLoopFactory()
+NUMBER_OF_VALIDATION_BATCHES = training_loop_factory.number_of_batches
 model_factory = ModelFactory()
+
 
 if not mlflow_settings.is_local:
     # Get the token for the metadata service (AWS)
@@ -33,8 +38,6 @@ if not mlflow_settings.is_local:
     headers={"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
     token_response = requests.put(url, headers=headers)
     token_response.raise_for_status()
-
-
     url = "http://169.254.169.254/latest/meta-data/spot/instance-action"
     headers = {"X-aws-ec2-metadata-token": token_response.text}
 
@@ -61,7 +64,7 @@ def exception_controlled_run() -> Iterator[mlflow.ActiveRun]:
 
     run_kwargs = {
         "run_id": mlflow_settings.run_id,
-        "experiment_id": 5,
+        "experiment_id": mlflow_settings.experiment_id,
         "log_system_metrics": mlflow_settings.log_system_metrics,
     }
 
@@ -89,10 +92,14 @@ def exception_controlled_run() -> Iterator[mlflow.ActiveRun]:
 
 # ----------------- TRAINING ----------------- #
 
+logger.info("Connecting to MLFlow and starting")
+
+
 with exception_controlled_run() as run:
 
     # ----------------- LOAD MODEL ----------------- #
 
+    logger.info("Loading model")
     if mlflow_settings.has_checkpoint():
         model, epoch = mlflow_settings.load_model()
         start_epoch = epoch + 1
@@ -103,21 +110,33 @@ with exception_controlled_run() as run:
         start_epoch = 0
 
 
-    parameters = model.parameters()
-    mlflow.log_param("n_parameters", sum(p.numel() for p in parameters))
+    mlflow.log_param("n_parameters", sum(p.numel() for p in model.parameters() if p.requires_grad))
+    mlflow.log_param("n_of_validation_batches", NUMBER_OF_VALIDATION_BATCHES)
+
     optimizer = training_loop_factory.create_optimizer(model.parameters())
     loss_function = training_loop_factory.create_loss_function()
-    create_training_batch, create_validation_batch, create_epoch_data = training_loop_factory.create_data_handlers()
+    data_factory = training_loop_factory.create_data_factory()
 
     # ----------------- TRAINING LOOP ----------------- #
 
-
     for epoch in range(start_epoch, training_loop_factory.number_of_epochs):
 
-        data_gen = create_epoch_data()
+        pb = tqdm(
+            range(training_loop_factory.number_of_batches),
+            desc=f"Epoch {epoch} training",
+            leave=True,
+        )
 
-        for in_sequence_bw, out_sequence_bw in tqdm(data_gen, desc=f"Epoch {epoch}", leave=True):
-    
+        training_loss_cumul = 0
+
+        for i in pb:
+            # generate data
+            in_sequence_bw, out_sequence_bw = data_factory.create_batch(
+                split="validation",
+                max_size_of_sequence=model_factory.words,
+            )
+
+            # Perform feed forward + backwards propagation + gradient descent
             optimizer.zero_grad()
             pred_logits_bwt = model(in_sequence_bw)
             pred_logits_btw = pred_logits_bwt.transpose(-1, -2)
@@ -125,19 +144,32 @@ with exception_controlled_run() as run:
             loss_train.backward()
             optimizer.step()
 
+            # Log the training loss
+            training_loss_cumul += loss_train.item()
+            pb.set_postfix({"avg_training_loss": training_loss_cumul / (i + 1)})
+
+            # Check if the instance will terminate and pause training if so
             if not mlflow_settings.is_local:
                 if instance_will_terminate():
-                    raise PauseTraining                   
-
+                    raise PauseTraining 
+        
         with torch.no_grad():
-            in_sequence_bw, out_sequence_bw = create_validation_batch()
+            in_sequence_bw, out_sequence_bw = data_factory.create_batch(
+                split="validation",
+                max_size_of_sequence=model_factory.words,
+            )
             pred_logits_bwt = model(in_sequence_bw)
             pred_logits_btw = pred_logits_bwt.transpose(-1, -2)
             loss_val = loss_function(pred_logits_btw, out_sequence_bw)
 
+
         mlflow.pytorch.log_model(model, f"mtn_{epoch}")
-        mlflow.log_metric("loss/train", loss_train.item(), epoch)
-        mlflow.log_metric("loss/val", loss_val.item(), epoch)
-        mlflow.log_metric("epoch", epoch, epoch)
+        mlflow.log_metrics(
+            {
+                "loss/train": training_loss_cumul / training_loop_factory.number_of_batches,
+                "loss/val": validation_loss_cumul / NUMBER_OF_VALIDATION_BATCHES,
+                "epoch": epoch,
+            },
+            step=epoch,
+        )
  
-    
