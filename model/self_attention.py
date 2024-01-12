@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from typing import Protocol
 from abc import ABC, abstractmethod
+from core.constants import DEVICE
 
 
 
@@ -78,7 +79,7 @@ class MetricSelfAttention(nn.Module, SelfAttention):
         self.set_common_parameters(params)
 
         buffers = {
-            "INDICES": torch.triu_indices(row=self.K_DIMENSION, col=self.K_DIMENSION, offset=1),
+            "INDICES": torch.triu_indices(row=self.K_DIMENSION, col=self.K_DIMENSION, offset=1, device=DEVICE),
         }
 
         learnable_parameters = {
