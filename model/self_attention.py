@@ -96,13 +96,13 @@ class MetricSelfAttention(nn.Module, SelfAttention):
 
    
     def get_metric(self) -> Tensor:
-        metric_tensors_nkk = torch.zeros(self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION)
+        metric_tensors_nkk = torch.zeros(self.NUMBER_OF_HEADS, self.K_DIMENSION, self.K_DIMENSION, device=DEVICE)
         metric_tensors_nkk[:, self.INDICES[0], self.INDICES[1]] = self.halves
         metric_tensors_nkk = metric_tensors_nkk + metric_tensors_nkk.transpose(-1, -2)
         metric_tensors_nkk = torch.diagonal_scatter(
             metric_tensors_nkk, self.diagonals_nk,
             offset=0, dim1=1, dim2=2
-        )
+        ).to(DEVICE)
         return metric_tensors_nkk
 
     def forward(self, in_sequence_bwc: Tensor) -> Tensor:
