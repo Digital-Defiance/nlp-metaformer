@@ -107,23 +107,28 @@ with exception_controlled_run() as run:
         model = model_factory.create_model()
         model_factory.save_to_mlflow()
         training_loop_factory.save_to_mlflow()
-        start_epoch = 0
+        start_epoch = 1
 
 
     mlflow.log_param("n_parameters", sum(p.numel() for p in model.parameters() if p.requires_grad))
     mlflow.log_param("n_of_validation_batches", NUMBER_OF_VALIDATION_BATCHES)
 
     optimizer = training_loop_factory.create_optimizer(model.parameters())
+    get_lr = training_loop_factory.create_scheduler(model_factory.coordinates)
     loss_function = training_loop_factory.create_loss_function()
     data_factory = training_loop_factory.create_data_factory()
 
     # ----------------- TRAINING LOOP ----------------- #
 
-    for epoch in range(start_epoch, training_loop_factory.number_of_epochs):
+    for epoch in range(start_epoch, training_loop_factory.number_of_epochs + 1):
+        lr = get_lr(epoch)
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
+        mlflow.log_metric("lr", lr, step=epoch)
 
         pb = tqdm(
             range(training_loop_factory.number_of_batches),
-            desc=f"Epoch {epoch} training",
+            desc=f"({epoch}) lr={lr:.2e}",
             leave=True,
         )
 
@@ -132,7 +137,7 @@ with exception_controlled_run() as run:
         for i in pb:
             # generate data
             in_sequence_bw, out_sequence_bw = data_factory.create_batch(
-                split="validation",
+                split="training",
                 max_size_of_sequence=model_factory.words,
             )
 
@@ -146,13 +151,13 @@ with exception_controlled_run() as run:
 
             # Log the training loss
             training_loss_cumul += loss_train.item()
-            pb.set_postfix({"avg_training_loss": training_loss_cumul / (i + 1)})
+            pb.set_postfix({"avg loss": training_loss_cumul / (i + 1)})
 
             # Check if the instance will terminate and pause training if so
             if not mlflow_settings.is_local:
                 if instance_will_terminate():
-                    raise PauseTraining 
-        
+                    raise PauseTraining
+
         with torch.no_grad():
             in_sequence_bw, out_sequence_bw = data_factory.create_batch(
                 split="validation",

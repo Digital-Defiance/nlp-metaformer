@@ -50,11 +50,16 @@ class DataFactory(BaseSettings, MyBaseSettingsMixin):
 class TrainingLoopFactory(BaseSettings, MyBaseSettingsMixin):
     number_of_epochs: int = 100
     number_of_batches: int = 10
-    learning_rate: float = 0.001
     loss_function: str = "CrossEntropyLoss"
     batch_size: int = 32
     input_text_file: FilePath = "train/static/raw_data.txt"
     split_ratio: float = 0.9
+
+
+    beta_1: float = 0.9
+    beta_2: float = 0.98
+    epsilon: float = 1e-9
+    warmup_steps: int = 4000
 
     class Config:
         env_prefix = "TRAIN_"
@@ -77,8 +82,15 @@ class TrainingLoopFactory(BaseSettings, MyBaseSettingsMixin):
             return nn.CrossEntropyLoss()
 
     def create_optimizer(self, parameters):
-        return torch.optim.Adam(parameters, lr=self.learning_rate)
+        return torch.optim.Adam(
+            parameters,
+            lr=1,
+            betas=(self.beta_1, self.beta_2),
+            eps=self.epsilon
+        )
 
+    def create_scheduler(self, d_model: int):
+        return lambda step: min(step ** -0.5, step * self.warmup_steps ** -1.5) * d_model ** -0.5
 
 
 class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
