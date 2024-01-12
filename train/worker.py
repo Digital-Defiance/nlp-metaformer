@@ -166,8 +166,8 @@ with exception_controlled_run() as run:
         mlflow.pytorch.log_model(model, f"mtn_{epoch}")
         mlflow.log_metrics(
             {
-                "loss/train": training_loss_cumul / training_loop_factory.number_of_batches,
-                "loss/val": validation_loss_cumul / NUMBER_OF_VALIDATION_BATCHES,
+                "loss/train": loss_train.item(),
+                "loss/val": loss_val.item(),
                 "epoch": epoch,
             },
             step=epoch,
