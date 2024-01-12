@@ -12,16 +12,6 @@ from core.logger import get_logger
 logger = get_logger(__name__)
 
 
-MODEL_VARIANTS = {
-    "nanoGPT": ModelFactory(
-        words=50,
-        coordinates=100,
-        number_of_blocks=3,
-        number_of_heads=5,
-        bias = False,
-        attention="scaled_dot_product"
-    ),
-}
 
 # Load the settings from the environment variables and create the AWS clients
 
@@ -32,14 +22,7 @@ mlflow_settings = MLFlowSettings(
     experiment_id=5
 )
 
-model_factory = ModelFactory(
-    words=1000,
-    coordinates=300,
-    number_of_blocks=3,
-    number_of_heads=5,
-    bias = False,
-    attention="metric"
-)
+model_factory = ModelFactory.create_variant(variant="NanoGPT")
 
 training_loop_factory = TrainingLoopFactory()
 

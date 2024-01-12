@@ -54,7 +54,19 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
         model.add_module("layer_norm_c", nn.LayerNorm(self.coordinates))
         model.add_module("language_model_weights_tc", nn.Linear(self.coordinates, self.tokens, bias=self.bias))
         return model.to(DEVICE)
-
-
     
+    @classmethod
+    def create_variant(cls, variant: str = "NanoGPT") -> nn.Module:
+        assert variant in  ["NanoGPT"] , f"Unknown variant {variant}"
+
+        if variant == "NanoGPT":
+            return cls(
+                words=1000,
+                coordinates=400,
+                number_of_blocks=10,
+                number_of_heads=20,
+                bias = False,
+                attention="scaled_dot_product"
+            )
+
 
