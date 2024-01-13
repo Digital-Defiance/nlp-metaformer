@@ -41,6 +41,9 @@ phase 3 - exploratory 2
 - https://paperswithcode.com/method/dot-product-attention
 - https://paperswithcode.com/method/scaled
 
+## datasets
+
+- https://paperswithcode.com/dataset/cnn-daily-mail-1
 
 ## The reasoning behind modifying transformers self attention 
 
