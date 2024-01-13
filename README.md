@@ -44,6 +44,7 @@ phase 3 - exploratory 2
 ## datasets
 
 - https://paperswithcode.com/dataset/cnn-daily-mail-1
+- https://metatext.io/datasets/wikisummary
 
 ## The reasoning behind modifying transformers self attention 
 
