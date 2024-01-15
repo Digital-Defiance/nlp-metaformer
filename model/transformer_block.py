@@ -1,12 +1,11 @@
 
 import torch.nn as nn
-from typing import Protocol, Literal, Union
+from typing import Protocol, Literal
 from core.types import TensorFloat
 from model.self_attention import MetricSelfAttention, ScaledDotProductAttention
 from core.logger import get_logger
 
 logger = get_logger(__name__)
-
 
 class TransformerBlockParameters(Protocol):
     coordinates: int
@@ -15,24 +14,70 @@ class TransformerBlockParameters(Protocol):
     attention: Literal["metric", "scaled_dot_product"]
 
 
-class TransformerBlock(nn.Module):
+def make_perceptron_layer(coordinates: int) -> nn.Sequential:
+    """ Make a perceptron layer. """
+
+    return nn.Sequential(
+        nn.LayerNorm(coordinates),
+        nn.Linear(coordinates, 4*coordinates),
+        nn.GELU(),
+        nn.Linear(4*coordinates, coordinates),
+    )
+
+def make_attention_layer(params, is_causal: bool) -> nn.Sequential:
+    """ Make an attention layer. """
+
+    return nn.Sequential(
+        nn.LayerNorm(params.coordinates),
+        MetricSelfAttention(params, is_causal) 
+        if params.attention == "metric" 
+        else ScaledDotProductAttention(params, is_causal),
+    )
+
+class TransformerJunctionBlock(nn.Module):
 
     def __init__(self, params: TransformerBlockParameters):
-        super(TransformerBlock, self).__init__()
+        super(TransformerJunctionBlock, self).__init__()
+        self.attention_layer_1 = make_attention_layer(params, is_causal=True)
+        self.perceptron_layer_1 = make_perceptron_layer(params)
+        self.attention_layer_2 = make_attention_layer(params, is_causal=True)
+        self.perceptron_layer_2 = make_perceptron_layer(params)
 
-        self.attention_layer = nn.Sequential(
-            nn.LayerNorm(params.coordinates),
-            MetricSelfAttention(params) if params.attention == "metric" else ScaledDotProductAttention(params),
-        )
+    def forward(self, sequence_bwc: TensorFloat, encoder_output_bwc: TensorFloat) -> TensorFloat:
+        
+        # Perform self attention with the decoder sequence only
+        sequence_bwc = sequence_bwc + self.attention_layer_1(sequence_bwc, sequence_bwc)
+        sequence_bwc = sequence_bwc + self.perceptron_layer_1(sequence_bwc)
+        
+        # Perform attention with the encoder output and the decoder sequence
+        sequence_bwc = sequence_bwc + self.attention_layer_2(sequence_bwc, encoder_output_bwc)
+        sequence_bwc = sequence_bwc + self.perceptron_layer_2(sequence_bwc)
 
-        self.perceptron_layer = nn.Sequential(
-            nn.LayerNorm(params.coordinates),
-            nn.Linear(params.coordinates, 4*params.coordinates),
-            nn.GELU(),
-            nn.Linear(4*params.coordinates, params.coordinates),
-        )
+        return sequence_bwc
+
+
+class _BaseTransformerBlock(nn.Module):
+    """ Base transformer block. """
+    
+    def __init__(self, params: TransformerBlockParameters, is_causal: bool):
+        super(_BaseTransformerBlock, self).__init__()
+        self.attention_layer = make_attention_layer(params, is_causal=is_causal)
+        self.perceptron_layer = make_perceptron_layer(params)
 
     def forward(self, sequence_bwc: TensorFloat) -> TensorFloat:
-        sequence_bwc = sequence_bwc + self.attention_layer(sequence_bwc)
+        sequence_bwc = sequence_bwc + self.attention_layer(sequence_bwc, sequence_bwc)
         sequence_bwc = sequence_bwc + self.perceptron_layer(sequence_bwc)
         return sequence_bwc
+
+class TransformerEncoderBlock(_BaseTransformerBlock):
+    """ Transformer encoder block. """
+
+    def __init__(self, params: TransformerBlockParameters):
+        super(TransformerEncoderBlock, self).__init__(params, is_causal=False)
+
+class TransformerDecoderBlock(nn.Module):
+    """ Transformer decoder block. """
+
+    def __init__(self, params: TransformerBlockParameters):
+        super(TransformerEncoderBlock, self).__init__(params, is_causal=True)
+

@@ -34,12 +34,13 @@ class SelfAttention(ABC):
         return nn.Parameter(torch.randn(*shape), requires_grad=requires_grad)
 
 
-    def set_common_parameters(self: nn.Module, params: SelfAttentionParameters):
+    def set_common_parameters(self: nn.Module, params: SelfAttentionParameters, is_decoder: bool):
         self.COORDINATES = params.coordinates
         self.NUMBER_OF_HEADS = params.number_of_heads
         self.K_DIMENSION = self.COORDINATES // self.NUMBER_OF_HEADS
         self.SQRT_K_DIMENSION = math.sqrt(self.K_DIMENSION)
-
+        self.IS_DECODER = is_decoder
+ 
         self.mixer_cc = nn.Linear(params.coordinates, params.coordinates, bias=params.bias)
 
         self.register_buffer(
@@ -73,10 +74,10 @@ class MetricSelfAttention(nn.Module, SelfAttention):
     COORDINATES: int
     K_DIMENSION: int
 
-    def __init__(self, params: SelfAttentionParameters):
+    def __init__(self, params: SelfAttentionParameters, is_decoder: bool):
         super(MetricSelfAttention, self).__init__()
 
-        self.set_common_parameters(params)
+        self.set_common_parameters(params, is_decoder)
 
         buffers = {
             "INDICES": torch.triu_indices(row=self.K_DIMENSION, col=self.K_DIMENSION, offset=1, device=DEVICE),
@@ -115,7 +116,13 @@ class MetricSelfAttention(nn.Module, SelfAttention):
 
         all_dot_products_bnww = all_projections_bnwk @ metric_tensors_1nkk @ all_projections_bnwk.transpose(-1, -2)
         all_scaled_dot_products_bnww = all_dot_products_bnww / self.SQRT_K_DIMENSION
-        all_scaled_dot_products_bnww = all_scaled_dot_products_bnww.masked_fill(self.MASK_11ww[:,:,:words,:words] == 0, float('-inf'))
+
+        if self.IS_DECODER:
+            all_scaled_dot_products_bnww = all_scaled_dot_products_bnww.masked_fill(
+                self.MASK_11ww[:,:,:words,:words] == 0,
+                float('-inf')
+            )
+        
         all_scaled_dot_products_bnww = F.softmax(all_scaled_dot_products_bnww, dim=-1)
 
         nudged_vectors_bnwk = all_dot_products_bnww @ all_projections_bnwk
@@ -138,9 +145,9 @@ class ScaledDotProductAttention(nn.Module, SelfAttention):
     projection_cc: nn.Parameter
     attention_heads_cd: nn.Parameter
 
-    def __init__(self, params: SelfAttentionParameters):
+    def __init__(self, params: SelfAttentionParameters, is_decoder: bool):
         super(ScaledDotProductAttention, self).__init__()
-        self.set_common_parameters(params)
+        self.set_common_parameters(params, is_decoder)
         self.D_DIMENSION = 3 * params.coordinates
         learnable_parameters = {
             "attention_heads_cd": torch.randn(params.coordinates, self.D_DIMENSION),
@@ -173,7 +180,12 @@ class ScaledDotProductAttention(nn.Module, SelfAttention):
         
         # prepare attention scores, scaling -> masking -> softmax
         scaled_attention_scores_bnww = attention_scores_bnww / self.SQRT_K_DIMENSION
-        scaled_attention_scores_bnww = scaled_attention_scores_bnww.masked_fill(self.MASK_11ww[:,:,:words,:words] == 0, float('-inf'))
+        if self.IS_DECODER:
+            scaled_attention_scores_bnww = scaled_attention_scores_bnww.masked_fill(
+                self.MASK_11ww[:,:,:words,:words] == 0,
+                float('-inf')
+            )
+
         scaled_attention_scores_bnww = F.softmax(scaled_attention_scores_bnww, dim=-1)
 
         # produce the output sequence and shape it to the correct form
