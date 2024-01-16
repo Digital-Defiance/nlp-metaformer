@@ -41,6 +41,8 @@ class SelfAttention(ABC):
         self.SQRT_K_DIMENSION = math.sqrt(self.K_DIMENSION)
         self.IS_CAUSAL = is_causal
 
+        self.norm = nn.LayerNorm(params.coordinates)
+
         self.mixer_cc = nn.Linear(params.coordinates, params.coordinates, bias=params.bias)
 
         self.register_buffer(
@@ -114,6 +116,9 @@ class MetricSelfAttention(nn.Module, SelfAttention):
         assert coordinates1 == coordinates2, "Coordinates of both sequences must be the same"
         assert words1 == words2, "Words of both sequences must be the same"
 
+        in_sequence1_bwc = self.norm(in_sequence1_bwc)
+        in_sequence2_bwc = self.norm(in_sequence2_bwc)
+
         metric_tensors_nkk = self.get_metric()
         metric_tensors_1nkk = metric_tensors_nkk.unsqueeze(0)
 
@@ -170,9 +175,15 @@ class ScaledDotProductAttention(nn.Module, SelfAttention):
             self.register_parameter(name, nn.Parameter(tensor))
 
     def forward(self, in_sequence1_bwc: Tensor, in_sequence2_bwc: Tensor) -> Tensor:
+
+
  
         batch, words, _ = in_sequence1_bwc.size()
         assert in_sequence1_bwc.size() == in_sequence2_bwc.size(), "Both sequences must have the same shape"
+
+
+        in_sequence1_bwc = self.norm(in_sequence1_bwc)
+        in_sequence2_bwc = self.norm(in_sequence2_bwc)
 
         sequence1_b1wc = in_sequence1_bwc.unsqueeze(1)
         sequence2_b1wc = in_sequence2_bwc.unsqueeze(1)

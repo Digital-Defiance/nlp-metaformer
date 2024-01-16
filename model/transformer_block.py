@@ -26,13 +26,7 @@ def make_perceptron_layer(coordinates: int) -> nn.Sequential:
 
 def make_attention_layer(params, is_causal: bool) -> nn.Sequential:
     """ Make an attention layer. """
-
-    return nn.Sequential(
-        nn.LayerNorm(params.coordinates),
-        MetricSelfAttention(params, is_causal) 
-        if params.attention == "metric" 
-        else ScaledDotProductAttention(params, is_causal),
-    )
+    return  MetricSelfAttention(params, is_causal) if params.attention == "metric" else ScaledDotProductAttention(params, is_causal),
 
 class TransformerJunctionBlock(nn.Module):
 
@@ -59,10 +53,18 @@ class TransformerJunctionBlock(nn.Module):
 class _BaseTransformerBlock(nn.Module):
     """ Base transformer block. """
     
-    def __init__(self, params: TransformerBlockParameters, is_causal: bool):
+    def __init__(self, params: TransformerBlockParameters, is_causal: bool = True):
         super(_BaseTransformerBlock, self).__init__()
-        self.attention_layer = make_attention_layer(params, is_causal=is_causal)
-        self.perceptron_layer = make_perceptron_layer(params)
+
+        if params.attention == "metric":
+            self.attention_layer = MetricSelfAttention(params, is_causal = is_causal)
+        elif params.attention == "scaled_dot_product":
+            self.attention_layer = ScaledDotProductAttention(params, is_causal = is_causal)
+        else:
+            raise ValueError(f"Invalid attention type: {params.attention}")
+    
+
+        self.perceptron_layer = make_perceptron_layer(params.coordinates)
 
     def forward(self, sequence_bwc: TensorFloat) -> TensorFloat:
         sequence_bwc = sequence_bwc + self.attention_layer(sequence_bwc, sequence_bwc)
@@ -75,9 +77,9 @@ class TransformerEncoderBlock(_BaseTransformerBlock):
     def __init__(self, params: TransformerBlockParameters):
         super(TransformerEncoderBlock, self).__init__(params, is_causal=False)
 
-class TransformerDecoderBlock(nn.Module):
+class TransformerDecoderBlock(_BaseTransformerBlock):
     """ Transformer decoder block. """
 
     def __init__(self, params: TransformerBlockParameters):
-        super(TransformerEncoderBlock, self).__init__(params, is_causal=True)
+        super(TransformerDecoderBlock, self).__init__(params, is_causal=True)
 

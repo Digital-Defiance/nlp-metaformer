@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 from core.constants import DEVICE
 from core.mixins import MyBaseSettingsMixin
 from model.sequence_encoder import SequenceEncoder
-from model.transformer_block import TransformerBlock, TransformerJunction
+from model.transformer_block import TransformerEncoderBlock, TransformerDecoderBlock, TransformerJunctionBlock
 from typing import Literal
 from pydantic import model_validator
 from core.types import PositiveInt, TensorFloat, TensorInt
@@ -16,21 +16,15 @@ gpt2_encoder = tiktoken.get_encoding("gpt2")
 
 
 class EncoderDecoder(nn.Module):
-    def __init__(self, params: "ModelFactory"):
+    def __init__(self, params: "ModelFactory", encoder: nn.Sequential):
         super(EncoderDecoder, self).__init__()
 
-        self.sequence_encoder = SequenceEncoder(params)
+        self.sequence_encoder = encoder.pop(0)
+        self.encoder = encoder
 
-        self.encoder = nn.Sequential()
-        for i in range(self.number_of_blocks):
-            block = TransformerBlock(params, is_decoder = False)
-            self.encoder.add_module(f"encoder_block_{i}", block)
-
-        decoder_blocks = nn.ModuleList()
-        junction_blocks = nn.ModuleList()
-        for i in range(self.number_of_blocks):
-            decoder_blocks.add_module(f"decoder_block_{i}", TransformerBlock(params, is_decoder = True))
-            junction_blocks.add_module(f"junction_block_{i}", TransformerJunction(params))
+        self.junction_blocks = nn.ModuleList()
+        for _ in range(params.number_of_blocks):
+            self.junction_blocks.append(TransformerJunctionBlock(params))
 
         self.output_layer = nn.Sequential(
             nn.LayerNorm(params.coordinates),
@@ -38,15 +32,14 @@ class EncoderDecoder(nn.Module):
         )
 
     
-    def forward(self, sequence_bw: TensorInt) -> TensorFloat:
-        sequence_bwc = self.sequence_encoder(sequence_bw)
-        encoder_output_bwc = self.encoder(sequence_bwc)
+    def forward(self, auto_regress_sequence_bw: TensorInt, in_sequence_bw: TensorInt) -> TensorFloat:
+        in_sequence_bwc = self.sequence_encoder(in_sequence_bw)
+        auto_regress_sequence_bwc = self.sequence_encoder(auto_regress_sequence_bw)
 
-        for i in range(self.number_of_blocks):
-            sequence_bwc = self.decoder_blocks[i](sequence_bwc)
-            sequence_bwc = self.junction_blocks[i](sequence_bwc, encoder_output_bwc)
-
-        return self.output_layer(sequence_bwc)
+        encoder_output_bwc = self.encoder(in_sequence_bwc)
+        for junction_block in self.junction_blocks:
+            auto_regress_sequence_bwc = junction_block(auto_regress_sequence_bwc, encoder_output_bwc)
+        return self.output_layer(auto_regress_sequence_bwc)
 
 
         
@@ -82,32 +75,38 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
         # return self
 
 
-    def create_model(self) -> nn.Module:
-        return self.create_decoder_only_network()
+    def create_model(self,  kind: Literal["encoder", "decoder", "encoder-decoder"] = "decoder") -> nn.Module:
+
+        if kind == "decoder":
+            return self._create_branch(kind)
+
+        if kind == "encoder":
+            return self._create_branch(kind)
+        
+        if kind == "encoder-decoder":
+            return EncoderDecoder(self, self._create_branch("encoder"))
+        
+
+    def _create_branch(self, kind: Literal["encoder", "decoder"]) -> nn.Module:
+
+        block = TransformerEncoderBlock if kind == "encoder" else TransformerDecoderBlock
     
-    def create_decoder_only_network(self) -> nn.Module:
-        model = nn.Sequential()
-        model.add_module("sequence_encoder", SequenceEncoder(self))
-        for i in range(self.number_of_blocks):
-            model.add_module(f"block_{i}", TransformerBlock(self, is_decoder=True))
-        model.add_module("layer_norm_c", nn.LayerNorm(self.coordinates))
-        model.add_module("language_model_weights_tc", nn.Linear(self.coordinates, self.tokens, bias=self.bias))
-        return model.to(DEVICE)
+        return nn.Sequential(
+            SequenceEncoder(self),
+            *[block(self) for _ in range(self.number_of_blocks)],
+            nn.LayerNorm(self.coordinates),
+            nn.Linear(self.coordinates, self.tokens, bias=self.bias),
+        ).to(DEVICE)
 
-    def create_encoder_only_network(self) -> nn.Module:
-        model = nn.Sequential()
-        model.add_module("sequence_encoder", SequenceEncoder(self))
-        for i in range(self.number_of_blocks):
-            model.add_module(f"block_{i}", TransformerBlock(self, is_decoder = False))
-        model.add_module("layer_norm_c", nn.LayerNorm(self.coordinates))
-        model.add_module("language_model_weights_tc", nn.Linear(self.coordinates, self.tokens, bias=self.bias))
-        return model.to(DEVICE)
 
-    def create_encoder_decoder(self):
-        return EncoderDecoder(self).to(DEVICE)
+
+
+
 
     @classmethod
     def create_variant(cls, variant: str = "NanoGPT") -> nn.Module:
+        """ DEPRECATED """
+
         assert variant in  ["NanoGPT", "NanoMTN"] , f"Unknown variant {variant}"
 
         if variant == "NanoGPT":
