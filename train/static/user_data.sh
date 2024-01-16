@@ -37,7 +37,6 @@ tail -F $LOG_FILE | while IFS= read -r LINE; do
 done
 EOF
 
-
 chmod +x send_logs_to_cloudwatch.sh
 nohup ./send_logs_to_cloudwatch.sh &
 
