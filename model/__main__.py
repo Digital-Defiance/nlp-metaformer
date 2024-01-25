@@ -7,7 +7,7 @@ from core.constants import DEVICE
 from core.mixins import MyBaseSettingsMixin
 from model.sequence_encoder import SequenceEncoder
 from model.transformer_block import TransformerEncoderBlock, TransformerDecoderBlock, TransformerJunctionBlock
-from typing import Literal
+from typing import Literal, Optional
 from pydantic import model_validator
 from core.types import PositiveInt, TensorFloat, TensorInt
 
@@ -46,7 +46,6 @@ class EncoderDecoder(nn.Module):
 
 
 class ModelFactory(BaseSettings, MyBaseSettingsMixin):
-
     coordinates: PositiveInt = 400
     tokens: PositiveInt = gpt2_encoder.max_token_value
     words: PositiveInt = 1000
@@ -88,9 +87,7 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
         
 
     def _create_branch(self, kind: Literal["encoder", "decoder"]) -> nn.Module:
-
         block = TransformerEncoderBlock if kind == "encoder" else TransformerDecoderBlock
-    
         return nn.Sequential(
             SequenceEncoder(self),
             *[block(self) for _ in range(self.number_of_blocks)],
