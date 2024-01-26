@@ -1,4 +1,4 @@
-sentence_index|sentiment_values
+phrase ids|sentiment values
 0|0.5
 1|0.5
 2|0.44444
