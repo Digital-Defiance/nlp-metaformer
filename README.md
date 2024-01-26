@@ -16,6 +16,10 @@ phase 1 - exploratory
 - [x] train a larger gpt on shakespeare
 - [x] experiment with transformer modifications (i.e. mtn)
 - [ ] perform systematic comparison between mtn and transformer
+  - [ ] sentiment analysis
+  - [ ] topic classification
+  - [ ] machine translation
+  - [ ] summarization 
 - [ ] write report on comparison between transformer and metric tensor network (might focus more on this depending on the results)
 - [ ] fine tune gpt2
 - [ ] setup whisper
