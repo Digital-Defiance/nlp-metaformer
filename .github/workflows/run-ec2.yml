@@ -44,6 +44,7 @@ jobs:
              sudo yum install docker git libicu -y
              sudo systemctl enable docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          market-type: spot
           ec2-image-id: ${{ github.event.inputs.ami_id }}
           ec2-instance-type: t3.nano
           subnet-id: subnet-07512e20d23632607
