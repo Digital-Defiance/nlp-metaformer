@@ -42,11 +42,12 @@ jobs:
     needs: start-runner # required to start the main job when the runner is ready
     runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
     strategy:
+      fail-fast: false
       max-parallel: 1
       matrix:
-        MODEL_COORDINATES: [200, 300]
-        MODEL_NUMBER_OF_BLOCKS: [6, 12]
-        MODEL_NUMBER_OF_HEADS: [10, 100]
+        MODEL_COORDINATES: [36, 360]
+        MODEL_NUMBER_OF_HEADS: [3, 6, 12, 36]  # note that coordinates must be divisible by these
+        MODEL_NUMBER_OF_BLOCKS: [3, 6, 12, 24]
     container:
       image: pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
       env:
