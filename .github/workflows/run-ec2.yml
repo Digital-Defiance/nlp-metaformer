@@ -57,6 +57,10 @@ jobs:
         run: echo 'Hello World!'
       - name: Write stuff
         run: echo 'hi, Im indeed running on ec2 :D' >> /test.txt
+      - name: Wait for a bit
+        run: |
+          echo "Running ..."
+          sleep 60
   stop-runner:
     name: Stop self-hosted EC2 runner
     needs:
