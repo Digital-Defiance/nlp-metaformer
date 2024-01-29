@@ -2,23 +2,26 @@ name: "train-model: Sentiment Analysis @ EC2 Spot"
 on:
   workflow_dispatch:
     inputs:
-      aws_region:
-        description: 'AWS_REGION'
+      # Model Hyper Parameters
+      MODEL_COORDINATES:
+        description: 'Dimension of the word embeddings'
         required: true
-        default: 'eu-west-2'
+        default: '300'
+        type: string
+      MODEL_NUMBER_OF_BLOCKS:
+        description: 'Number of transformer layers (self attention + feed forward)'
+        required: true
+        default: '6'
+        type: string
+      MODEL_NUMBER_OF_HEADS:
+        description: 'Number of attention heads inside an attention module'
+        required: true
+        default: '10'
         type: string
 
-      ami_id:
-        description: 'ami-id'
-        required: true
-        default: 'ami-0ac78de7f262baaf2'
-        type: string
+      # Data parameters
 
-      ec2-instance-type:
-        description: 'ec2-instance-type'
-        required: true
-        default: 'inf1.2xlarge'
-        type: string
+  
 
 jobs:
   start-runner:
@@ -33,7 +36,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ github.event.inputs.aws_region }}
+          aws-region: eu-west-2
       - name: Start EC2 runner
         id: start-ec2-runner
         uses: digital-defiance/ec2-github-runner@v2
@@ -46,8 +49,8 @@ jobs:
               sudo systemctl start docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
-          ec2-image-id: ${{ github.event.inputs.ami_id }}
-          ec2-instance-type: ${{ github.event.inputs.ec2-instance-type }}
+          ec2-image-id: ami-0ac78de7f262baaf2
+          ec2-instance-type: inf1.2xlarge
           subnet-id: subnet-07512e20d23632607
           security-group-id: sg-098d5c6cb021e55a4
       # - name: Waite so that I can clone the AMI 
@@ -60,7 +63,11 @@ jobs:
     container:
       image: pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
       env:
-        MODEL_PARAM_1: 'yes'
+        MODEL_COORDINATES: $${{ inputs.MODEL_COORDINATES }}
+        MODEL_NUMBER_OF_BLOCKS: $${{ inputs.MODEL_NUMBER_OF_BLOCKS }}
+        MODEL_NUMBER_OF_HEADS:  $${{ inputs.MODEL_NUMBER_OF_HEADS }}
+        TRAIN_BATCH_SIZE: 32
+        TRAIN_EPOCHS: 100
     steps:
       - name: Install dependencies
         run: |
@@ -86,7 +93,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region:  ${{ github.event.inputs.aws_region }}
+          aws-region: eu-west-2
       - name: Stop EC2 runner
         uses: digital-defiance/ec2-github-runner@v2
         with:
