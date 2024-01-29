@@ -39,11 +39,9 @@ jobs:
         uses: digital-defiance/ec2-github-runner@v2
         with:
           mode: start
-          # pre-runner-script: |
-          #   sudo yum update -y && \ 
-          #   sudo yum install docker git libicu -y
-          #   sudo systemctl enable docker
-          #   sudo systemctl start docker
+          pre-runner-script: | #   sudo yum update -y && \  #   sudo yum install docker git libicu -y
+              sudo systemctl enable docker
+              sudo systemctl start docker
           #   sudo docker pull pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
