@@ -25,6 +25,7 @@ on:
 
 jobs:
   start-runner:
+
     name: Start self-hosted EC2 runner
     runs-on: ubuntu-latest
     outputs:
@@ -37,6 +38,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
+      - uses: ahmadnassri/action-workflow-queue@v1
       - name: Start EC2 runner
         id: start-ec2-runner
         uses: digital-defiance/ec2-github-runner@v2
