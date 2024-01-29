@@ -9,6 +9,15 @@ on:
         type: choice
         options:
           - 'eu-west-2'
+      ami_id:
+        description: 'AMI_ID'
+        required: true
+        default: 'ami-093cb9fb2d34920ad'
+        type: choice
+        options:
+          - 'ami-093cb9fb2d34920ad'
+
+          
 
 
 jobs:
@@ -31,7 +40,7 @@ jobs:
         with:
           mode: start
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          ec2-image-id: ami-123
+          ec2-image-id: ${{ github.event.inputs.ami_id }}
           ec2-instance-type: t3.nano
           subnet-id: subnet-123
           security-group-id: sg-123
