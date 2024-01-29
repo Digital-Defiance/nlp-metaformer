@@ -1,4 +1,4 @@
-name: Train GPT-Array-Sorter on AWS
+name: "train-model: Array Sorting"
 
 on:
   workflow_dispatch:
