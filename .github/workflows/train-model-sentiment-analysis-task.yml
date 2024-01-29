@@ -48,14 +48,20 @@ jobs:
         MODEL_COORDINATES: [36, 360]
         MODEL_NUMBER_OF_HEADS: [3, 6, 12, 36]  # note that coordinates must be divisible by these
         MODEL_NUMBER_OF_BLOCKS: [3, 6, 12, 24]
+        TRAIN_BATCH_SIZE: [32]
+        TRAIN_EPOCHS: [100]
     container:
       image: pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
       env:
         MODEL_COORDINATES: $${{ matrix.MODEL_COORDINATES }}
         MODEL_NUMBER_OF_BLOCKS: $${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
         MODEL_NUMBER_OF_HEADS: $${{ matrix.MODEL_NUMBER_OF_HEADS }}
-        TRAIN_BATCH_SIZE: 32
-        TRAIN_EPOCHS: 100
+        TRAIN_BATCH_SIZE: $${{ matrix.TRAIN_BATCH_SIZE }}
+        TRAIN_EPOCHS: $${{ matrix.TRAIN_EPOCHS }}
+        MLFLOW_EXPERIMENT_ID: $${{ inputs.MLFLOW_EXPERIMENT_ID }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: eu-west-2
     steps:
       - name: Install dependencies
         run: |
