@@ -11,7 +11,7 @@ on:
       ami_id:
         description: 'ami-id'
         required: true
-        default: 'ami-035dc0f8062cc2f35'
+        default: 'ami-0ac78de7f262baaf2'
         type: string
 
       ec2-instance-type:
@@ -39,10 +39,11 @@ jobs:
         uses: digital-defiance/ec2-github-runner@v2
         with:
           mode: start
-          pre-runner-script: | #   sudo yum update -y && \  #   sudo yum install docker git libicu -y
+          pre-runner-script: | 
+              sudo yum update -y && \  
+              sudo yum install docker git libicu -y
               sudo systemctl enable docker
               sudo systemctl start docker
-          #   sudo docker pull pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
           ec2-image-id: ${{ github.event.inputs.ami_id }}
