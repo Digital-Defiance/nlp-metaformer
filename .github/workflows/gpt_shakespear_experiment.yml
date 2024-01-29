@@ -1,4 +1,4 @@
-name: "train-model: Shakespeare Text Gen"
+name: "train-model: Shakespeare Text Gen @ EC2 Spot"
 on:
   workflow_dispatch:
     inputs:
