@@ -6,17 +6,20 @@ on:
         description: 'AWS_REGION'
         required: true
         default: 'eu-west-2'
-        type: choice
-        options:
-          - 'eu-west-2'
+        type: string
+
+ 
       ami_id:
         description: 'AMI_ID'
         required: true
         default: 'ami-093cb9fb2d34920ad'
-        type: choice
-        options:
-          - 'ami-093cb9fb2d34920ad'
+        type: string
 
+      ec2-instance-type:
+        description: 'AMI_ID'
+        required: true
+        default: 't3.nano'
+        type: string
 
 jobs:
   start-runner:
