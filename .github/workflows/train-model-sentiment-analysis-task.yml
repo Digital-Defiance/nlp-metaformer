@@ -10,15 +10,15 @@ on:
 
  
       ami_id:
-        description: 'AMI_ID'
+        description: 'ami-id'
         required: true
-        default: 'ami-093cb9fb2d34920ad'
+        default: 'ami-0ac78de7f262baaf2'
         type: string
 
       ec2-instance-type:
-        description: 'AMI_ID'
+        description: 'ec2-instance-type'
         required: true
-        default: 't3.nano'
+        default: 'inf1.6xlarge'
         type: string
 
 jobs:
