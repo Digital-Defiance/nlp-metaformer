@@ -1,4 +1,4 @@
-name: "train-model: Sentiment Analysis"
+name: "train-model: Sentiment Analysis @ EC2 Spot"
 on:
   workflow_dispatch:
     inputs:
