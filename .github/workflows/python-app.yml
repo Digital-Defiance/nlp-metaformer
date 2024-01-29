@@ -1,4 +1,4 @@
-name: "train-model: Array Sorting"
+name: "train-model: Array Sorting @ EC2 Spot"
 
 on:
   workflow_dispatch:
