@@ -48,22 +48,28 @@ jobs:
           subnet-id: subnet-07512e20d23632607
           security-group-id: sg-098d5c6cb021e55a4
 
-  do-the-job:
-    name: Do the job on the runner
+  training-loop:
+    name: Train model
     needs: start-runner # required to start the main job when the runner is ready
     runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
+    container:
+      image: python:3.11
+      env:
+        MODEL_PARAM_1: 'yes'
     steps:
       - uses: actions/checkout@v3
       - name: Hello World
         run: echo 'Hello World!'
       - name: Where am I
         run: ls
+      - name: Do I see the parameter ? 
+        run: echo $MODEL_PARAM_1
 
   stop-runner:
     name: Stop self-hosted EC2 runner
     needs:
       - start-runner # required to get output from the start-runner job
-      - do-the-job # required to wait when the main job is done
+      - training-loop # required to wait when the main job is done
     runs-on: ubuntu-latest
     if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
     steps:
