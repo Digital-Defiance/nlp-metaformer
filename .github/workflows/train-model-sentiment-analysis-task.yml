@@ -1,28 +1,7 @@
 name: "train-model: Sentiment Analysis @ EC2 Spot"
 on:
   workflow_dispatch:
-    inputs:
-      # Model Hyper Parameters
-      MODEL_COORDINATES:
-        description: 'Dimension of the word embeddings'
-        required: true
-        default: '300'
-        type: string
-      MODEL_NUMBER_OF_BLOCKS:
-        description: 'Number of transformer layers (self attention + feed forward)'
-        required: true
-        default: '6'
-        type: string
-      MODEL_NUMBER_OF_HEADS:
-        description: 'Number of attention heads inside an attention module'
-        required: true
-        default: '10'
-        type: string
-
-      # Data parameters
-
-  
-
+ 
 jobs:
   start-runner:
 
@@ -62,12 +41,18 @@ jobs:
     name: Train model
     needs: start-runner # required to start the main job when the runner is ready
     runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
+    strategy:
+      max-parallel: 1
+      matrix:
+        MODEL_COORDINATES: [200, 300]
+        MODEL_NUMBER_OF_BLOCKS: [6, 12]
+        MODEL_NUMBER_OF_HEADS: [10, 100]
     container:
       image: pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
       env:
-        MODEL_COORDINATES: $${{ inputs.MODEL_COORDINATES }}
-        MODEL_NUMBER_OF_BLOCKS: $${{ inputs.MODEL_NUMBER_OF_BLOCKS }}
-        MODEL_NUMBER_OF_HEADS:  $${{ inputs.MODEL_NUMBER_OF_HEADS }}
+        MODEL_COORDINATES: $${{ matrix.MODEL_COORDINATES }}
+        MODEL_NUMBER_OF_BLOCKS: $${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
+        MODEL_NUMBER_OF_HEADS: $${{ matrix.MODEL_NUMBER_OF_HEADS }}
         TRAIN_BATCH_SIZE: 32
         TRAIN_EPOCHS: 100
     steps:
