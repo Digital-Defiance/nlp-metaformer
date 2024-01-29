@@ -55,6 +55,8 @@ jobs:
     steps:
       - name: Hello World
         run: echo 'Hello World!'
+      - name: Write stuff
+        run: echo 'hi, Im indeed running on ec2 :D' >> /test.txt
   stop-runner:
     name: Stop self-hosted EC2 runner
     needs:
