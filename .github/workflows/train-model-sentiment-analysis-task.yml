@@ -8,17 +8,16 @@ on:
         default: 'eu-west-2'
         type: string
 
- 
       ami_id:
         description: 'ami-id'
         required: true
-        default: 'ami-0ac78de7f262baaf2'
+        default: 'ami-035dc0f8062cc2f35'
         type: string
 
       ec2-instance-type:
         description: 'ec2-instance-type'
         required: true
-        default: 'inf1.6xlarge'
+        default: 'inf1.2xlarge'
         type: string
 
 jobs:
@@ -40,20 +39,20 @@ jobs:
         uses: digital-defiance/ec2-github-runner@v2
         with:
           mode: start
-          pre-runner-script: |
-             sudo yum update -y && \ 
-             sudo yum install docker git libicu -y
-             sudo systemctl enable docker
-             sudo systemctl start docker
-             sudo docker pull pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
+          # pre-runner-script: |
+          #   sudo yum update -y && \ 
+          #   sudo yum install docker git libicu -y
+          #   sudo systemctl enable docker
+          #   sudo systemctl start docker
+          #   sudo docker pull pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
           ec2-image-id: ${{ github.event.inputs.ami_id }}
           ec2-instance-type: ${{ github.event.inputs.ec2-instance-type }}
           subnet-id: subnet-07512e20d23632607
           security-group-id: sg-098d5c6cb021e55a4
-      - name: Waite so that I can clone the AMI 
-        run: sleep 100000
+      # - name: Waite so that I can clone the AMI 
+      #  run: sleep 100000
 
   training-loop:
     name: Train model
