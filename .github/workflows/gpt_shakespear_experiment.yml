@@ -1,5 +1,4 @@
-name: Train GPT-Shakespear on AWS
-
+name: "train-model: Shakespeare Text Gen"
 on:
   workflow_dispatch:
     inputs:
