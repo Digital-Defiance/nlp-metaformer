@@ -1,4 +1,4 @@
-name: Train Model on Sentiment Analysis Task
+name: "train-model: Sentiment Analysis"
 on:
   workflow_dispatch:
     inputs:
