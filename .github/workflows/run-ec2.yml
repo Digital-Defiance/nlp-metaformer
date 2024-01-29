@@ -1,4 +1,4 @@
-name: do-the-job
+name: run-ec2
 on:
   workflow_dispatch:
     inputs:
@@ -39,6 +39,10 @@ jobs:
         uses: machulav/ec2-github-runner@v2
         with:
           mode: start
+          pre-runner-script: |
+             sudo yum update -y && \ 
+             sudo yum install docker git libicu -y
+             sudo systemctl enable docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           ec2-image-id: ${{ github.event.inputs.ami_id }}
           ec2-instance-type: t3.nano
