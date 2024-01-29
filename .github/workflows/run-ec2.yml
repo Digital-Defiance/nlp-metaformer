@@ -57,10 +57,8 @@ jobs:
         run: echo 'Hello World!'
       - name: Write stuff
         run: echo 'hi, Im indeed running on ec2 :D' >> /test.txt
-      - name: Wait for a bit
-        run: |
-          echo "Running ..."
-          sleep 60
+      - name: Schedule Termination
+        run: aws ec2 terminate-instances --instance-ids $(curl -s http://169.254.169.254/latest/meta-data/instance-id) | at now +1 minutes
   stop-runner:
     name: Stop self-hosted EC2 runner
     needs:
@@ -75,6 +73,8 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:  ${{ github.event.inputs.aws_region }}
+      - name: Print instance id 
+        run: echo "$${{ needs.start-runner.outputs.ec2-instance-id }}"
       - name: Stop EC2 runner
         uses: machulav/ec2-github-runner@v2
         with:
