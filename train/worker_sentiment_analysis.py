@@ -29,6 +29,10 @@ logger.info(f"Using mlflow version {mlflow.__version__}")
 mlflow_settings = MLFlowSettings()
 training_loop_factory = TrainingLoopFactory()
 model_factory =  ModelFactory(
+    
+
+)
+"""
     coordinates = 30,
     words = 70,
     tokens=50258 + 5,
@@ -36,7 +40,7 @@ model_factory =  ModelFactory(
     number_of_heads = 3,
     bias = False,
     attention = "metric" # "scaled_dot_product", # or "metric"
-)
+"""
 
 
 def reshuffle_batches(x, y):
