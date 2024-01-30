@@ -159,9 +159,9 @@ class ScaledDotProductAttention(nn.Module, SelfAttention):
     projection_cc: nn.Parameter
     attention_heads_cd: nn.Parameter
 
-    def __init__(self, params: SelfAttentionParameters, is_decoder: bool):
+    def __init__(self, params: SelfAttentionParameters, is_causal: bool):
         super(ScaledDotProductAttention, self).__init__()
-        self.set_common_parameters(params, is_decoder)
+        self.set_common_parameters(params, is_causal)
         self.D_DIMENSION = 3 * params.coordinates
         learnable_parameters = {
             "attention_heads_cd": torch.randn(params.coordinates, self.D_DIMENSION),

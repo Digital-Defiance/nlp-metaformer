@@ -47,6 +47,14 @@ class DataFactory(BaseSettings, MyBaseSettingsMixin):
         return in_sequence_bw, out_sequence_bw
 
 
+
+
+class Adam(torch.optim.Adam):
+    def set_lr(self, lr: float):
+        for param_group in self.param_groups:
+            param_group['lr'] = lr
+
+
 class TrainingLoopFactory(BaseSettings, MyBaseSettingsMixin):
     number_of_epochs: int = 100
     number_of_batches: int = 10
@@ -54,7 +62,8 @@ class TrainingLoopFactory(BaseSettings, MyBaseSettingsMixin):
     batch_size: int = 32
     input_text_file: FilePath = "train/static/raw_data.txt"
     split_ratio: float = 0.9
-
+    l1_regularization: float = 0
+    l2_regularization: float = 0
 
     beta_1: float = 0.9
     beta_2: float = 0.98
@@ -82,7 +91,7 @@ class TrainingLoopFactory(BaseSettings, MyBaseSettingsMixin):
             return nn.CrossEntropyLoss()
 
     def create_optimizer(self, parameters):
-        return torch.optim.Adam(
+        return Adam(
             parameters,
             lr=1,
             betas=(self.beta_1, self.beta_2),
