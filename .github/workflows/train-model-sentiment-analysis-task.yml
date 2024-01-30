@@ -45,9 +45,9 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        MODEL_COORDINATES: [36, 360]
-        MODEL_NUMBER_OF_HEADS: [3, 6, 12, 36]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [3, 6, 12, 24]
+        MODEL_COORDINATES: [36]
+        MODEL_NUMBER_OF_HEADS: [3, 6]  # note that coordinates must be divisible by these
+        MODEL_NUMBER_OF_BLOCKS: [3, 6]
         MODEL_WORDS: [70]
         MODEL_TOKENS: [63]
         MODEL_BIAS: [false]
@@ -60,23 +60,23 @@ jobs:
     container:
       image: pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
       env:
-        MODEL_COORDINATES: $${{ matrix.MODEL_COORDINATES }}
-        MODEL_NUMBER_OF_BLOCKS: $${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
-        MODEL_NUMBER_OF_HEADS: $${{ matrix.MODEL_NUMBER_OF_HEADS }}
-        MODEL_WORDS: $${{ matrix.MODEL_WORDS }}
-        MODEL_TOKENS: $${{ matrix.MODEL_TOKENS }}
-        MODEL_BIAS: $${{ matrix.MODEL_BIAS }}
-        MODEL_ATTENTION: $${{ matrix.MODEL_ATTENTION }}
+        MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
+        MODEL_NUMBER_OF_BLOCKS: ${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
+        MODEL_NUMBER_OF_HEADS: ${{ matrix.MODEL_NUMBER_OF_HEADS }}
+        MODEL_WORDS: ${{ matrix.MODEL_WORDS }}
+        MODEL_TOKENS: ${{ matrix.MODEL_TOKENS }}
+        MODEL_BIAS: ${{ matrix.MODEL_BIAS }}
+        MODEL_ATTENTION: ${{ matrix.MODEL_ATTENTION }}
 
-        TRAIN_BATCH_SIZE: $${{ matrix.TRAIN_BATCH_SIZE }}
-        TRAIN_EPOCHS: $${{ matrix.TRAIN_EPOCHS }}
-        TRAIN_L1_REGULARIZATION: $${{ matrix.TRAIN_L1_REGULARIZATION }}
-        TRAIN_L2_REGULARIZATION: $${{ matrix.TRAIN_L2_REGULARIZATION }}
+        TRAIN_BATCH_SIZE: ${{ matrix.TRAIN_BATCH_SIZE }}
+        TRAIN_EPOCHS: ${{ matrix.TRAIN_EPOCHS }}
+        TRAIN_L1_REGULARIZATION: ${{ matrix.TRAIN_L1_REGULARIZATION }}
+        TRAIN_L2_REGULARIZATION: ${{ matrix.TRAIN_L2_REGULARIZATION }}
 
         MLFLOW_EXPERIMENT_ID: 2
-        MLFLOW_TRACKING_URI: $${{ secrets.MLFLOW_TRACKING_URI }}
-        MLFLOW_TRACKING_USERNAME: $${{ secrets.MLFLOW_TRACKING_USERNAME }}
-        MLFLOW_TRACKING_PASSWORD: $${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+        MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
+        MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
   
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
