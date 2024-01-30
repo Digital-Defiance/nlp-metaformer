@@ -60,6 +60,7 @@ jobs:
         TRAIN_L2_REGULARIZATION: [0]
     container:
       image: ghcr.io/digital-defiance/llm-voice-chat:main
+      options: --gpus all
       env:
         MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
         MODEL_NUMBER_OF_BLOCKS: ${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
@@ -86,6 +87,8 @@ jobs:
 
         GIT_PYTHON_REFRESH: quiet
     steps:
+      - name: Check gpu availability
+        run: nvidia-smi
       - uses: actions/checkout@v3
       - name: Perform Training Loop
         run: python -m train.worker_sentiment_analysis
