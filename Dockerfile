@@ -1,4 +1,4 @@
-FROM docker pull rocm/pytorch:latest
+FROM rocm/pytorch:latest
 
 
 
