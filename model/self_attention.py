@@ -197,7 +197,7 @@ class ScaledDotProductAttention(nn.Module, SelfAttention):
         
         # prepare attention scores, scaling -> masking -> softmax
         scaled_attention_scores_bnww = attention_scores_bnww / self.SQRT_K_DIMENSION
-        if self.IS_DECODER:
+        if self.IS_CAUSAL:
             scaled_attention_scores_bnww = scaled_attention_scores_bnww.masked_fill(
                 self.MASK_11ww[:,:,:words,:words] == 0,
                 float('-inf')
