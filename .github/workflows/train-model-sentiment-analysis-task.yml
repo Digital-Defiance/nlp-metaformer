@@ -30,12 +30,12 @@ jobs:
               sudo systemctl start docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
-          ec2-image-id: ami-0ac78de7f262baaf2
+          ec2-image-id: ami-09e075c286c850fd1
           ec2-instance-type: g4ad.xlarge
           subnet-id: subnet-07512e20d23632607
           security-group-id: sg-098d5c6cb021e55a4
-      # - name: Waite so that I can clone the AMI 
-      #  run: sleep 100000
+      - name: Waite so that I can clone the AMI 
+        run: sleep 100000
 
   training-loop:
     name: Train model (c, h, b, w, bias, att)
