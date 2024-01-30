@@ -31,7 +31,7 @@ jobs:
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
           ec2-image-id: ami-0ac78de7f262baaf2
-          ec2-instance-type: p3.2xlarge
+          ec2-instance-type: p2.xlarge
           subnet-id: subnet-07512e20d23632607
           security-group-id: sg-098d5c6cb021e55a4
       # - name: Waite so that I can clone the AMI 
