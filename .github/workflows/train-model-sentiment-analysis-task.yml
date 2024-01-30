@@ -59,7 +59,7 @@ jobs:
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
     container:
-      image: ghcr.io/digital-defiance/llm-voice-chat:main
+      image: rocm/pytorch:latest
       options: --gpus all
       env:
         MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
