@@ -46,10 +46,16 @@ jobs:
       max-parallel: 1
       matrix:
         MODEL_COORDINATES: [36, 360]
+        MODEL_WORDS: [70]
+        MODEL_TOKENS: [63]
+        MODEL_BIAS: [false]
+        MODEL_ATTENTION: ["metric", "scaled_dot_product"]
         MODEL_NUMBER_OF_HEADS: [3, 6, 12, 36]  # note that coordinates must be divisible by these
         MODEL_NUMBER_OF_BLOCKS: [3, 6, 12, 24]
         TRAIN_BATCH_SIZE: [32]
         TRAIN_EPOCHS: [100]
+        TRAIN_L1_REGULARIZATION: [0]
+        TRAIN_L2_REGULARIZATION: [0]
     container:
       image: pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime
       env:
@@ -58,6 +64,8 @@ jobs:
         MODEL_NUMBER_OF_HEADS: $${{ matrix.MODEL_NUMBER_OF_HEADS }}
         TRAIN_BATCH_SIZE: $${{ matrix.TRAIN_BATCH_SIZE }}
         TRAIN_EPOCHS: $${{ matrix.TRAIN_EPOCHS }}
+        TRAIN_L1_REGULARIZATION: $${{ matrix.TRAIN_L1_REGULARIZATION }}
+        TRAIN_L2_REGULARIZATION: $${{ matrix.TRAIN_L2_REGULARIZATION }}
         MLFLOW_EXPERIMENT_ID: $${{ inputs.MLFLOW_EXPERIMENT_ID }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
