@@ -95,7 +95,7 @@ with mlflow.start_run(
 
         training_loss_cumul = 0
         counter = 0
-        last_count = len(train_sentences) // training_loop_factory.batch_size
+        last_step = training_loop_factory.batch_size * (len(train_sentences) // training_loop_factory.batch_size)
 
         for step in (
             pb := progressbar_range(
@@ -127,7 +127,7 @@ with mlflow.start_run(
                 "lr": f"{lr:.2e}"
             }
         
-            if counter != last_count:
+            if step != last_step:
                 pb.set_postfix(to_log)
                 continue
 
