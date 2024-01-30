@@ -29,7 +29,7 @@ logger.info(f"Using mlflow version {mlflow.__version__}")
 mlflow_settings = MLFlowSettings()
 training_loop_factory = TrainingLoopFactory()
 model_factory =  ModelFactory(
-    
+
 
 )
 """

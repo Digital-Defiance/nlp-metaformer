@@ -49,7 +49,7 @@ jobs:
         MODEL_NUMBER_OF_HEADS: [3, 6]  # note that coordinates must be divisible by these
         MODEL_NUMBER_OF_BLOCKS: [3, 6]
         MODEL_WORDS: [70]
-        MODEL_TOKENS: [5063]
+        MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric", "scaled_dot_product"]
 
