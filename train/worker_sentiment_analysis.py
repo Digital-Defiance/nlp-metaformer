@@ -87,7 +87,7 @@ with mlflow.start_run(
 
     logger.info("Starting training loop")
     for epoch in range(1, training_loop_factory.number_of_epochs + 1):
-        lr = get_lr(epoch)
+        lr = get_lr(epoch) / 100
         optimizer.set_lr(lr)
         mlflow.log_metric("lr", lr, step=epoch)
 
