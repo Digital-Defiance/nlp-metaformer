@@ -136,8 +136,8 @@ with mlflow.start_run(
                 val_counter = 0
                 for val_step in range(0, len(dev_sentences), training_loop_factory.batch_size):
                     val_counter += 1
-                    dev_sentence_bw = dev_sentences[step:step+training_loop_factory.batch_size]
-                    dev_gt_sentence_bw = dev_gt_sentences[step:step+training_loop_factory.batch_size]
+                    dev_sentence_bw = dev_sentences[val_step:val_step+training_loop_factory.batch_size]
+                    dev_gt_sentence_bw = dev_gt_sentences[val_step:val_step+training_loop_factory.batch_size]
                     pred_logits_bwt = model(dev_sentence_bw)
                     pred_logits_btw = pred_logits_bwt.transpose(-1, -2)
                     loss_val = loss_function(pred_logits_btw, dev_gt_sentence_bw)
