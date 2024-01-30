@@ -55,7 +55,7 @@ jobs:
 
         TRAIN_BATCH_SIZE: [64]
         TRAIN_EPOCHS: [25]
-        TRAIN_WARMUP_STEPS: [2]
+        TRAIN_WARMUP_STEPS: [5]
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
     container:
