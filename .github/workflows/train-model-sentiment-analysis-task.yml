@@ -59,7 +59,7 @@ jobs:
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
     container:
-      image: ghcr.io/digital-defiance/llm-voice-chat:main
+      image: rocm/pytorch:latest
       options: --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --device=/dev/kfd --device=/dev/dri --group-add video --ipc=host --shm-size 8G
       env:
         MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
@@ -87,7 +87,7 @@ jobs:
 
         GIT_PYTHON_REFRESH: quiet
     steps:
-      - name: Check gpu availability
+      - name: Install dependencies
         run: nvidia-smi
       - uses: actions/checkout@v3
       - name: Perform Training Loop
