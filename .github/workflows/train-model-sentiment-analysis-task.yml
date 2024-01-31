@@ -20,7 +20,7 @@ jobs:
       - uses: ahmadnassri/action-workflow-queue@v1
       - name: Start EC2 runner
         id: start-ec2-runner
-        uses: digital-defiance/ec2-github-runner@v2
+        uses: digital-defiance/ec2-github-runner@feature/add-storage-option
         with:
           mode: start
           root-volume-size: 30
