@@ -46,15 +46,15 @@ jobs:
       max-parallel: 1
       matrix:
         MODEL_COORDINATES: [36]
-        MODEL_NUMBER_OF_HEADS: [3, 6]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [3, 6]
+        MODEL_NUMBER_OF_HEADS: [3]  # note that coordinates must be divisible by these
+        MODEL_NUMBER_OF_BLOCKS: [3]
         MODEL_WORDS: [70]
         MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
-        MODEL_ATTENTION: ["metric", "scaled_dot_product"]
+        MODEL_ATTENTION: ["metric"]
 
-        TRAIN_BATCH_SIZE: [64]
-        TRAIN_NUMBER_OF_EPOCHS: [10]
+        TRAIN_BATCH_SIZE: [10, 20, 30, 40, 50, 75, 100, 125, 150]
+        TRAIN_NUMBER_OF_EPOCHS: [25]
         TRAIN_WARMUP_STEPS: [5]
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
@@ -76,7 +76,7 @@ jobs:
         TRAIN_L2_REGULARIZATION: ${{ matrix.TRAIN_L2_REGULARIZATION }}
         TRAIN_WARMUP_STEPS: ${{ matrix.TRAIN_WARMUP_STEPS }}
 
-        MLFLOW_EXPERIMENT_ID: 6
+        MLFLOW_EXPERIMENT_ID: 7
         MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
         MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
         MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
