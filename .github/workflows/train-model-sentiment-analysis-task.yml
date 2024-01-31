@@ -62,7 +62,7 @@ jobs:
         TRAIN_L2_REGULARIZATION: [0]
     container:
       image: rocm/rocm-terminal
-      options: --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --device=/dev/kfd --device=/dev/dri --group-add video --ipc=host --shm-size 8G
+      options: --user=root --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --device=/dev/kfd --device=/dev/dri --group-add video --ipc=host --shm-size 8G
       env:
         MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
         MODEL_NUMBER_OF_BLOCKS: ${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
