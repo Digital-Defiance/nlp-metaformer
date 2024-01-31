@@ -30,7 +30,7 @@ jobs:
               sudo systemctl start docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
-          ec2-image-id: ami-04ae88736992322ef
+          ec2-image-id: ami-0fdb18af51d48e8f3
           ec2-instance-type: g4ad.xlarge
           subnet-id: subnet-07512e20d23632607
           security-group-id: sg-098d5c6cb021e55a4
@@ -60,8 +60,8 @@ jobs:
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
     container:
-      image: rocm/rocm-terminal # ghcr.io/digital-defiance/llm-voice-chat:main
-      options: --user=root --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --device=/dev/kfd --device=/dev/dri --group-add video --ipc=host --shm-size 8G
+      image: rocm/pytorch:latest # ghcr.io/digital-defiance/llm-voice-chat:main
+      options: --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --device=/dev/kfd --device=/dev/dri --group-add video --ipc=host --shm-size 8G
       env:
         MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
         MODEL_NUMBER_OF_BLOCKS: ${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
