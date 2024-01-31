@@ -30,7 +30,7 @@ jobs:
               sudo systemctl start docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
-          ec2-image-id: ami-07a95f070c44f5ccb
+          ec2-image-id: ami-04ae88736992322ef
           ec2-instance-type: g4ad.xlarge
           subnet-id: subnet-07512e20d23632607
           security-group-id: sg-098d5c6cb021e55a4
