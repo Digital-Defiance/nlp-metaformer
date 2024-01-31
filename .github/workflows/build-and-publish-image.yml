@@ -28,12 +28,13 @@ jobs:
         uses: digital-defiance/ec2-github-runner@feature/add-storage-option
         with:
           mode: start
-          root-volume-size: 70
+          root-volume-size: 100
           pre-runner-script: | 
               sudo yum update -y && \  
               sudo yum install docker git libicu -y
               sudo systemctl enable docker
               sudo systemctl start docker
+              sleep 100000 
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
           ec2-image-id: ami-09d6bbc1af02c2ca1
