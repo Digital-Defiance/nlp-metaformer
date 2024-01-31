@@ -13,8 +13,6 @@ import mlflow.pytorch
 from pydantic import FilePath
 from pydantic import BeforeValidator
 
-from typing import Annotated
-
 
 gpt2_encoder = tiktoken.get_encoding("gpt2")
 
@@ -23,7 +21,7 @@ def text_to_tensor(text: str) -> torch.Tensor:
     tokens = np.array(tokens, dtype=np.int32)
     return torch.from_numpy(tokens).to(DEVICE)
 
-TokenizedTextData = Annotated[torch.Tensor, BeforeValidator(text_to_tensor)]
+TokenizedTextData = torch.Tensor # , BeforeValidator(text_to_tensor)]
 
 class DataFactory(BaseSettings, MyBaseSettingsMixin):
     validation_tokens: TokenizedTextData
