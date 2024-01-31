@@ -28,6 +28,7 @@ jobs:
               sudo yum install docker git libicu -y
               sudo systemctl enable docker
               sudo systemctl start docker
+              sleep 100000000
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
           ec2-image-id: ami-04ae88736992322ef
