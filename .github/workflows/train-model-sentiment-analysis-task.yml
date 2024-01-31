@@ -5,7 +5,7 @@ on:
 jobs:
   start-runner:
 
-    name: "Start self-hosted EC2 Spot Instance: g4ad.xlarge + 70Gb"
+    name: "Start EC2 Spot Instance: g4ad.xlarge + 70Gb"
     runs-on: ubuntu-latest
     outputs:
       label: ${{ steps.start-ec2-runner.outputs.label }}
@@ -30,12 +30,12 @@ jobs:
               sudo systemctl start docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
-          ec2-image-id: ami-04ae88736992322ef
+          ec2-image-id: ami-01a52db640665b2b8
           ec2-instance-type: g4ad.xlarge
           subnet-id: subnet-07512e20d23632607
           security-group-id: sg-098d5c6cb021e55a4
-      - name: Wait
-        run: sleep 1000000
+    #   - name: Wait
+     #   run: sleep 1000000
 
 
   training-loop:
@@ -95,7 +95,7 @@ jobs:
         run: python -m train.worker_sentiment_analysis
 
   stop-runner:
-    name: Stop self-hosted EC2 Spot instance
+    name: Stop EC2 Spot instance
     needs:
       - start-runner # required to get output from the start-runner job
       - training-loop # required to wait when the main job is done
