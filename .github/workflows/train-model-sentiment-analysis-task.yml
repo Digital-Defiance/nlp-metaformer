@@ -34,6 +34,8 @@ jobs:
           ec2-instance-type: g4ad.xlarge
           subnet-id: subnet-07512e20d23632607
           security-group-id: sg-098d5c6cb021e55a4
+      - name: Wait
+        run: sleep 1000000
 
 
   training-loop:
