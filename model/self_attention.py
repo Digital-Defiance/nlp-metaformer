@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
-from typing import Protocol
+from typing import Protocol, Tuple
 from abc import ABC, abstractmethod
 from core.constants import DEVICE
 
@@ -19,7 +19,7 @@ class SelfAttentionParameters(Protocol):
     number_of_heads: int
 
 
-def create_parameter(*shape: tuple[int, ...], requires_grad: bool = True) -> nn.Parameter:
+def create_parameter(*shape: Tuple[int, ...], requires_grad: bool = True) -> nn.Parameter:
     return nn.Parameter(torch.randn(*shape), requires_grad=requires_grad)
 
 
@@ -30,7 +30,7 @@ class SelfAttention(ABC):
     K_DIMENSION: int
 
 
-    def create_parameter(self, shape: tuple[int, ...], requires_grad: bool = True) -> nn.Parameter:
+    def create_parameter(self, shape: Tuple[int, ...], requires_grad: bool = True) -> nn.Parameter:
         return nn.Parameter(torch.randn(*shape), requires_grad=requires_grad)
 
 
