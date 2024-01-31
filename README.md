@@ -2,13 +2,13 @@
 
 
 
-
-
 | Workflow Status | Experiment Status | Experiment Name |
 |---------------|-------------------|-----------------|
 | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml) | Completed | GPT Array Sorter Experiment |
 | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml) | Completed | GPT Shakespeare Experiment |
 | [![train-model: Sentiment Analysis @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml) | WIP | Sentiment Analysis Task |
+
+
 
 
 
@@ -18,12 +18,12 @@ Speak with a language model.
 
 phase 1 - exploratory
 
-- [x] implement and train a simple gpt that sorts tokens
+- [x] implement and train a simple gpt that sorts tokens - [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml)
 - [x] use simpler implementation to contruct the MLOps infra
-- [x] train a larger gpt on shakespeare
+- [x] train a larger gpt on shakespeare - [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml)
 - [x] experiment with transformer modifications (i.e. mtn)
 - [ ] perform systematic comparison between mtn and transformer
-  - [ ] sentiment analysis
+  - [ ] [![train-model: Sentiment Analysis @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml)
   - [ ] topic classification
   - [ ] machine translation
   - [ ] summarization 
