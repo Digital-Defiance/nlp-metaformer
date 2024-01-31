@@ -5,7 +5,7 @@ on:
 jobs:
   start-runner:
 
-    name: "Start EC2 Spot Instance: g4ad.xlarge + 100Gb"
+    name: "Start EC2 Spot Instance: g4ad.2xlarge + 100Gb"
     runs-on: ubuntu-latest
     outputs:
       label: ${{ steps.start-ec2-runner.outputs.label }}
@@ -31,7 +31,7 @@ jobs:
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
           ec2-image-id: ami-04ae88736992322ef
-          ec2-instance-type: g4ad.xlarge
+          ec2-instance-type: g4ad.2xlarge
           subnet-id: subnet-07512e20d23632607
           security-group-id: sg-098d5c6cb021e55a4
 
@@ -90,6 +90,7 @@ jobs:
       - name: install dependencies
         run : |
           pip install boto3==1.34.8 psutil==5.9.7 mlflow==2.9.2 pydantic==2.5.3 pydantic-settings==2.1.0 tqdm==4.66.1 tiktoken==0.5.2 pynvml
+          pip install numpy==1.26.3
       - uses: actions/checkout@v3
       - name: Sleep
         run: sleep 10000000
