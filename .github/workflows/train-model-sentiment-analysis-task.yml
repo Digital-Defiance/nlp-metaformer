@@ -23,7 +23,7 @@ jobs:
         uses: digital-defiance/ec2-github-runner@feature/add-storage-option
         with:
           mode: start
-          root-volume-size: 30
+          root-volume-size: 70
           pre-runner-script: | 
               sudo yum update -y && \  
               sudo yum install docker git libicu -y
