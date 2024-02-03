@@ -18,7 +18,9 @@ Speak with a language model.
 ## Roadmap
 https://github.com/orgs/Digital-Defiance/projects/11/views/1
 
-phase 1 - exploratory
+### Phase 1
+
+In this phase I am exploring a transformer variant and laying the groundwork for an ablation study similar to the one made on the MetaFormer (for vision). This phase is also primarily for me to build up my knowledge of NLP, data engineering, MLOps and large scale model training while hopefully getting some useful research done. 
 
 - [x] implement and train a simple gpt that sorts tokens - [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml)
 - [x] use simpler implementation to contruct the MLOps infra
@@ -32,18 +34,23 @@ phase 1 - exploratory
   - [ ] machine translation
   - [ ] summarization 
 - [ ] write report on comparison between transformer and metric tensor network (might focus more on this depending on the results)
-- [ ] fine tune gpt2
-- [ ] setup whisper
 
-phase 2 - development
+
+### Phase 2 
+
+In this phase the plan is to deploy the models trained on phase 1, alongside with open source LLMs.
 
 - [ ] write webapp (traefik - go + htmx + tmpl - fastapi + models)
 - [ ] deploy webapp
 - [ ] release first version
 
-phase 3 - exploratory 2
+### Phase 3
 
-- TBD
+In this phase, all the lessons from 1 and 2 will be used to to fine tune Lamma into multi-modility and finally, non-turn based voice chat. 
+
+- [ ] fine tune gpt2
+- [ ] fine tune lamma
+- [ ] setup whisper
 
 
 
