@@ -1,4 +1,5 @@
-name: Create and publish a Docker image
+
+name: "build: Create and publish a Docker image"
 
 on:
   workflow_dispatch:
@@ -6,48 +7,11 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
- 
+
 jobs:
-  start-runner:
-
-    name: "Start EC2 Spot Instance: inf1.xlarge + 70Gb"
-    runs-on: ubuntu-latest
-    outputs:
-      label: ${{ steps.start-ec2-runner.outputs.label }}
-      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-      - uses: ahmadnassri/action-workflow-queue@v1
-      - name: Start EC2 runner
-        id: start-ec2-runner
-        uses: digital-defiance/ec2-github-runner@feature/add-storage-option
-        with:
-          mode: start
-          root-volume-size: 100
-          pre-runner-script: | 
-              sudo yum update -y && \  
-              sudo yum install docker git libicu -y
-              sudo systemctl enable docker
-              sudo systemctl start docker
-              sleep 100000 
-          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          market-type: spot
-          ec2-image-id: ami-09d6bbc1af02c2ca1
-          ec2-instance-type: inf1.2xlarge
-          subnet-id: subnet-07512e20d23632607
-          security-group-id: sg-098d5c6cb021e55a4
-
-
-
   build-and-push-image:
-    needs: start-runner # required to start the main job when the runner is ready
-    runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
     # runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-m
     # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
     permissions:
       contents: read
@@ -76,26 +40,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-
-
-  stop-runner:
-    name: Stop EC2 Spot instance
-    needs:
-      - start-runner # required to get output from the start-runner job
-      - build-and-push-image # required to wait when the main job is done
-    runs-on: ubuntu-latest
-    if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-      - name: Stop EC2 runner
-        uses: digital-defiance/ec2-github-runner@v2
-        with:
-          mode: stop
-          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          label: ${{ needs.start-runner.outputs.label }}
-          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
