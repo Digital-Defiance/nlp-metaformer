@@ -16,6 +16,7 @@ Speak with a language model.
 
 
 ## Roadmap
+https://github.com/orgs/Digital-Defiance/projects/11/views/1
 
 phase 1 - exploratory
 
