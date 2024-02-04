@@ -3,7 +3,7 @@
 Speak with a language model.
 
 
-| Workflow | Status | Name | Dataset | Usability ! 
+| Workflow | Status | Name | Dataset | Usability |
 |---------------|-------------------|-----------------|-----------------|-----------------|
 | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml) | Completed | GPT Array Sorter Experiment | Generated | Outdated |
 | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml) | Completed | GPT Shakespeare Experiment | Shakespeares work | Outdated |
