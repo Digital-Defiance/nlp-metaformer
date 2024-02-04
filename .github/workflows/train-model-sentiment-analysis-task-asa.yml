@@ -65,7 +65,7 @@ jobs:
       celery-worker:
         image: ghcr.io/digital-defiance/data-worker:main
     container:
-      image: ghcr.io/digital-defiance/llm-voice-chat:main
+      image: ghcr.io/digital-defiance/training-loop-worker:main
       options: --gpus all
       env:
         MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
