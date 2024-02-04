@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: data-worker
 
 jobs:
   build-and-push-image:
@@ -38,5 +38,5 @@ jobs:
         with:
           context: ./data
           push: true
-          tags: data-worker
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
