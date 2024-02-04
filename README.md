@@ -8,7 +8,7 @@ Speak with a language model.
 | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml) | Completed | GPT Array Sorter Experiment | Generated | 
 | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml) | Completed | GPT Shakespeare Experiment | Shakespeares work |
 | [![train-model: Sentiment Analysis @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml) | Completed | Sentiment Analysis Task |  standford dataset |
-| WIP | WIP | Sentiment Analysis Task | https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/asa-v0.2.0 |
+| [![train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml) | WIP | Sentiment Analysis Task | https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/asa-v0.2.0 |
 
 
 
@@ -29,7 +29,7 @@ In this phase I am exploring a transformer variant and laying the groundwork for
 - [ ] perform systematic comparison between mtn and transformer
   - [ ] Sentiment Analysis 
     - [x] [![train-model: Sentiment Analysis @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml)
-    - [ ] wip
+    - [ ] [![train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml)
   - [ ] topic classification
   - [ ] machine translation
   - [ ] summarization 
