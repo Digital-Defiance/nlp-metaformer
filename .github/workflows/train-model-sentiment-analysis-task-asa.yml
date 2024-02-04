@@ -1,6 +1,8 @@
 name: "train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot"
 on:
   workflow_dispatch:
+  push:
+    - main
  
 jobs:
   start-runner:
