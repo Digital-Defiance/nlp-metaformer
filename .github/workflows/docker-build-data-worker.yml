@@ -1,5 +1,5 @@
 
-name: "docker: Build data worker image"
+name: "build: data worker image"
 
 on:
   workflow_dispatch:
