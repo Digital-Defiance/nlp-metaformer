@@ -3,12 +3,12 @@
 Speak with a language model.
 
 
-| Workflow | Status | Name | Dataset | 
-|---------------|-------------------|-----------------|-----------------|
-| [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml) | Completed | GPT Array Sorter Experiment | Generated | 
-| [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml) | Completed | GPT Shakespeare Experiment | Shakespeares work |
-| [![train-model: Sentiment Analysis @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml) | Completed | Sentiment Analysis Task |  standford dataset |
-| [![train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml/badge.svg?branch=main)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml) | WIP | Sentiment Analysis Task | https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/asa-v0.2.0 |
+| Workflow | Status | Name | Dataset | Usability ! 
+|---------------|-------------------|-----------------|-----------------|-----------------|
+| [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml) | Completed | GPT Array Sorter Experiment | Generated | Outdated |
+| [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml) | Completed | GPT Shakespeare Experiment | Shakespeares work | Outdated |
+| [![train-model: Sentiment Analysis @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml) | Completed | Sentiment Analysis Task |  standford dataset | Deprecated |
+| [![train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml/badge.svg?branch=main)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml) | WIP | Sentiment Analysis Task | https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/asa-v0.2.0 | WIP |
 
 
 
