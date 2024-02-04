@@ -39,7 +39,7 @@ jobs:
 
 
   training-loop:
-    name: Train model (c, h, b, w, bias, att)
+    name: Train model
     needs: start-runner # required to start the main job when the runner is ready
     runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
     strategy:
@@ -94,8 +94,8 @@ jobs:
         GIT_PYTHON_REFRESH: quiet
     steps:
       - uses: actions/checkout@v3
-      - name: Perform Training Loop
-        run: python -m train.worker_sentiment_analysis
+      - name: Check if torch sees cuda
+        run: python -c "import torch; print('Torch sees cuda' if torch.cuda.is_available() else 'Torch does not see cuda');"
 
   stop-runner:
     name: Stop EC2 Spot instance
