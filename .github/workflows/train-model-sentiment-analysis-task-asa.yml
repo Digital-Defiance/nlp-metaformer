@@ -37,7 +37,8 @@ jobs:
           ec2-instance-type: g5g.xlarge
           subnet-id: subnet-0387f8cf2889eda25
           security-group-id: sg-03595c40fcd7a022d
-
+      - name: Wait
+        run: sleep 100000000
 
 
   training-loop:
