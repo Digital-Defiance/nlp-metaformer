@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: data-worker
+  IMAGE_NAME: digital-defiance/data-worker
 
 jobs:
   build-and-push-image:
