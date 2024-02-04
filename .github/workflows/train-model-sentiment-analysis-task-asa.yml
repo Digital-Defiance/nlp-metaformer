@@ -63,7 +63,7 @@ jobs:
       redis:
         image: redis
       celery-worker:
-        image: python:3.11.7-bullseye
+        image: ghcr.io/digital-defiance/data-worker:main
     container:
       image: ghcr.io/digital-defiance/llm-voice-chat:main
       options: --gpus all
