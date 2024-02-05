@@ -2,4 +2,4 @@
 __pycache__/
 var.sh
 *.log
-
+*.parquet

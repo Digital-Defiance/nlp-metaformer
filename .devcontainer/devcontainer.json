@@ -1,6 +1,6 @@
 {
     "name": "Python",
-    "dockerFile": "Dockerfile",
+    "dockerFile": "../data/Dockerfile",
     "customizations": {
 
         "settings": {
