@@ -93,9 +93,29 @@ jobs:
 
         GIT_PYTHON_REFRESH: quiet
     steps:
-      - uses: actions/checkout@v3
+      - name: Check if container sees gpu
+        run: nvidia-smi
       - name: Check if torch sees cuda
-        run: python -c "import torch; print('Torch sees cuda' if torch.cuda.is_available() else 'Torch does not see cuda');"
+        shell: python
+        run: |
+          import torch
+          if not torch.cuda.is_available():
+              print("Torch does not see cuda")
+              exit(1)
+          print("Torch sees cuda")
+
+      - name: Check if Redis is available
+        shell: python
+        run: |
+          import redis
+          r = redis.Redis(host='redis', port=6379, db=0)
+          try:
+              r.ping()
+              print("Redis is available")
+          except redis.exceptions.ConnectionError:
+              print("Failed to connect to Redis")
+              exit(1)
+      - uses: actions/checkout@v3
 
   stop-runner:
     name: Stop EC2 Spot instance
