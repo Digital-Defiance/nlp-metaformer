@@ -125,7 +125,9 @@ jobs:
               exit(1)
           print("Torch sees cuda")
 
-      - name: Check if Redis is available
+      - name: Redis logs
+        run: docker logs "${{ job.services.redis.id }}"
+      - name: Check if redis is available
         shell: python
         run: |
           import redis
@@ -136,7 +138,11 @@ jobs:
           except redis.exceptions.ConnectionError:
               print("Failed to connect to Redis")
               exit(1)
+
       - uses: actions/checkout@v3
+  
+      - name: Celery worker logs
+        run: docker logs "${{ job.services.celery-worker.id }}"
       - name: Test celery worker
         run: cd data && python test.py
 
