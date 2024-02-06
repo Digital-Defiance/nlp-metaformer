@@ -53,7 +53,7 @@ train_slices = TrainSettings.get_train_slices()
 main = Worker().celery
 
 @main.task(name='prepare_data')
-def prepare_data(idx: int) -> str:
+def prepare_data(idx: int, context_window_size: int) -> str:
     print(f"Slice of index {idx} has been requested.")
     print("Collecting slice...")
     rating, text = [], []
@@ -61,7 +61,7 @@ def prepare_data(idx: int) -> str:
         rating.append(row.rating)
         text.append(row.text)
     print("Slice has been collected.")
-    return np.array(rating), np.array(text)
+    return np.array(rating)[:, :context_window_size], np.array(text)[:, :context_window_size]
 
 
 
