@@ -72,9 +72,9 @@ with mlflow.start_run(
 
 
         rating, text = task.get()
-        rating, text = torch.tensor(rating), torch.tensor(text)
-        rating, text = reshuffle_batches(rating, text)
+        rating, text = torch.tensor(rating).to(DEVICE), torch.tensor(text).to(DEVICE)
         gc.collect()
+        rating, text = reshuffle_batches(rating, text)
         epoch_slice = 0
         task = worker.request_data(epoch_slice)
 
