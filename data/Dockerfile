@@ -10,3 +10,4 @@ WORKDIR /app
 COPY main.py /app/main.py
 COPY worker.py /app/worker.py
 CMD celery -A main worker
+
