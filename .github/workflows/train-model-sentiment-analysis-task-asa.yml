@@ -140,6 +140,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Test celery worker
         run: cd data && python test.py
+      - name: Run training loop
+        run: python -m train.sentiment_analysis
 
 
   stop-runner:
