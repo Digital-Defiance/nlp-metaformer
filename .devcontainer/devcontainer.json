@@ -2,7 +2,6 @@
     "name": "Python",
     "dockerFile": "../data/Dockerfile",
     "customizations": {
-
         "settings": {
             "python.pythonPath": "/usr/local/bin/python",
             "python.linting.enabled": true,
