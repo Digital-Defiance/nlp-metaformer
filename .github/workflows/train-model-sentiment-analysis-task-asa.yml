@@ -85,7 +85,7 @@ jobs:
           - /data:/data
     container:
       image: ghcr.io/digital-defiance/training-loop-worker:main
-      options: --gpus all
+      options: --gpus all --cpus 1
       env:
         REDIS_HOST: redis
 
