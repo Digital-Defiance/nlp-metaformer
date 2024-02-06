@@ -58,7 +58,11 @@ class SentimentAnalysisModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.transformer = model_factory.create_model(kind="encoder")
-        self.project_tokens = torch.nn.Linear(model_factory.tokens, 5)
+        self.project_tokens = torch.nn.Sequential(
+            torch.nn.Linear(model_factory.tokens, model_factory.tokens // 2),
+            torch.nn.Linear(model_factory.tokens // 2, model_factory.tokens // 4),
+            torch.nn.Linear(model_factory.tokens // 4, 5),
+        )
         self.project_context = torch.nn.Linear(model_factory.words, 1)
 
     def forward(self, x):
@@ -115,8 +119,7 @@ with mlflow.start_run(
     logger.info("Starting training loop...")
     step = 0
     for epoch in range(1, training_loop_factory.number_of_epochs + 1):
-        lr = get_lr(epoch) / 10
-        optimizer.set_lr(lr)
+
         
 
 
@@ -142,6 +145,8 @@ with mlflow.start_run(
             )
         ):
             step += 1
+            lr = get_lr(step) / 10
+            optimizer.set_lr(lr)
             start = i*training_loop_factory.batch_size
             end = start + training_loop_factory.batch_size
     

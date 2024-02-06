@@ -63,10 +63,11 @@ jobs:
         MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
+        MODEL_WORDS: [25]
 
-        TRAIN_BATCH_SIZE: [16]
-        TRAIN_NUMBER_OF_EPOCHS: [200]
-        TRAIN_WARMUP_STEPS: [50, 100, 25]
+        TRAIN_BATCH_SIZE: [32]
+        TRAIN_NUMBER_OF_EPOCHS: [50]
+        TRAIN_WARMUP_STEPS: [200]
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
     services:
@@ -92,7 +93,7 @@ jobs:
         MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
         MODEL_NUMBER_OF_BLOCKS: ${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
         MODEL_NUMBER_OF_HEADS: ${{ matrix.MODEL_NUMBER_OF_HEADS }}
-        MODEL_WORDS: 624
+        MODEL_WORDS:  ${{ matrix.MODEL_WORDS }}
         MODEL_TOKENS: ${{ matrix.MODEL_TOKENS }}
         MODEL_BIAS: ${{ matrix.MODEL_BIAS }}
         MODEL_ATTENTION: ${{ matrix.MODEL_ATTENTION }}
