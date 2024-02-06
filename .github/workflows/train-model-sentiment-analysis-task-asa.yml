@@ -74,6 +74,11 @@ jobs:
         image: redis
       celery-worker:
         image: ghcr.io/digital-defiance/data-worker:main
+        env:
+          REDIS_HOST: redis
+          TRAIN_N_SLICES: 60
+          SPARK_DRIVER_MEMORY: 2g
+          SPARK_EXECUTOR_MEMORY: 2g
         volumes:
           - /data:/data
     container:
@@ -128,6 +133,9 @@ jobs:
               print("Failed to connect to Redis")
               exit(1)
       - uses: actions/checkout@v3
+      - name: Test celery worker
+        run: cd data && python test.py
+
 
   stop-runner:
     name: Stop EC2 Spot instance
