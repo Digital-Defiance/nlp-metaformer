@@ -72,7 +72,7 @@ with mlflow.start_run(
 
 
         rating, text = task.get()
-        rating, text = torch.tensor(rating).to(DEVICE), torch.tensor(text).to(DEVICE)
+        rating, text = torch.tensor(rating), torch.tensor(text)
         gc.collect()
         rating, text = reshuffle_batches(rating, text)
         epoch_slice = 0
@@ -88,8 +88,8 @@ with mlflow.start_run(
             step += 1
             end = start + training_loop_factory.batch_size
     
-            rating_batch_bw = rating[start:end]
-            text_batch_bw = text[start:end]
+            rating_batch_bw = rating[start:end].to(DEVICE)
+            text_batch_bw = text[start:end].to(DEVICE)
 
             # Perform feed forward + backwards propagation + gradient descent
             optimizer.zero_grad()
