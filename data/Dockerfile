@@ -9,4 +9,4 @@ RUN mkdir /app
 WORKDIR /app
 COPY main.py /app/main.py
 COPY worker.py /app/worker.py
-RUN celery -A main worker
+CMD celery -A main worker
