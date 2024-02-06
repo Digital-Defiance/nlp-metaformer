@@ -25,6 +25,7 @@ jobs:
         with:
           mode: start
           root-volume-size: 80
+          iam-role-name: ec2-logs
           pre-runner-script: | 
               sudo yum update -y && \  
               sudo yum install docker git libicu -y
