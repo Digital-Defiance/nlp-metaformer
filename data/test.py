@@ -16,6 +16,7 @@ print("Task has been completed.")
 print(result)
 print(result[0].shape)
 print(result[1].shape)
+task.forget()
 
 
 
