@@ -76,7 +76,6 @@ jobs:
         image: redis
       celery-worker:
         image: ghcr.io/digital-defiance/data-worker:main
-        options: -A main worker
         env:
           REDIS_HOST: redis
           TRAIN_N_SLICES: 60
