@@ -7,7 +7,7 @@ env:
  
 jobs:
   start-runner:
-    name: "Start EC2 Spot Instance: g4dn.xlarge + 100Gb"
+    name: "Start EC2 Spot Instance: g4dn.xlarge"
     runs-on: ubuntu-latest
     outputs:
       label: ${{ steps.start-ec2-runner.outputs.label }}
@@ -24,7 +24,7 @@ jobs:
         uses: digital-defiance/ec2-github-runner@feature/add-storage-option
         with:
           mode: start
-          root-volume-size: 100
+          root-volume-size: 80
           pre-runner-script: | 
               sudo yum update -y && \  
               sudo yum install docker git libicu -y
@@ -50,8 +50,10 @@ jobs:
 
   training-loop:
     name: Train model
-    needs: start-runner # required to start the main job when the runner is ready
-    runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
+    needs:
+      - start-runner
+      - download-data
+    runs-on: ${{ needs.start-runner.outputs.label }}
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -85,6 +87,8 @@ jobs:
       image: ghcr.io/digital-defiance/training-loop-worker:main
       options: --gpus all
       env:
+        REDIS_HOST: redis
+
         MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
         MODEL_NUMBER_OF_BLOCKS: ${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
         MODEL_NUMBER_OF_HEADS: ${{ matrix.MODEL_NUMBER_OF_HEADS }}
