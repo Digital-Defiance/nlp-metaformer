@@ -28,6 +28,6 @@ class Worker(BaseSettings):
             accept_content=['pickle', 'json'],
         )
 
-    def request_data(self, idx: int) -> AsyncResult:
-        return self.celery.send_task('prepare_data', args=[idx])
+    def request_data(self, idx: int, ctx_window: int) -> AsyncResult:
+        return self.celery.send_task('prepare_data', args=[idx, ctx_window])
 

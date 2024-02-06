@@ -11,10 +11,32 @@ from data.worker import Worker
 from train.config import TrainingLoopFactory, MLFlowSettings
 
 
-
 worker = Worker()
 model_factory =  ModelFactory()
+
 task = worker.request_data(0, model_factory.words)
+
+
+# def get():
+#    return torch.randint(0, 100, (64, 5)), torch.randint(0, 100, (64, 100))
+
+
+class SentimentAnalysisModel(torch.nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.transformer = model_factory.create_model(kind="encoder")
+        self.project_tokens = torch.nn.Linear(model_factory.tokens, 5)
+        self.project_context = torch.nn.Linear(model_factory.words, 1)
+
+    def forward(self, x):
+        x = self.transformer(x)
+        x = self.project_tokens(x)
+        x = self.project_context(x.transpose(-1, -2))[:, :, 0]
+        return x
+
+
+    
 
 
 
@@ -32,11 +54,6 @@ mlflow_settings = MLFlowSettings()
 training_loop_factory = TrainingLoopFactory()
 
 
-def reshuffle_batches(x, y):
-    random_idx = torch.randperm(len(x))
-    return x[random_idx], y[random_idx]
-
-
 
 
 with mlflow.start_run(
@@ -44,10 +61,9 @@ with mlflow.start_run(
     experiment_id=mlflow_settings.experiment_id,
     log_system_metrics=mlflow_settings.log_system_metrics,
 ) as run:
-    
     logger.info("Connected to MLFlow and started run.")
 
-    model = model_factory.create_model(kind="encoder")
+    model = SentimentAnalysisModel().to(DEVICE)
     logger.info("Created model")
 
     model_factory.save_to_mlflow()
@@ -56,30 +72,37 @@ with mlflow.start_run(
     training_loop_factory.save_to_mlflow()
     logger.info("Saved training info to MLFLow")
 
-    mlflow.log_param("n_parameters",  sum(p.numel() for p in model.parameters() if p.requires_grad))
-    
+    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    mlflow.log_param("n_parameters", n_parameters)
+    logger.info(f"Model has {n_parameters} parameters")
+
     optimizer = training_loop_factory.create_optimizer(model.parameters())
     get_lr = training_loop_factory.create_scheduler(model_factory.coordinates)
     loss_function = training_loop_factory.create_loss_function()
 
-
-    logger.info("Starting training loop")
+    logger.info("Starting training loop...")
     step = 0
     for epoch in range(1, training_loop_factory.number_of_epochs + 1):
         lr = get_lr(epoch) / 10
         optimizer.set_lr(lr)
-        mlflow.log_metric("lr", lr, step=epoch)
+        
 
 
         rating, text = task.get()
         task.forget()
+        # rating, text = get()
         rating, text = torch.tensor(rating), torch.tensor(text)
         gc.collect()
-        rating, text = reshuffle_batches(rating, text)
+        random_idx = torch.randperm(len(rating))
+        rating, text = rating[random_idx], text[random_idx]
+        del random_idx
+
+
         epoch_slice = 0
+
         task = worker.request_data(epoch_slice, model_factory.words)
 
-        for start in (
+        for i in (
             pb := tqdm(
                 range(len(rating) // training_loop_factory.batch_size),
                 desc=f"({epoch}/{epoch_slice})",
@@ -87,16 +110,16 @@ with mlflow.start_run(
             )
         ):
             step += 1
+            start = i*training_loop_factory.batch_size
             end = start + training_loop_factory.batch_size
     
-            rating_batch_bw = rating[start:end].to(DEVICE)
+            rating_batch_b5 = rating[start:end].to(DEVICE)
             text_batch_bw = text[start:end].to(DEVICE)
 
             # Perform feed forward + backwards propagation + gradient descent
             optimizer.zero_grad()
-            pred_logits_bwt = model(text_batch_bw)
-            pred_logits_btw = pred_logits_bwt.transpose(-1, -2)
-            loss_train = loss_function(pred_logits_btw, rating_batch_bw)
+            pred_logits_b5 = model(text_batch_bw)
+            loss_train = loss_function(pred_logits_b5, rating_batch_b5.float())
             loss_train.backward()
             optimizer.step()
 
