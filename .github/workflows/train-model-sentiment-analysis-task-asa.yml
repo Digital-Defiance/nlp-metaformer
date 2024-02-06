@@ -63,7 +63,7 @@ jobs:
         MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
-        MODEL_WORDS: [50]
+        MODEL_WORDS: [25]
 
         TRAIN_BATCH_SIZE: [32]
         TRAIN_NUMBER_OF_EPOCHS: [50]
