@@ -76,6 +76,7 @@ jobs:
         image: redis
       celery-worker:
         image: ghcr.io/digital-defiance/data-worker:main
+        options: -A main worker
         env:
           REDIS_HOST: redis
           TRAIN_N_SLICES: 60
@@ -124,9 +125,6 @@ jobs:
               print("Torch does not see cuda")
               exit(1)
           print("Torch sees cuda")
-
-      - name: Redis logs
-        run: docker logs "${{ job.services.redis.id }}"
       - name: Check if redis is available
         shell: python
         run: |
@@ -140,9 +138,6 @@ jobs:
               exit(1)
 
       - uses: actions/checkout@v3
-  
-      - name: Celery worker logs
-        run: docker logs "${{ job.services.celery-worker.id }}"
       - name: Test celery worker
         run: cd data && python test.py
 
