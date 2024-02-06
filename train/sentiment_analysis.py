@@ -83,8 +83,7 @@ with mlflow.start_run(
     logger.info("Starting training loop...")
     step = 0
     for epoch in range(1, training_loop_factory.number_of_epochs + 1):
-        lr = get_lr(epoch) / 10
-        optimizer.set_lr(lr)
+
         
 
 
@@ -110,6 +109,8 @@ with mlflow.start_run(
             )
         ):
             step += 1
+            lr = get_lr(step)
+            optimizer.set_lr(lr)
             start = i*training_loop_factory.batch_size
             end = start + training_loop_factory.batch_size
     
