@@ -64,7 +64,7 @@ jobs:
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
 
-        TRAIN_BATCH_SIZE: [16]
+        TRAIN_BATCH_SIZE: [32]
         TRAIN_NUMBER_OF_EPOCHS: [200]
         TRAIN_WARMUP_STEPS: [50, 100, 25]
         TRAIN_L1_REGULARIZATION: [0]
