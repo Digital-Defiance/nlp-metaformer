@@ -26,9 +26,7 @@ jobs:
           mode: start
           root-volume-size: 80
           iam-role-name: ec2-logs
-          pre-runner-script: | 
-              sudo yum update -y && \  
-              sudo yum install docker git libicu -y
+          pre-runner-script: |  # sudo yum update -y && sudo yum install docker git libicu -y
               sudo systemctl enable docker
               sudo systemctl start docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
