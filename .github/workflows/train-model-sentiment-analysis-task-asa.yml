@@ -25,6 +25,7 @@ jobs:
         with:
           mode: start
           root-volume-size: 80
+          iam-role-name: ec2-logs
           pre-runner-script: | 
               sudo yum update -y && \  
               sudo yum install docker git libicu -y
@@ -74,10 +75,10 @@ jobs:
     services:
       redis:
         image: redis
-        options: --memory=1g --cpus 1
+        options: --memory=1g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis  --log-opt awslogs-create-group=true
       celery-worker:
         image: ghcr.io/digital-defiance/data-worker:main
-        options: --memory=6g --cpus 3
+        options: --memory=6g --cpus 3 --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=dataworker  --log-opt awslogs-create-group=true 
         env:
           REDIS_HOST: redis
           TRAIN_N_SLICES: 60
@@ -87,7 +88,7 @@ jobs:
           - /data:/data
     container:
       image: ghcr.io/digital-defiance/training-loop-worker:main
-      options: --gpus all --cpus 1 --memory=9g
+      options: --gpus all --cpus 1 --memory=9g  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=trainingloop  --log-opt awslogs-create-group=true
       env:
         REDIS_HOST: redis
 

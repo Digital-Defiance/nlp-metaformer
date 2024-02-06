@@ -40,12 +40,12 @@ class TrainSettings(BaseSettings):
     @classmethod
     def get_train_slices(cls):
         self = cls()
-        return spark.read.parquet("train.parquet").randomSplit([1.]*self.n_slices)
+        return spark.read.parquet("/data/train.parquet").randomSplit([1.]*self.n_slices)
     
     @classmethod
     def get_test_slices(cls):
         self = cls()
-        return spark.read.parquet("test.parquet").randomSplit([1.]*self.n_slices)
+        return spark.read.parquet("/data/test.parquet").randomSplit([1.]*self.n_slices)
 
 
 train_slices = TrainSettings.get_train_slices()
