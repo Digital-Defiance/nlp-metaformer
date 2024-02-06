@@ -54,15 +54,14 @@ main = Worker().celery
 
 @main.task(name='prepare_data')
 def prepare_data(idx: int) -> str:
-    print(f"GOT INDEX: {idx}")
-    rating = []
-    text = []
+    print(f"Slice of index {idx} has been requested.")
+    print("Collecting slice...")
+    rating, text = [], []
     for row in train_slices[idx].collect():
         rating.append(row.rating)
         text.append(row.text)
-    rating  = np.array(rating)
-    text = np.array(text)
-    return rating, text
+    print("Slice has been collected.")
+    return np.array(rating), np.array(text)
 
 
 
