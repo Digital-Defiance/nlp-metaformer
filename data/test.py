@@ -5,7 +5,7 @@ worker = Worker()
 print("Worker has been initialized.")
 
 
-task = worker.request_data(0)
+task = worker.request_data(0, 100)
 print("Request for slice 0 has been sent.")
 print("Task id is ", task)
 
