@@ -37,6 +37,13 @@ jobs:
           ec2-instance-type: g4dn.xlarge
           subnet-id: subnet-0fc7dea0969cca860
           security-group-id: sg-0c4cc0c0be64f1b08
+
+
+  download-data:
+    name: Download data
+    needs: start-runner # required to start the main job when the runner is ready
+    runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
+    steps:
       - name: Pull Redis
         run: docker pull redis
       - name: Pull python
@@ -44,8 +51,7 @@ jobs:
       - name: Pull pytorch
         run: docker pull pytorch/pytorch:2.2.0-cuda11.8-cudnn8-runtime
       - name: Wait while I copy this AMI
-        run: sleep 100000000
-
+        run: sleep 1000000000
 
 
   stop-runner:
