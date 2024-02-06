@@ -65,7 +65,7 @@ jobs:
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [25]
 
-        TRAIN_BATCH_SIZE: [32]
+        TRAIN_BATCH_SIZE: [32, 64, 84, 16]
         TRAIN_NUMBER_OF_EPOCHS: [50]
         TRAIN_WARMUP_STEPS: [200]
         TRAIN_L1_REGULARIZATION: [0]
