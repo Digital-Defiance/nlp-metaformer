@@ -12,13 +12,45 @@ from train.config import TrainingLoopFactory, MLFlowSettings
 
 
 worker = Worker()
-model_factory =  ModelFactory()
+model_factory =  ModelFactory(
+    words=100,
+    tokens=6,
+    coordinates=6,
+    number_of_heads=3,
+
+)
+
+
+
+class SentimentAnalysisModel(torch.nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        model = model_factory.create_model(kind="encoder")
+        del model[-1]
+        self.transformer = model
+        self.project_context = torch.nn.Linear(model_factory.words, 5)
+        self.project_coordinates = torch.nn.Linear(model_factory.coordinates, 1)
+
+    def forward(self, x_bw):
+        x_bwc = self.transformer(x_bw)
+        x_bw = self.project_coordinates(x_bwc)[:, :, 0]
+        x_b5 = self.project_context(x_bw)
+        return x_b5
+
+
+# def get():
+#    return torch.randint(0, 5, (64, 5)), torch.randint(0, 5, (64, 100))
+
+# y, x = get()
+
+
+
 
 task = worker.request_data(0, model_factory.words)
 
 
-# def get():
-#    return torch.randint(0, 100, (64, 5)), torch.randint(0, 100, (64, 100))
+
 
 
 class SentimentAnalysisModel(torch.nn.Module):
