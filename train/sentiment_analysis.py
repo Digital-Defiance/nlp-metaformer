@@ -13,7 +13,8 @@ from train.config import TrainingLoopFactory, MLFlowSettings
 
 
 worker = Worker()
-task = worker.request_data(0)
+model_factory =  ModelFactory()
+task = worker.request_data(0, model_factory.words)
 
 
 
@@ -29,7 +30,6 @@ logger.info(f"Using mlflow version {mlflow.__version__}")
 
 mlflow_settings = MLFlowSettings()
 training_loop_factory = TrainingLoopFactory()
-model_factory =  ModelFactory()
 
 
 def reshuffle_batches(x, y):
@@ -77,7 +77,7 @@ with mlflow.start_run(
         gc.collect()
         rating, text = reshuffle_batches(rating, text)
         epoch_slice = 0
-        task = worker.request_data(epoch_slice)
+        task = worker.request_data(epoch_slice, model_factory.words)
 
         for start in (
             pb := tqdm(
