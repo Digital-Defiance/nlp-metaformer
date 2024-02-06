@@ -72,6 +72,7 @@ with mlflow.start_run(
 
 
         rating, text = task.get()
+        task.forget()
         rating, text = torch.tensor(rating), torch.tensor(text)
         gc.collect()
         rating, text = reshuffle_batches(rating, text)
