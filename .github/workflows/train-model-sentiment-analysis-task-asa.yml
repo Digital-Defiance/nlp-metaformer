@@ -115,7 +115,7 @@ jobs:
 
         MLFLOW_EXPERIMENT_ID: 1
         MLFLOW_TRACKING_URI: "http://mlflow:80"
-        MLFLOW_EXPERIMENT_NAME: ${{ github.sha }}
+        MLFLOW_RUN_NAME: ${{ github.sha }}
   
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
