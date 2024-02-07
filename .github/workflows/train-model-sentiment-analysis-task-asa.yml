@@ -71,6 +71,15 @@ jobs:
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
     services:
+      mlflow:
+        image: ghcr.io/mlflow/mlflow:v2.0.1
+        env:
+          MLFLOW_BACKEND_STORE_URI: ${{ secrets.DB_URI }}
+          AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
+          MLFLOW_HOST: 0.0.0.0
+          MLFLOW_PORT: 80
       redis:
         image: redis:5.0.0
         options: --memory=1g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis  --log-opt awslogs-create-group=true

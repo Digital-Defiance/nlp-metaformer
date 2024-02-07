@@ -90,8 +90,6 @@ mlflow_settings = MLFlowSettings()
 training_loop_factory = TrainingLoopFactory()
 
 
-
-
 with mlflow.start_run(
     run_id=mlflow_settings.run_id,
     experiment_id=mlflow_settings.experiment_id,

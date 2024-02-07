@@ -12,6 +12,7 @@ import mlflow
 import mlflow.pytorch
 from pydantic import FilePath
 from pydantic import BeforeValidator
+from typing import Literal
 
 
 gpt2_encoder = tiktoken.get_encoding("gpt2")
@@ -103,7 +104,7 @@ class TrainingLoopFactory(BaseSettings, MyBaseSettingsMixin):
 class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
     experiment_id: int = 5
     run_id: Optional[str] = None
-    tracking_uri: str
+    tracking_uri: Literal["http://mlflow:80"] 
     tracking_username: str
     tracking_password: str
     log_system_metrics: bool = True
