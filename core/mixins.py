@@ -3,12 +3,8 @@
 import mlflow
 from typing import Protocol
 
-class Config(Protocol):
-    env_prefix: str
-
-
 class MyBaseSettingsMixin:
-    Config: Config
+    """ Deprecated """ 
 
     def save_to_mlflow(self) -> None:
         for key, value in self.dict().items():
