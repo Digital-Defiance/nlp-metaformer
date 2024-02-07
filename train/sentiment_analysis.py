@@ -128,7 +128,6 @@ with start_run(**mlflow_settings.model_dump()) as run:
                     step ** -0.5,
                     step * train_settings.warmup_steps ** -1.5
                 ) * model_factory.coordinates ** -0.5
-                lr = lr / 10.
 
                 metrics["lr"] = lr
                 optimizer.set_lr(lr)
