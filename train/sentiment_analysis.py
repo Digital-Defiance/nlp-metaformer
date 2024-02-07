@@ -102,7 +102,7 @@ with start_run(**mlflow_settings.model_dump()) as run:
             logger.info("Fetched slice from worker.")
             task.forget()
             logger.info("Deleted slice from redis.")
-            rating, text = torch.tensor(rating).float(), torch.tensor(text)
+            rating, text = torch.tensor(rating), torch.tensor(text)
             random_idx = torch.randperm(len(rating))
             rating, text = rating[random_idx], text[random_idx]
             del random_idx
