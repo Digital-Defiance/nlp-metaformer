@@ -105,10 +105,10 @@ class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
     experiment_id: int = 5
     run_id: Optional[str] = None
     tracking_uri: Literal["http://mlflow:80"] 
-    tracking_username: str
-    tracking_password: str
-    log_system_metrics: bool = True
-    is_local: bool = True
+    tracking_username: Optional[str] 
+    tracking_password: Optional[str] 
+    log_system_metrics: Optional[bool] = True
+    is_local: Optional[bool]  = True
 
     class Config:
         env_prefix = "MLFLOW_"
