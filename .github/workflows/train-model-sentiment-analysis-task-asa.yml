@@ -59,13 +59,13 @@ jobs:
       matrix:
         MODEL_COORDINATES: [150]
         MODEL_NUMBER_OF_HEADS: [15]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [50, 25, 15, 10, 5, 3]
+        MODEL_NUMBER_OF_BLOCKS: [12]
         MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
-        MODEL_WORDS: [312]
+        MODEL_WORDS: [100]
 
-        TRAIN_BATCH_SIZE: [300, 250, 200, 150, 100, 50, 15]
+        TRAIN_BATCH_SIZE: [15]
         TRAIN_NUMBER_OF_EPOCHS: [1]
         TRAIN_WARMUP_STEPS: [200]
         TRAIN_L1_REGULARIZATION: [0]
