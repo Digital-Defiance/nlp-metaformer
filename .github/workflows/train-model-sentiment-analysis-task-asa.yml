@@ -67,7 +67,7 @@ jobs:
 
         TRAIN_BATCH_SIZE: [1024]
         TRAIN_NUMBER_OF_EPOCHS: [25]
-        TRAIN_WARMUP_STEPS: [200]
+        TRAIN_WARMUP_STEPS: [2000]
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
     services:
