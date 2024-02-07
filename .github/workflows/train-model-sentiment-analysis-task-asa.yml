@@ -65,12 +65,12 @@ jobs:
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [100]
 
-        TRAIN_BATCH_SIZE: [500, 400, 300, 200, 100]
+        TRAIN_BATCH_SIZE: [250, 225, 200]
         TRAIN_NUMBER_OF_EPOCHS: [1]
-        TRAIN_WARMUP_STEPS: [2000]
+        TRAIN_WARMUP_STEPS: [4000] # same value and same schedule as in the attention all you need paper
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
-        TRAIN_NUMBER_OF_SLICES: [10]
+        TRAIN_NUMBER_OF_SLICES: [50] # 50 -> almost 3M datapoints
 
     services:
       mlflow:
