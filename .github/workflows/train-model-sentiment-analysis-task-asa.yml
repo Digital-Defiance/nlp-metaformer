@@ -31,7 +31,7 @@ jobs:
               sudo systemctl start docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
-          ec2-image-id: ami-019356ee1ec03d0e5 # ami-00e9a577171a99277 # ami-02fbad1683bc61f9f
+          ec2-image-id: ami-001c8c5e4e5049652 # base = ami-02fbad1683bc61f9f
           ec2-instance-type: g4dn.xlarge
           subnet-id: subnet-0fc7dea0969cca860
           security-group-id: sg-0c4cc0c0be64f1b08
@@ -82,10 +82,10 @@ jobs:
           MLFLOW_PORT: 80
       redis:
         image: redis:5.0.0
-        options: --memory=1g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis  --log-opt awslogs-create-group=true
+        options: --memory=2g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis  --log-opt awslogs-create-group=true
       celery-worker:
         image: ghcr.io/digital-defiance/data-worker:main
-        options: --memory=6g --cpus 3 --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=dataworker  --log-opt awslogs-create-group=true 
+        options: --memory=5g --cpus 3 --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=dataworker  --log-opt awslogs-create-group=true 
         env:
           REDIS_HOST: redis
           TRAIN_N_SLICES: 60
@@ -115,8 +115,7 @@ jobs:
 
         MLFLOW_EXPERIMENT_ID: 1
         MLFLOW_TRACKING_URI: "http://mlflow:80"
-        # MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
-        # MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+        MLFLOW_EXPERIMENT_NAME: ${{ github.sha }}
   
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

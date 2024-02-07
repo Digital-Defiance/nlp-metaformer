@@ -8,7 +8,7 @@ from typing import  Optional, Literal, Dict, Any
 from core.mixins import MyBaseSettingsMixin
 from core.logger import get_logger
 from core.constants import DEVICE
-from model import ModelFactory
+from model import ModelFactory, SentimentAnalysisModel
 from data.worker import Worker
 
 torch.autograd.set_detect_anomaly(True)
@@ -45,21 +45,7 @@ class Adam(torch.optim.Adam):
             param_group['lr'] = lr
 
 
-class SentimentAnalysisModel(torch.nn.Module):
 
-    def __init__(self):
-        super().__init__()
-        model = model_factory.create_model(kind="encoder")
-        del model[-1]
-        self.transformer = model
-        self.project_context = torch.nn.Linear(model_factory.words, 5)
-        self.project_coordinates = torch.nn.Linear(model_factory.coordinates, 1)
-
-    def forward(self, x_bw):
-        x_bwc = self.transformer(x_bw)
-        x_bw = self.project_coordinates(x_bwc)[:, :, 0]
-        x_b5 = self.project_context(x_bw)
-        return x_b5
 
 
 class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
@@ -146,13 +132,13 @@ with mlflow.start_run(**mlflow_settings.model_dump()) as run:
                 # Create batch from the slice
                 start = i*train_settings.batch_size
                 end = start + train_settings.batch_size
-                rating_batch_b5 = rating[start:end].to(DEVICE)
+                rating_batch_b = rating[start:end].to(DEVICE)
                 text_batch_bw = text[start:end].to(DEVICE)
 
                 # Perform feed forward + backwards propagation + gradient descent
                 optimizer.zero_grad()
                 pred_logits_b5 = model(text_batch_bw)
-                loss_train = loss_function(pred_logits_b5, rating_batch_b5)
+                loss_train = loss_function(pred_logits_b5, rating_batch_b)
                 loss_train.backward()
                 optimizer.step()
 

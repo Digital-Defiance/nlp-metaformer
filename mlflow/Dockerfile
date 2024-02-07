@@ -3,7 +3,8 @@ FROM ghcr.io/mlflow/mlflow:v2.0.1
 
 RUN apt update && \ 
     apt install -y gcc libpq-dev && \
-    pip install psycopg2==2.8.5
+    pip install psycopg2==2.8.5 && \
+    pip install boto3==1.34.8
 
 
 LABEL traefik.enable "true"

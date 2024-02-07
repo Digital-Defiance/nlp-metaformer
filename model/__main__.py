@@ -10,6 +10,7 @@ from model.transformer_block import TransformerEncoderBlock, TransformerDecoderB
 from typing import Literal, Optional
 from pydantic import model_validator
 from core.types import PositiveInt, TensorFloat, TensorInt
+import torch
 
 gpt2_encoder = tiktoken.get_encoding("gpt2")
 
@@ -129,3 +130,28 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
 
 
 
+class SentimentAnalysisModel(nn.Module):
+
+    def __init__(self, model_factory):
+        super().__init__()
+        self.transformer = model_factory.create_model(kind="encoder")
+        self.transformer[-1] = nn.Linear(model_factory.coordinates, 5, bias=model_factory.bias)
+
+    def forward(self, x_bw):
+        x_bw5 = self.transformer(x_bw)
+        x_b5 = x_bw5.mean(dim=1)
+        return x_b5
+    
+
+if __name__ == "__main__":
+
+    print("Creating model factory")
+    model_factory = ModelFactory(
+        coordinates=100,
+        tokens=100,
+        words=100,
+        number_of_blocks=1,
+        number_of_heads=1,
+        bias=False,
+        attention="metric",
+    )

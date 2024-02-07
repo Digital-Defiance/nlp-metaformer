@@ -61,7 +61,13 @@ def prepare_data(idx: int, context_window_size: int) -> str:
         rating.append(row.rating)
         text.append(row.text)
     print("Slice has been collected.")
-    return np.array(rating)[:, :context_window_size], np.array(text)[:, :context_window_size]
+    text_bw = np.array(text)[:, :context_window_size]
+    rating_b5 = np.array(rating)
+
+    # transform to index of along last dimension
+    rating_b = np.argmax(rating_b5 == 1, axis=-1)
+    return rating_b, text_bw
+
 
 
 
