@@ -11,7 +11,7 @@ class Worker(BaseSettings):
     class Config:
         env_prefix = "REDIS_"
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         def get_redis_uri(db = 0):

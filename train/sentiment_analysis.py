@@ -1,6 +1,5 @@
 import torch
 import mlflow
-import mlflow.pytorch
 from tqdm import tqdm
 from torch import nn
 from pydantic_settings import BaseSettings
@@ -10,6 +9,9 @@ from core.logger import get_logger
 from core.constants import DEVICE
 from model import ModelFactory, SentimentAnalysisModel
 from data.worker import Worker
+from mlflow import log_metrics, start_run, log_param
+import mlflow
+
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -40,7 +42,7 @@ class TrainSettings(BaseSettings, MyBaseSettingsMixin):
         env_prefix = "TRAIN_"
 
 class Adam(torch.optim.Adam):
-    def set_lr(self, lr: float):
+    def set_lr(self, lr: float) -> None:
         for param_group in self.param_groups:
             param_group['lr'] = lr
 
@@ -66,17 +68,17 @@ class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
 mlflow_settings = MLFlowSettings()
 train_settings = TrainSettings()
 
-with mlflow.start_run(**mlflow_settings.model_dump()) as run:
+with start_run(**mlflow_settings.model_dump()) as run:
     logger.info("Connected to MLFlow and started run.")
 
-    model = SentimentAnalysisModel().to(DEVICE)
+    model = SentimentAnalysisModel(model_factory).to(DEVICE)
     logger.info(f"Created model and moved it to {DEVICE}")
 
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     model_factory.save_to_mlflow()
     train_settings.save_to_mlflow()
-    mlflow.log_param("number_of_parameters", n_parameters)
+    log_param("number_of_parameters", n_parameters)
     logger.info("Saved training info and hyperparameters to MLFLow")
     logger.info(f"Model has {n_parameters} parameters")
     del n_parameters
@@ -109,7 +111,7 @@ with mlflow.start_run(**mlflow_settings.model_dump()) as run:
             task = worker.request_data(epoch_slice_idx, model_factory.words)
             logger.info(f"Schedule slice {epoch_slice_idx}.")
             logger.info("Starting training loop...")
-            metrics = {
+            metrics: dict[str, str | int ] = {
                 "epoch": epoch,
                 "slice_idx": epoch_slice_idx,
             }
@@ -122,12 +124,14 @@ with mlflow.start_run(**mlflow_settings.model_dump()) as run:
                 step += 1
 
                 # Handle learning rate
-                metrics["lr"] = min(
+                lr = min(
                     step ** -0.5,
                     step * train_settings.warmup_steps ** -1.5
                 ) * model_factory.coordinates ** -0.5
-                metrics["lr"] = metrics["lr"] / 10
-                optimizer.set_lr(metrics["lr"])
+                lr = lr / 10.
+
+                metrics["lr"] = lr
+                optimizer.set_lr(lr)
 
                 # Create batch from the slice
                 start = i*train_settings.batch_size
@@ -144,7 +148,7 @@ with mlflow.start_run(**mlflow_settings.model_dump()) as run:
 
                 # Log the training loss
                 metrics["loss/train"] = loss_train.item()
-                mlflow.log_metrics(metrics, step=step)
+                log_metrics(metrics, step=step)
         
 
             """

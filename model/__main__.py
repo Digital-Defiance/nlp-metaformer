@@ -1,5 +1,6 @@
 
 import torch.nn as nn
+from torch import Tensor
 import tiktoken
 from pydantic_settings import BaseSettings
 
@@ -82,9 +83,7 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
 
         if kind == "encoder":
             return self._create_branch(kind)
-        
-        if kind == "encoder-decoder":
-            return EncoderDecoder(self, self._create_branch("encoder"))
+
         
 
     def _create_branch(self, kind: Literal["encoder", "decoder"]) -> nn.Module:
@@ -98,47 +97,15 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
 
 
 
-
-
-
-    @classmethod
-    def create_variant(cls, variant: str = "NanoGPT") -> nn.Module:
-        """ DEPRECATED """
-
-        assert variant in  ["NanoGPT", "NanoMTN"] , f"Unknown variant {variant}"
-
-        if variant == "NanoGPT":
-            return cls(
-                words=100,
-                coordinates=300,
-                number_of_blocks=3,
-                number_of_heads=3,
-                bias = False,
-                attention="scaled_dot_product"
-            )
-
-        if variant == "NanoMTN":
-            return cls(
-                words=100,
-                coordinates=300,
-                number_of_blocks=3,
-                number_of_heads=3,
-                bias = False,
-                attention="metric"
-            )
-        
-
-
-
 class SentimentAnalysisModel(nn.Module):
 
-    def __init__(self, model_factory):
+    def __init__(self, model_factory: ModelFactory):
         super().__init__()
         self.transformer = model_factory.create_model(kind="encoder")
         self.transformer[-1] = nn.Linear(model_factory.coordinates, 5, bias=model_factory.bias)
 
-    def forward(self, x_bw):
-        x_bw5 = self.transformer(x_bw)
+    def forward(self, x_bw: Tensor) -> Tensor:
+        x_bw5: Tensor = self.transformer(x_bw)
         x_b5 = x_bw5.mean(dim=1)
         return x_b5
     

@@ -1,11 +1,16 @@
 
 
 import mlflow
+from typing import Protocol
+
+class Config(Protocol):
+    env_prefix: str
 
 
 class MyBaseSettingsMixin:
+    Config: Config
 
-    def save_to_mlflow(self):
+    def save_to_mlflow(self) -> None:
         for key, value in self.dict().items():
             mlflow.log_param(key, value)
 
