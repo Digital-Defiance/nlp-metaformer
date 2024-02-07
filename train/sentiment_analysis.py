@@ -2,8 +2,7 @@ import torch
 import mlflow
 import mlflow.pytorch
 from tqdm import tqdm
-import gc
-
+from torch import nn
 from pydantic_settings import BaseSettings
 from typing import  Optional, Literal, Dict, Any
 from core.mixins import MyBaseSettingsMixin
@@ -11,7 +10,6 @@ from core.logger import get_logger
 from core.constants import DEVICE
 from model import ModelFactory
 from data.worker import Worker
-from train.config import TrainingLoopFactory
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -24,6 +22,27 @@ logger.info(f"Using mlflow version {mlflow.__version__}")
 worker = Worker()
 model_factory =  ModelFactory()
 task = worker.request_data(0, model_factory.words)
+
+
+
+class TrainSettings(BaseSettings, MyBaseSettingsMixin):
+    number_of_epochs: int = 100
+    batch_size: int = 32
+    number_of_slices: int = 2
+    l1_regularization: float = 0
+    l2_regularization: float = 0
+    beta_1: float = 0.9
+    beta_2: float = 0.98
+    epsilon: float = 1e-9
+    warmup_steps: int = 4000
+
+    class Config:
+        env_prefix = "TRAIN_"
+
+class Adam(torch.optim.Adam):
+    def set_lr(self, lr: float):
+        for param_group in self.param_groups:
+            param_group['lr'] = lr
 
 
 class SentimentAnalysisModel(torch.nn.Module):
@@ -59,9 +78,9 @@ class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
 # MLFLOW_TRACKING_URI=http://mlflow:80
 
 mlflow_settings = MLFlowSettings()
-training_loop_factory = TrainingLoopFactory()
+train_settings = TrainSettings()
 
-with mlflow.start_run(**mlflow_settings.model_dumpt()) as run:
+with mlflow.start_run(**mlflow_settings.model_dump()) as run:
     logger.info("Connected to MLFlow and started run.")
 
     model = SentimentAnalysisModel().to(DEVICE)
@@ -70,19 +89,25 @@ with mlflow.start_run(**mlflow_settings.model_dumpt()) as run:
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     model_factory.save_to_mlflow()
-    training_loop_factory.save_to_mlflow()
+    train_settings.save_to_mlflow()
+    mlflow.log_param("number_of_parameters", n_parameters)
     logger.info("Saved training info and hyperparameters to MLFLow")
     logger.info(f"Model has {n_parameters} parameters")
-    
-    
+    del n_parameters
 
-    optimizer = training_loop_factory.create_optimizer(model.parameters())
-    get_lr = training_loop_factory.create_scheduler(model_factory.coordinates)
-    loss_function = training_loop_factory.create_loss_function()
+
+    optimizer = Adam(
+        model.parameters(),
+        lr=1,
+        betas=(train_settings.beta_1, train_settings.beta_2),
+        eps=train_settings.epsilon,
+    )
+
+    loss_function = nn.CrossEntropyLoss()
 
     step: int = 0
-    for epoch in range(1, training_loop_factory.number_of_epochs + 1):
-        for epoch_slice_idx in range(2):
+    for epoch in range(1, train_settings.number_of_epochs + 1):
+        for epoch_slice_idx in range(train_settings.number_of_slices):
 
             logger.info(f"Fetching slice {epoch_slice_idx} from worker...")
             rating, text = task.get()
@@ -98,17 +123,29 @@ with mlflow.start_run(**mlflow_settings.model_dumpt()) as run:
             task = worker.request_data(epoch_slice_idx, model_factory.words)
             logger.info(f"Schedule slice {epoch_slice_idx}.")
             logger.info("Starting training loop...")
+            metrics = {
+                "epoch": epoch,
+                "slice_idx": epoch_slice_idx,
+            }
+
             for i in tqdm(
-                range(len(rating) // training_loop_factory.batch_size),
+                range(len(rating) // train_settings.batch_size),
                 desc=f"Epoch {epoch}, Slice {epoch_slice_idx})",
                 leave=True,
             ):
                 step += 1
-                lr = get_lr(step) / 10
-                optimizer.set_lr(lr)
-                start = i*training_loop_factory.batch_size
-                end = start + training_loop_factory.batch_size
-        
+
+                # Handle learning rate
+                metrics["lr"] = min(
+                    step ** -0.5,
+                    step * train_settings.warmup_steps ** -1.5
+                ) * model_factory.coordinates ** -0.5
+                metrics["lr"] = metrics["lr"] / 10
+                optimizer.set_lr(metrics["lr"])
+
+                # Create batch from the slice
+                start = i*train_settings.batch_size
+                end = start + train_settings.batch_size
                 rating_batch_b5 = rating[start:end].to(DEVICE)
                 text_batch_bw = text[start:end].to(DEVICE)
 
@@ -120,13 +157,7 @@ with mlflow.start_run(**mlflow_settings.model_dumpt()) as run:
                 optimizer.step()
 
                 # Log the training loss
-                metrics = {
-                    "loss/train": loss_train.item(),
-                    "epoch": epoch,
-                    "slice_idx": epoch_slice_idx,
-                    "lr": lr,
-                }
-
+                metrics["loss/train"] = loss_train.item()
                 mlflow.log_metrics(metrics, step=step)
         
 
@@ -134,10 +165,10 @@ with mlflow.start_run(**mlflow_settings.model_dumpt()) as run:
             with torch.no_grad():
                 val_loss_cumul = 0
                 val_counter = 0
-                for val_step in range(0, len(dev_sentences), training_loop_factory.batch_size):
+                for val_step in range(0, len(dev_sentences), train_settings.batch_size):
                     val_counter += 1
-                    dev_sentence_bw = dev_sentences[val_step:val_step+training_loop_factory.batch_size]
-                    dev_gt_sentence_bw = dev_gt_sentences[val_step:val_step+training_loop_factory.batch_size]
+                    dev_sentence_bw = dev_sentences[val_step:val_step+train_settings.batch_size]
+                    dev_gt_sentence_bw = dev_gt_sentences[val_step:val_step+train_settings.batch_size]
                     pred_logits_bwt = model(dev_sentence_bw)
                     pred_logits_btw = pred_logits_bwt.transpose(-1, -2)
                     loss_val = loss_function(pred_logits_btw, dev_gt_sentence_bw)
