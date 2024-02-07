@@ -2,7 +2,6 @@ from pydantic_settings import BaseSettings
 from celery import Celery
 from celery.result import AsyncResult
 
-
 class Worker(BaseSettings):
     host: str = "localhost"
     port: int = 6379
@@ -14,13 +13,10 @@ class Worker(BaseSettings):
     def __init__(self) -> None:
         super().__init__()
 
-        def get_redis_uri(db = 0):
-            return f"redis://{self.host}:{self.port}/{db}"
-
         self.celery = Celery(
             'celery_app',
-            broker=get_redis_uri(db=1),
-            backend=get_redis_uri(db=2),
+            broker=f"redis://{self.host}:{self.port}/1",
+            backend="db+sqlite:///data/results.sqlite",
             broker_connection_retry_on_startup=True,
             result_serializer='pickle',
 
