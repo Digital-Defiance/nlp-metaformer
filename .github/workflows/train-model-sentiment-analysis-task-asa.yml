@@ -82,12 +82,16 @@ jobs:
           MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
           MLFLOW_HOST: 0.0.0.0
           MLFLOW_PORT: 80
-      redis:
+      redis-queue:
         image: redis:5.0.0
         env:
           REDIS_ARGS: "--client-output-buffer-limit normal 0 0 0 --client-output-buffer-limit replica 256mb 64mb 60 --client-output-buffer-limit pubsub 1000mb 2000mb 500"
-
-        options: --memory=4g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis  --log-opt awslogs-create-group=true
+        options: --memory=4g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis-queue --log-opt awslogs-create-group=true
+      redis-results:
+        image: redis:5.0.0
+        env:
+          REDIS_ARGS: "--client-output-buffer-limit normal 0 0 0 --client-output-buffer-limit replica 256mb 64mb 60 --client-output-buffer-limit pubsub 1000mb 2000mb 500"
+        options: --memory=4g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis-results  --log-opt awslogs-create-group=true
       celery-worker:
         image: ghcr.io/digital-defiance/data-worker:main
         options: --memory=5g --cpus 3 --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=dataworker  --log-opt awslogs-create-group=true 
