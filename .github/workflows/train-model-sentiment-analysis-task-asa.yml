@@ -137,26 +137,6 @@ jobs:
     steps:
       - name: Check if container sees gpu
         run: nvidia-smi
-      - name: Check if torch sees cuda
-        shell: python
-        run: |
-          import torch
-          if not torch.cuda.is_available():
-              print("Torch does not see cuda")
-              exit(1)
-          print("Torch sees cuda")
-      - name: Check if redis is available
-        shell: python
-        run: |
-          import redis
-          r = redis.Redis(host='redis', port=6379, db=0)
-          try:
-              r.ping()
-              print("Redis is available")
-          except redis.exceptions.ConnectionError:
-              print("Failed to connect to Redis")
-              exit(1)
-
       - uses: actions/checkout@v3
       # - name: Test celery worker
       #  run: cd data && python test.py
