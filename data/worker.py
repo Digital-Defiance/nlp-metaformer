@@ -15,8 +15,8 @@ class Worker(BaseSettings):
 
         self.celery = Celery(
             'celery_app',
-            broker=f"redis://{self.host}:{self.port}/1",
-            backend=f"redis://{self.host}:{self.port}/2",
+            broker=f"redis://redis-queue:{self.port}/0",
+            backend=f"redis://redis-results:{self.port}/0",
             broker_connection_retry_on_startup=True,
             result_serializer='pickle',
 
