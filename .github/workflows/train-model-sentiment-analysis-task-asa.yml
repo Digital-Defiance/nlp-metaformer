@@ -83,7 +83,7 @@ jobs:
       matrix:
         MODEL_COORDINATES: [200]
         MODEL_NUMBER_OF_HEADS: [40]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [16]
+        MODEL_NUMBER_OF_BLOCKS: [12]
         MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
@@ -113,11 +113,11 @@ jobs:
         options: --memory=2g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis-queue --log-opt awslogs-create-group=true
       data-worker:
         image: ghcr.io/digital-defiance/data-worker:main
-        options: --memory=10g --cpus 3 --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=dataworker  --log-opt awslogs-create-group=true 
+        options: --memory=14g --cpus 3 --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=dataworker  --log-opt awslogs-create-group=true 
         env:
           TRAIN_N_SLICES: 60
-          SPARK_DRIVER_MEMORY: 5g
-          SPARK_EXECUTOR_MEMORY: 5g
+          SPARK_DRIVER_MEMORY: 7g
+          SPARK_EXECUTOR_MEMORY: 7g
         volumes:
           - /data:/data
           - ${{ github.workspace }}:/app
