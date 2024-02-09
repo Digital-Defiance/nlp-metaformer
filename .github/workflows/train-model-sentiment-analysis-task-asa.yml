@@ -111,21 +111,20 @@ jobs:
         image: redis:5.0.0
         env:
           REDIS_ARGS: "--client-output-buffer-limit normal 0 0 0 --client-output-buffer-limit replica 256mb 64mb 60 --client-output-buffer-limit pubsub 1000mb 2000mb 500"
-        options: --memory=4g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis-queue --log-opt awslogs-create-group=true
+        options: --memory=2g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis-queue --log-opt awslogs-create-group=true
       data-worker:
         image: ghcr.io/digital-defiance/data-worker:main
-        options: --memory=5g --cpus 3 --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=dataworker  --log-opt awslogs-create-group=true 
+        options: --memory=10g --cpus 3 --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=dataworker  --log-opt awslogs-create-group=true 
         env:
-          REDIS_HOST: redis
           TRAIN_N_SLICES: 60
-          SPARK_DRIVER_MEMORY: 2g
-          SPARK_EXECUTOR_MEMORY: 2g
+          SPARK_DRIVER_MEMORY: 5g
+          SPARK_EXECUTOR_MEMORY: 5g
         volumes:
           - /data:/data
           - ${{ github.workspace }}:/app
     container:
       image: ghcr.io/digital-defiance/training-loop-worker:main
-      options: --gpus all --cpus 1 --memory=7g  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=trainingloop  --log-opt awslogs-create-group=true
+      options: --gpus all --cpus 1 --memory=2g  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=trainingloop  --log-opt awslogs-create-group=true
       volumes:
         - /data:/data
         - ${{ github.workspace }}:/app
