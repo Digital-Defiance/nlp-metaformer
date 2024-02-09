@@ -8,7 +8,7 @@ from core.mixins import MyBaseSettingsMixin
 from core.logger import get_logger
 from core.constants import DEVICE
 from model import ModelFactory, SentimentAnalysisModel
-from data.worker import Worker
+from data.worker import request_data
 from mlflow import log_metrics, start_run, log_param
 import mlflow
 
@@ -20,10 +20,9 @@ logger.info(f"Using device {DEVICE}")
 logger.info(f"Using torch version {torch.__version__}")
 logger.info(f"Using mlflow version {mlflow.__version__}")
 
-
-worker = Worker()
 model_factory =  ModelFactory()
-task = worker.request_data(0, model_factory.words)
+task = request_data(0, model_factory.words)
+logger.info(f"Requested slice 0")
 
 
 
