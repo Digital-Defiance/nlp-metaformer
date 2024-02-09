@@ -58,7 +58,7 @@ jobs:
           depth: 0
 
   pull-images:
-    name: Pull data worker image
+    name: Pull image
     needs: start-runner 
     runs-on: ${{ needs.start-runner.outputs.label }}
     strategy:
