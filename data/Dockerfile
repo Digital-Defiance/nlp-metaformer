@@ -7,9 +7,6 @@ ENV C_FORCE_ROOT="true"
 
 RUN mkdir /app
 WORKDIR /app
-COPY main.py /app/main.py
-COPY worker.py /app/worker.py
-COPY backend.py /app/backend.py
 
-CMD celery -A main worker
+CMD celery -A data.main worker
 

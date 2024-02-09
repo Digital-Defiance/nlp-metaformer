@@ -38,7 +38,7 @@ jobs:
 
   download-data:
     name: Download data
-    needs: start-runner # required to start the main job when the runner is ready
+    needs: start-runner 
     runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
     steps:
       - name: Download data
@@ -47,11 +47,24 @@ jobs:
           curl -L https://github.com/Digital-Defiance/llm-voice-chat/releases/download/asa-v0.2.0/test.parquet -o /data/test.parquet
           curl -L https://github.com/Digital-Defiance/llm-voice-chat/releases/download/asa-v0.2.0/train.parquet -o /data/train.parquet
 
-  training-loop:
+  clone-repo:
+    name: Clone repository
+    needs: start-runner 
+    runs-on: ${{ needs.start-runner.outputs.label }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          depth: 0
+          path: /app
+
+
+  training-loop-worker:
     name: Train model
     needs:
       - start-runner
       - download-data
+      - clone-repo
     runs-on: ${{ needs.start-runner.outputs.label }}
     strategy:
       fail-fast: false
@@ -82,17 +95,12 @@ jobs:
           MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
           MLFLOW_HOST: 0.0.0.0
           MLFLOW_PORT: 80
-      redis-queue:
+      redis:
         image: redis:5.0.0
         env:
           REDIS_ARGS: "--client-output-buffer-limit normal 0 0 0 --client-output-buffer-limit replica 256mb 64mb 60 --client-output-buffer-limit pubsub 1000mb 2000mb 500"
         options: --memory=4g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis-queue --log-opt awslogs-create-group=true
-      redis-results:
-        image: redis:5.0.0
-        env:
-          REDIS_ARGS: "--client-output-buffer-limit normal 0 0 0 --client-output-buffer-limit replica 256mb 64mb 60 --client-output-buffer-limit pubsub 1000mb 2000mb 500"
-        options: --memory=4g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis-results  --log-opt awslogs-create-group=true
-      celery-worker:
+      data-worker:
         image: ghcr.io/digital-defiance/data-worker:main
         options: --memory=5g --cpus 3 --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=dataworker  --log-opt awslogs-create-group=true 
         env:
@@ -102,14 +110,14 @@ jobs:
           SPARK_EXECUTOR_MEMORY: 2g
         volumes:
           - /data:/data
+          - /app:/app
     container:
       image: ghcr.io/digital-defiance/training-loop-worker:main
       options: --gpus all --cpus 1 --memory=7g  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=trainingloop  --log-opt awslogs-create-group=true
       volumes:
         - /data:/data
+        - /app:/app
       env:
-        REDIS_HOST: redis
-
         MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
         MODEL_NUMBER_OF_BLOCKS: ${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
         MODEL_NUMBER_OF_HEADS: ${{ matrix.MODEL_NUMBER_OF_HEADS }}
@@ -137,9 +145,6 @@ jobs:
     steps:
       - name: Check if container sees gpu
         run: nvidia-smi
-      - uses: actions/checkout@v3
-      # - name: Test celery worker
-      #  run: cd data && python test.py
       - name: Run training loop
         run: python -m train.sentiment_analysis
 
@@ -148,7 +153,7 @@ jobs:
     name: Stop EC2 Spot instance
     needs:
       - start-runner # required to get output from the start-runner job
-      - training-loop # required to wait when the main job is done
+      - training-loop-worker # required to wait when the main job is done
     runs-on: ubuntu-latest
     if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
     steps:
