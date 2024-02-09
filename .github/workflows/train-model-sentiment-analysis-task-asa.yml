@@ -82,14 +82,14 @@ jobs:
       max-parallel: 1
       matrix:
         MODEL_COORDINATES: [200]
-        MODEL_NUMBER_OF_HEADS: [20]  # note that coordinates must be divisible by these
+        MODEL_NUMBER_OF_HEADS: [40]  # note that coordinates must be divisible by these
         MODEL_NUMBER_OF_BLOCKS: [20]
         MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [100]
 
-        TRAIN_BATCH_SIZE: [150]
+        TRAIN_BATCH_SIZE: [84]
         TRAIN_NUMBER_OF_EPOCHS: [1]
         TRAIN_WARMUP_STEPS: [4000] # same value and same schedule as in the attention all you need paper
         TRAIN_L1_REGULARIZATION: [0]
