@@ -1,11 +1,9 @@
 
-from worker import Worker
-
-worker = Worker()
-print("Worker has been initialized.")
+from data.worker import request_data
 
 
-task = worker.request_data(0, 100)
+
+task = request_data(0, 100)
 print("Request for slice 0 has been sent.")
 print("Task id is ", task)
 

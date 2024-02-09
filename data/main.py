@@ -3,7 +3,7 @@ from pyspark.sql import SparkSession
 from functools import cache
 from pydantic_settings import BaseSettings
 import numpy as np
-from worker import Worker
+from data.worker import celery_app
 
 
 class SparkSettings(BaseSettings):
@@ -50,10 +50,10 @@ class TrainSettings(BaseSettings):
 
 train_slices = TrainSettings.get_train_slices()
 
-main = Worker().celery
 
-@main.task(name='prepare_data')
+@celery_app.task(name='prepare_data')
 def prepare_data(idx: int, context_window_size: int) -> str:
+    
     print(f"Slice of index {idx} has been requested.")
     print("Collecting slice...")
     rating, text = [], []

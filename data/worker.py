@@ -1,29 +1,17 @@
-from pydantic_settings import BaseSettings
 from celery import Celery
 from celery.result import AsyncResult
 
-class Worker(BaseSettings):
-    host: str = "localhost"
-    port: int = 6379
-    celery: Celery | None = None
+celery_app = Celery(
+    'celery_app',
+    broker=f"redis://redis:6379/0",
+    backend=f"data.backend.CustomBackend://redis:6379/1",
+    broker_connection_retry_on_startup=True,
+    result_serializer='pickle',
 
-    class Config:
-        env_prefix = "REDIS_"
+    # export C_FORCE_ROOT="true", pickle is okay here, closed network 
+    accept_content=['pickle', 'json'],
+)
 
-    def __init__(self) -> None:
-        super().__init__()
-
-        self.celery = Celery(
-            'celery_app',
-            broker=f"redis://redis-queue:{self.port}/0",
-            backend=f"redis://redis-results:{self.port}/0",
-            broker_connection_retry_on_startup=True,
-            result_serializer='pickle',
-
-            # export C_FORCE_ROOT="true", pickle is okay here, closed network 
-            accept_content=['pickle', 'json'],
-        )
-
-    def request_data(self, idx: int, ctx_window: int) -> AsyncResult:
-        return self.celery.send_task('prepare_data', args=[idx, ctx_window])
+def request_data(idx: int, ctx_window: int) -> AsyncResult:
+    return celery_app.send_task('prepare_data', args=[idx, ctx_window])
 
