@@ -14,22 +14,7 @@ class SparkSettings(BaseSettings):
         env_prefix = "SPARK_"
 
     
-    @classmethod
-    @cache
-    def get_spark(cls):
-        self = cls()
-        return SparkSession.builder \
-            .master("local[*]") \
-            .appName("DATA_WORKER") \
-            .config("spark.driver.memory", self.driver_memory) \
-            .config("spark.executor.memory", self.executor_memory) \
-            .getOrCreate()
-
-    @classmethod
-    def get_spark_context(cls):
-        return cls.get_spark().sparkContext
-    
-spark = SparkSettings.get_spark()
+spark_settings = SparkSettings()
 
 class TrainSettings(BaseSettings):
     n_slices: int = 60
@@ -37,24 +22,31 @@ class TrainSettings(BaseSettings):
     class Config:
         env_prefix = "TRAIN_"
 
-    @classmethod
-    def get_train_slices(cls):
-        self = cls()
-        return spark.read.parquet("/data/train.parquet").randomSplit([1.]*self.n_slices)
-    
-    @classmethod
-    def get_test_slices(cls):
-        self = cls()
-        return spark.read.parquet("/data/test.parquet").randomSplit([1.]*self.n_slices)
 
-
-train_slices = TrainSettings.get_train_slices()
+train_settings = TrainSettings()
 
 
 @celery_app.task(name='prepare_data')
-def prepare_data(idx: int, context_window_size: int) -> str:
-    
+def prepare_data(idx: int, context_window_size: int):
     print(f"Slice of index {idx} has been requested.")
+
+    
+    print("Starting spark session")
+    spark = SparkSession.builder \
+                .master("local[*]") \
+                .appName("DATA_WORKER") \
+                .config("spark.driver.memory", spark_settings.driver_memory) \
+                .config("spark.executor.memory", spark_settings.executor_memory) \
+                .getOrCreate()
+    print("Started spark session")
+
+    train_slices = spark.read.parquet("/data/train.parquet").randomSplit(
+        [1.]*train_settings.n_slices
+    )
+    
+    print("Generated random split.")
+
+    
     print("Collecting slice...")
     rating, text = [], []
     for row in train_slices[idx].collect():
