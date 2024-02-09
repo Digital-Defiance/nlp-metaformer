@@ -63,7 +63,6 @@ jobs:
     runs-on: ${{ needs.start-runner.outputs.label }}
     strategy:
       fail-fast: true 
-      max-parallel: 1
       matrix:
         IMAGE: ["ghcr.io/digital-defiance/data-worker:main", "ghcr.io/digital-defiance/mlflow:main", "ghcr.io/digital-defiance/training-loop-worker:main", "redis:5.0.0"]
     steps:
