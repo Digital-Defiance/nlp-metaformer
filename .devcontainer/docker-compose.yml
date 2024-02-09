@@ -5,11 +5,6 @@ services:
     build: "../data"
     volumes:
       - ../..:/workspaces:cached      
-
-  training-loop-worker:
-    build: "../train"
-    volumes:
-      - ../..:/workspaces:cached      
     command: sleep infinity
 
   redis:
