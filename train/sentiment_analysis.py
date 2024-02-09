@@ -107,7 +107,7 @@ with start_run(**mlflow_settings.model_dump()) as run:
             del random_idx
 
 
-            task = worker.request_data(epoch_slice_idx, model_factory.words)
+            task = request_data(epoch_slice_idx, model_factory.words)
             logger.info(f"Schedule slice {epoch_slice_idx}.")
             logger.info("Starting training loop...")
             metrics: dict[str, str | int ] = {
