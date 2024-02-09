@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+
+  data-worker:
+    build: "../data"
+    volumes:
+      - ../..:/workspaces:cached      
+
+  training-loop-worker:
+    build: "../train"
+    volumes:
+      - ../..:/workspaces:cached      
+    command: sleep infinity
+
+  redis:
+    image: redis:5.0.0

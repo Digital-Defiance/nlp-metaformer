@@ -2,21 +2,16 @@ from pydantic_settings import BaseSettings
 from celery import Celery
 from celery.result import AsyncResult
 
-class Worker(BaseSettings):
-    host: str = "localhost"
-    port: int = 6379
-    celery: Celery | None = None
 
-    class Config:
-        env_prefix = "REDIS_"
 
+class Worker:
     def __init__(self) -> None:
         super().__init__()
 
         self.celery = Celery(
             'celery_app',
-            broker=f"redis://redis-queue:{self.port}/0",
-            backend=f"redis://redis-results:{self.port}/0",
+            broker=f"data.backend.CustomBackend://redis:6379/0",
+            backend=f"data.backend.CustomBackend://redis:6379/1",
             broker_connection_retry_on_startup=True,
             result_serializer='pickle',
 
