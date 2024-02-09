@@ -57,6 +57,18 @@ jobs:
         with:
           depth: 0
 
+  pull-images:
+    name: Pull data worker image
+    needs: start-runner 
+    runs-on: ${{ needs.start-runner.outputs.label }}
+    strategy:
+      fail-fast: true 
+      max-parallel: 1
+      matrix:
+        IMAGE: ["ghcr.io/digital-defiance/data-worker:main", "ghcr.io/digital-defiance/mlflow:main", "ghcr.io/digital-defiance/training-loop-worker:main", "redis:5.0.0"]
+    steps:
+      - name: Pull ${{ matrix.IMAGE }}
+        run: docker pull ${{ matrix.IMAGE }} 
 
   training-loop-worker:
     name: Train model
@@ -64,6 +76,7 @@ jobs:
       - start-runner
       - download-data
       - clone-repo
+      - pull-images
     runs-on: ${{ needs.start-runner.outputs.label }}
     strategy:
       fail-fast: false
