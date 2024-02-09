@@ -109,13 +109,13 @@ jobs:
           SPARK_EXECUTOR_MEMORY: 2g
         volumes:
           - /data:/data
-          - ./:/app
+          - ${{ github.workspace }}:/app
     container:
       image: ghcr.io/digital-defiance/training-loop-worker:main
       options: --gpus all --cpus 1 --memory=7g  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=trainingloop  --log-opt awslogs-create-group=true
       volumes:
         - /data:/data
-        - ./:/app
+        - ${{ github.workspace }}:/app
       env:
         MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
         MODEL_NUMBER_OF_BLOCKS: ${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
