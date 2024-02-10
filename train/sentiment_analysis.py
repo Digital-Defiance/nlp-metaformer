@@ -132,7 +132,7 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 optimizer.set_lr(lr)
                 logger.info(f"Set learning rate to {lr} at step {step}")
     
-            set_lr(lr)
+            set_lr(step)
             slice_size = len(rating) // 16
             logger.info("Starting training loop...")
             for i in tqdm(range(slice_size), desc=f"Epoch {epoch}, Slice {epoch_slice_idx})", leave=True):
@@ -150,7 +150,7 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 loss_train = loss_train / train_settings.batch_size
                 loss_train.backward()
 
-                if step % train_settings.batch_size == 0 or i == slice_size - 1:
+                if (i + 1) % train_settings.batch_size == 0 or (i + 1) == slice_size:
                     optimizer.step()
                     optimizer.zero_grad()
                     # Log the training loss
