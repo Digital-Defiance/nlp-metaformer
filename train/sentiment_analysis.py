@@ -130,7 +130,6 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 lr = lr * model_factory.coordinates ** -0.5
                 metrics["lr"] = lr
                 optimizer.set_lr(lr)
-                logger.info(f"Set learning rate to {lr} at step {step}")
     
             set_lr(step)
             slice_size = len(rating) // 16
