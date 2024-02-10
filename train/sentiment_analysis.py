@@ -92,7 +92,18 @@ with start_run(**mlflow_settings.model_dump()) as run:
 
     loss_function = nn.CrossEntropyLoss()
 
-    step: int = 0
+    def set_lr(step):
+        lr = min(
+            step ** -0.5,
+            step * train_settings.warmup_steps ** -1.5
+        ) * model_factory.coordinates ** -0.5
+
+        metrics["lr"] = lr
+        optimizer.set_lr(lr)
+    
+    step: int = 1
+    set_lr(step)
+    
     for epoch in range(1, train_settings.number_of_epochs + 1):
         for epoch_slice_idx in range(train_settings.number_of_slices):
 
@@ -106,7 +117,6 @@ with start_run(**mlflow_settings.model_dump()) as run:
             rating, text = rating[random_idx], text[random_idx]
             del random_idx
 
-
             task = request_data(epoch_slice_idx, model_factory.words)
             logger.info(f"Schedule slice {epoch_slice_idx}.")
             logger.info("Starting training loop...")
@@ -114,39 +124,34 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 "epoch": epoch,
                 "slice_idx": epoch_slice_idx,
             }
-
+            slice_size = len(rating) // train_settings.batch_size
             for i in tqdm(
-                range(len(rating) // train_settings.batch_size),
+                range(slice_size),
                 desc=f"Epoch {epoch}, Slice {epoch_slice_idx})",
                 leave=True,
             ):
-                step += 1
-
-                # Handle learning rate
-                lr = min(
-                    step ** -0.5,
-                    step * train_settings.warmup_steps ** -1.5
-                ) * model_factory.coordinates ** -0.5
-
-                metrics["lr"] = lr
-                optimizer.set_lr(lr)
 
                 # Create batch from the slice
-                start = i*train_settings.batch_size
-                end = start + train_settings.batch_size
+                start = i*16
+                end = start + 16
                 rating_batch_b = rating[start:end].to(DEVICE)
                 text_batch_bw = text[start:end].to(DEVICE)
 
                 # Perform feed forward + backwards propagation + gradient descent
-                optimizer.zero_grad()
+                
                 pred_logits_b5 = model(text_batch_bw)
                 loss_train = loss_function(pred_logits_b5, rating_batch_b)
+                loss_train = loss_train / train_settings.batch_size
                 loss_train.backward()
-                optimizer.step()
 
-                # Log the training loss
-                metrics["loss/train"] = loss_train.item()
-                log_metrics(metrics, step=step)
+                if step % train_settings.batch_size == 0 or i == slice_size - 1:
+                    optimizer.step()
+                    optimizer.zero_grad()
+                    # Log the training loss
+                    metrics["loss/train"] = loss_train.item()
+                    log_metrics(metrics, step=step)
+                    step += 1
+                    set_lr(step)
         
 
             """
