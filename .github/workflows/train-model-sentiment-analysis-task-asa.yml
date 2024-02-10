@@ -72,6 +72,7 @@ jobs:
   training-loop-worker:
     name: Train and evaluate model
     needs:
+      - start-runner
       - download-data
       - clone-repo
       - pull-images
@@ -159,13 +160,11 @@ jobs:
       - name: Evaluate model
         run: echo "Not implemented."
 
-
-
   stop-runner:
     name: Stop EC2 Spot instance
     needs:
-      - start-runner # required to get output from the start-runner job
-      - training-loop-worker # required to wait when the main job is done
+      - start-runner
+      - training-loop-worker
     runs-on: ubuntu-latest
     if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
     steps:
