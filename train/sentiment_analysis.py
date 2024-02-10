@@ -26,6 +26,10 @@ task = request_data(0, model_factory.words)
 logger.info(f"Requested slice 0")
 
 
+class Adam(torch.optim.Adam):
+    def set_lr(self, lr: float) -> None:
+        for param_group in self.param_groups:
+            param_group['lr'] = lr
 
 class TrainSettings(BaseSettings, MyBaseSettingsMixin):
     number_of_epochs: int = 100
@@ -41,15 +45,6 @@ class TrainSettings(BaseSettings, MyBaseSettingsMixin):
     class Config:
         env_prefix = "TRAIN_"
 
-class Adam(torch.optim.Adam):
-    def set_lr(self, lr: float) -> None:
-        for param_group in self.param_groups:
-            param_group['lr'] = lr
-
-
-
-
-
 class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
     run_id: Optional[str] = None
     experiment_id: int = 1
@@ -63,11 +58,8 @@ class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
         env_prefix = "MLFLOW_"
 
 
-# MLFLOW_TRACKING_URI=http://mlflow:80
-
 mlflow_settings = MLFlowSettings()
 train_settings = TrainSettings()
-
 
 def get_lr(step):
     lr = min(step ** -0.5, step * train_settings.warmup_steps ** -1.5)
@@ -80,7 +72,6 @@ with start_run(**mlflow_settings.model_dump()) as run:
     model = SentimentAnalysisModel(model_factory).to(DEVICE)
     logger.info(f"Created model and moved it to {DEVICE}")
 
-
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     model_factory.save_to_mlflow()
     train_settings.save_to_mlflow()
@@ -89,14 +80,7 @@ with start_run(**mlflow_settings.model_dump()) as run:
     logger.info(f"Model has {n_parameters} parameters")
     del n_parameters
 
-
-    optimizer = Adam(
-        model.parameters(),
-        lr=1,
-        betas=(train_settings.beta_1, train_settings.beta_2),
-        eps=train_settings.epsilon,
-    )
-
+    optimizer = Adam(model.parameters(), lr=1, betas=(train_settings.beta_1, train_settings.beta_2), eps=train_settings.epsilon)
     loss_function = nn.CrossEntropyLoss()
     step: int = 1
 
