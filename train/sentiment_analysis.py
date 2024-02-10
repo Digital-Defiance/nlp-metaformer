@@ -136,14 +136,14 @@ with start_run(**mlflow_settings.model_dump()) as run:
             logger.info("Starting training loop...")
             avg_step_loss = 0
             for start in tqdm(
-                range(0, slice_size, 16),
+                range(0, slice_size, 32),
                 desc=f"Epoch {epoch}, Slice {epoch_slice_idx})",
                 leave=True,
                 miniters=train_settings.batch_size,
             ):
                 step += 1
                 # Create batch from the slice
-                end = start + 16
+                end = start + 32
                 rating_batch_b = rating[start:end].to(DEVICE)
                 text_batch_bw = text[start:end].to(DEVICE)
 
@@ -155,7 +155,7 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 loss_train.backward()
                 avg_step_loss += loss_train.item()
 
-                if (end // 16) % train_settings.batch_size == 0 or end == slice_size:
+                if (end // 32) % train_settings.batch_size == 0 or end == slice_size:
                     optimizer.step()
                     optimizer.zero_grad()
                     # Log the training loss
