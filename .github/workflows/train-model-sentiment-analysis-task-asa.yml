@@ -94,7 +94,7 @@ jobs:
         TRAIN_WARMUP_STEPS: [4000] # same value and same schedule as in the attention all you need paper
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
-        TRAIN_NUMBER_OF_SLICES: [5]
+        TRAIN_NUMBER_OF_SLICES: [50]
 
     services:
       mlflow:
