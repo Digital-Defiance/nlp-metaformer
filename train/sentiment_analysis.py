@@ -92,43 +92,50 @@ with start_run(**mlflow_settings.model_dump()) as run:
 
     loss_function = nn.CrossEntropyLoss()
     step: int = 1
-    
-    for epoch in range(1, train_settings.number_of_epochs + 1):
-        for epoch_slice_idx in range(train_settings.number_of_slices):
 
+    for epoch in range(1, train_settings.number_of_epochs + 1):
+        rating, text = None, None
+        for epoch_slice_idx in range(train_settings.number_of_slices):
+            
+            logger.info(f"Cleaning up memory...")
+            del rating, text
+            gc.collect()
+            logger.info(f"Called garbage collector.")
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                logger.info(f"Emptied gpu cache.")
+    
             logger.info(f"Fetching slice {epoch_slice_idx} from worker...")
             rating, text = task.get()
             logger.info("Fetched slice from worker.")
             task.forget()
             logger.info("Deleted slice from redis.")
+            
             rating, text = torch.tensor(rating), torch.tensor(text)
             random_idx = torch.randperm(len(rating))
             rating, text = rating[random_idx], text[random_idx]
             del random_idx
 
             task = request_data(epoch_slice_idx, model_factory.words)
-            logger.info(f"Schedule slice {epoch_slice_idx}.")
-            logger.info("Starting training loop...")
+            logger.info(f"Scheduled slice {epoch_slice_idx}.")
+
             metrics: dict[str, str | int ] = {
                 "epoch": epoch,
                 "slice_idx": epoch_slice_idx,
+                "data_worker_task_id": task.id,
             }
 
             def set_lr(step):
-                lr = min(
-                    step ** -0.5,
-                    step * train_settings.warmup_steps ** -1.5
-                ) * model_factory.coordinates ** -0.5
-        
+                lr = min(step ** -0.5, step * train_settings.warmup_steps ** -1.5)
+                lr = lr * model_factory.coordinates ** -0.5
                 metrics["lr"] = lr
                 optimizer.set_lr(lr)
+                logger.info(f"Set learning rate to {lr} at step {step}")
+    
             set_lr(lr)
-            slice_size = len(rating) // train_settings.batch_size
-            for i in tqdm(
-                range(slice_size),
-                desc=f"Epoch {epoch}, Slice {epoch_slice_idx})",
-                leave=True,
-            ):
+            slice_size = len(rating) // 16
+            logger.info("Starting training loop...")
+            for i in tqdm(range(slice_size), desc=f"Epoch {epoch}, Slice {epoch_slice_idx})", leave=True):
 
                 # Create batch from the slice
                 start = i*16
@@ -151,35 +158,3 @@ with start_run(**mlflow_settings.model_dump()) as run:
                     log_metrics(metrics, step=step)
                     step += 1
                     set_lr(step)
-        
-
-            """
-            with torch.no_grad():
-                val_loss_cumul = 0
-                val_counter = 0
-                for val_step in range(0, len(dev_sentences), train_settings.batch_size):
-                    val_counter += 1
-                    dev_sentence_bw = dev_sentences[val_step:val_step+train_settings.batch_size]
-                    dev_gt_sentence_bw = dev_gt_sentences[val_step:val_step+train_settings.batch_size]
-                    pred_logits_bwt = model(dev_sentence_bw)
-                    pred_logits_btw = pred_logits_bwt.transpose(-1, -2)
-                    loss_val = loss_function(pred_logits_btw, dev_gt_sentence_bw)
-                    val_loss_cumul += loss_val.item()
-                to_log["val"] = val_loss_cumul / val_counter
-                pb.set_postfix(to_log)
-
-            # mlflow.pytorch.log_model(model, f"mtn_{epoch}")
-            mlflow.log_metrics(
-                {
-                    "loss/train": to_log["train"],
-                    # "loss/val": to_log["val"],
-                    "epoch": epoch,
-                },
-                step=epoch,
-            )
-            """
-
- 
-
-
-
