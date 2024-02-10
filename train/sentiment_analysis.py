@@ -91,18 +91,7 @@ with start_run(**mlflow_settings.model_dump()) as run:
     )
 
     loss_function = nn.CrossEntropyLoss()
-
-    def set_lr(step):
-        lr = min(
-            step ** -0.5,
-            step * train_settings.warmup_steps ** -1.5
-        ) * model_factory.coordinates ** -0.5
-
-        metrics["lr"] = lr
-        optimizer.set_lr(lr)
-    
     step: int = 1
-    set_lr(step)
     
     for epoch in range(1, train_settings.number_of_epochs + 1):
         for epoch_slice_idx in range(train_settings.number_of_slices):
@@ -124,6 +113,16 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 "epoch": epoch,
                 "slice_idx": epoch_slice_idx,
             }
+
+            def set_lr(step):
+                lr = min(
+                    step ** -0.5,
+                    step * train_settings.warmup_steps ** -1.5
+                ) * model_factory.coordinates ** -0.5
+        
+                metrics["lr"] = lr
+                optimizer.set_lr(lr)
+            set_lr(lr)
             slice_size = len(rating) // train_settings.batch_size
             for i in tqdm(
                 range(slice_size),
