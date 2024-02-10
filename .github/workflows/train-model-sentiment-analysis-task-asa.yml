@@ -81,9 +81,9 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        MODEL_COORDINATES: [500, 400, 300, 200, 100, 50]
+        MODEL_COORDINATES: [50]
         MODEL_NUMBER_OF_HEADS: [10]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [12]
+        MODEL_NUMBER_OF_BLOCKS: [3, 6, 9, 12]
         MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
@@ -94,7 +94,7 @@ jobs:
         TRAIN_WARMUP_STEPS: [4000] # same value and same schedule as in the attention all you need paper
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
-        TRAIN_NUMBER_OF_SLICES: [10]
+        TRAIN_NUMBER_OF_SLICES: [5]
 
     services:
       mlflow:
