@@ -28,7 +28,7 @@ logger.info(f"Requested slice 0")
 
 class TrainSettings(BaseSettings, MyBaseSettingsMixin):
     number_of_epochs: int = 100
-    batch_size: int = 32
+    batch_size: int = 2
     number_of_slices: int = 2
     l1_regularization: float = 0
     l2_regularization: float = 0
