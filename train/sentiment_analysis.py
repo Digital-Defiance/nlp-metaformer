@@ -68,6 +68,12 @@ class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
 mlflow_settings = MLFlowSettings()
 train_settings = TrainSettings()
 
+
+def get_lr(step):
+    lr = min(step ** -0.5, step * train_settings.warmup_steps ** -1.5)
+    lr = lr * model_factory.coordinates ** -0.5
+    return lr
+
 with start_run(**mlflow_settings.model_dump()) as run:
     logger.info("Connected to MLFlow and started run.")
 
@@ -125,41 +131,30 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 "slice_idx": epoch_slice_idx,
             }
 
-            def set_lr(step):
-                lr = min(step ** -0.5, step * train_settings.warmup_steps ** -1.5)
-                lr = lr * model_factory.coordinates ** -0.5
-                metrics["lr"] = lr
-                optimizer.set_lr(lr)
-    
-            set_lr(step)
             slice_size = len(rating)
             logger.info("Starting training loop...")
-            avg_step_loss = 0
             for start in tqdm(
                 range(0, slice_size, 32),
                 desc=f"Epoch {epoch}, Slice {epoch_slice_idx})",
                 leave=True,
-                miniters=train_settings.batch_size,
             ):
                 step += 1
+
                 # Create batch from the slice
                 end = start + 32
                 rating_batch_b = rating[start:end].to(DEVICE)
                 text_batch_bw = text[start:end].to(DEVICE)
 
                 # Perform feed forward + backwards propagation + gradient descent
-                
                 pred_logits_b5 = model(text_batch_bw)
                 loss_train = loss_function(pred_logits_b5, rating_batch_b)
-                loss_train = loss_train / train_settings.batch_size
-                loss_train.backward()
-                avg_step_loss += loss_train.item()
+                (loss_train / train_settings.batch_size).backward()
+                metrics["loss/train"] = loss_train.item()
+                metrics["lr"] = get_lr(step)
 
                 if (end // 32) % train_settings.batch_size == 0 or end == slice_size:
+                    optimizer.set_lr(metrics["lr"])
                     optimizer.step()
                     optimizer.zero_grad()
-                    # Log the training loss
-                    metrics["loss/train"] = avg_step_loss
-                    avg_step_loss = 0
-                    log_metrics(metrics, step=step)
-                    set_lr(step)
+        
+                log_metrics(metrics, step=step)
