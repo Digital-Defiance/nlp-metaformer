@@ -149,10 +149,10 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 pred_logits_b5 = model(text_batch_bw)
                 loss_train = loss_function(pred_logits_b5, rating_batch_b)
                 (loss_train / train_settings.batch_size).backward()
-                metrics["loss/train"] = loss_train.item()
-                metrics["lr"] = get_lr(step)
 
                 if (end // 32) % train_settings.batch_size == 0 or end == slice_size:
+                    metrics["loss/train"] = loss_train.item()
+                    metrics["lr"] = get_lr( step // train_settings.batch_size )
                     optimizer.set_lr(metrics["lr"])
                     optimizer.step()
                     optimizer.zero_grad()
