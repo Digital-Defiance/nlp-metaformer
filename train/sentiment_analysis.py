@@ -141,6 +141,7 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 leave=True,
                 miniters=train_settings.batch_size,
             ):
+                step += 1
 
                 # Create batch from the slice
                 start = i*16
@@ -163,5 +164,4 @@ with start_run(**mlflow_settings.model_dump()) as run:
                     metrics["loss/train"] = avg_step_loss
                     avg_step_loss = 0
                     log_metrics(metrics, step=step)
-                    step += 1
                     set_lr(step)
