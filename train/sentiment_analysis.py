@@ -118,12 +118,11 @@ with start_run(**mlflow_settings.model_dump()) as run:
             del random_idx
 
             task = request_data(epoch_slice_idx, model_factory.words)
-            logger.info(f"Scheduled slice {epoch_slice_idx}.")
+            logger.info(f"Scheduled slice {epoch_slice_idx}, task id is {task.id}.")
 
             metrics: dict[str, str | int ] = {
                 "epoch": epoch,
                 "slice_idx": epoch_slice_idx,
-                "data_worker_task_id": task.id,
             }
 
             def set_lr(step):
