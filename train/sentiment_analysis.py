@@ -11,6 +11,7 @@ from model import ModelFactory, SentimentAnalysisModel
 from data.worker import request_data
 from mlflow import log_metrics, start_run, log_param
 import mlflow
+import gc
 
 
 torch.autograd.set_detect_anomaly(True)
