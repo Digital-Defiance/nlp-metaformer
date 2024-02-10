@@ -83,7 +83,7 @@ jobs:
       matrix:
         MODEL_COORDINATES: [200]
         MODEL_NUMBER_OF_HEADS: [40]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [24]
+        MODEL_NUMBER_OF_BLOCKS: [12]
         MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
@@ -94,7 +94,7 @@ jobs:
         TRAIN_WARMUP_STEPS: [4000] # same value and same schedule as in the attention all you need paper
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
-        TRAIN_NUMBER_OF_SLICES: [50] # 50 -> almost 3M datapoints
+        TRAIN_NUMBER_OF_SLICES: [50]
 
     services:
       mlflow:
