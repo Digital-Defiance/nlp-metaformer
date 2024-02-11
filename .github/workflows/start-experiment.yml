@@ -51,34 +51,4 @@ jobs:
               print(f'Failed to dispatch workflow. Status code: {response.status_code} Response: {response.text}')
               raise RuntimeError
 
-      - name: Create issue with PR title and description
-        shell: python
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          import requests
-          import json
-
-          issue_title = "${{ github.event.pull_request.title }}"
-          issue_body = "Related PR: #${{ github.event.pull_request.number }}\n\n${{ github.event.pull_request.body }}"
-
-          url = f"https://api.github.com/repos/${{ github.repository }}/issues"
-          payload = json.dumps({
-            "title": issue_title,
-            "body": issue_body,
-          })
-          headers = {
-            "Authorization": "Bearer ${GITHUB_TOKEN}",
-            "Accept": "application/vnd.github.v3+json",
-          }
-
-          response = requests.post(url, data=payload, headers=headers)
-
-          if response.status_code == 201:
-              print("Issue created successfully.")
-          else:
-              print(f"Failed to create issue. Status code: {response.status_code} Response: {response.text}")
-              raise RuntimeError
-        
-
 
