@@ -1,4 +1,4 @@
-name: Create experimen on PR
+name: Create experiment from PR
 
 on:
   pull_request:
