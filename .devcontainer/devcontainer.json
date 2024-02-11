@@ -14,6 +14,7 @@
         "vscode": {
             "extensions": [
                 "ms-python.python",
+                "ms-python.vscode-pylance",
                 "GitHub.copilot",
                 "ms-azuretools.vscode-docker",
                 "github.vscode-github-actions",
@@ -22,10 +23,14 @@
         }
     },
     "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2.8.0": {
-            "version": "latest",
-            "moby": true
-        }
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+         "ghcr.io/devcontainers/features/python:1": {
+             "version": "3.11",
+             "installTools": true,
+             "toolsToInstall": "flake8,autopep8,black,yapf,mypy,pydocstyle,pycodestyle,pytest,pylint",
+             "installJupyterlab": true
+             
+         }
     }
 
 }
