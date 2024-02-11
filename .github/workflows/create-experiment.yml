@@ -22,7 +22,7 @@ jobs:
         from mlflow import MlflowClient
         client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
         experiment_name = "${{ github.event.pull_request.title }}"
-        experiment_name = experiment_name[10:]
+        experiment_name = experiment_name[11:]
         experiment_id = client.create_experiment(
             "${{ github.event.pull_request.number }}:" + experiment_name,
             artifact_location="s3://digitaldefiancemlartifacts",
