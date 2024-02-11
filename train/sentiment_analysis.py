@@ -1,6 +1,5 @@
 import torch
 import mlflow
-from tqdm import tqdm
 from torch import nn
 from pydantic_settings import BaseSettings
 from typing import  Optional, Literal, Dict, Any
@@ -8,7 +7,7 @@ from core.mixins import MyBaseSettingsMixin
 from core.logger import get_logger
 from core.constants import DEVICE
 from model import ModelFactory, SentimentAnalysisModel
-from data.worker import request_data
+from data.worker import request_data, request_task_cleanup
 from mlflow import log_metrics, start_run, log_param
 import mlflow
 import gc
@@ -100,8 +99,8 @@ with start_run(**mlflow_settings.model_dump()) as run:
             logger.info(f"Fetching slice {epoch_slice_idx} from worker...")
             rating, text = task.get()
             logger.info("Fetched slice from worker.")
-            task.forget()
-            logger.info("Deleted slice from redis.")
+            request_task_cleanup(task.id)
+            logger.info("Requested task cleanup.")
             
             rating, text = torch.tensor(rating), torch.tensor(text)
             random_idx = torch.randperm(len(rating))
