@@ -15,3 +15,9 @@ celery_app = Celery(
 def request_data(idx: int, ctx_window: int) -> AsyncResult:
     return celery_app.send_task('prepare_data', args=[idx, ctx_window])
 
+
+def request_task_cleanup(task_id):
+    return celery_app.send_task('cleanup_task', args=[task_id])
+
+    
+
