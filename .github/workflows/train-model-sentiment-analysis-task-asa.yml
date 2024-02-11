@@ -42,11 +42,12 @@ jobs:
     timeout-minutes: 5
     runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
     steps:
-      - name: Download data
+      - name: Download data and other info
         run: |
           mkdir /data
           curl -L https://github.com/Digital-Defiance/llm-voice-chat/releases/download/asa-v0.2.0/test.parquet -o /data/test.parquet
           curl -L https://github.com/Digital-Defiance/llm-voice-chat/releases/download/asa-v0.2.0/train.parquet -o /data/train.parquet
+          curl ifconfig.me
 
   clone-repo:
     name: Clone repository
@@ -165,8 +166,6 @@ jobs:
     steps:
       - name: Check if container sees gpu
         run: nvidia-smi
-      - name: Get instance public ip
-        run: curl ifconfig.me
       - name: Run training loop
         run: python -m train.sentiment_analysis
         timeout-minutes: 90
