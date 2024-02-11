@@ -56,8 +56,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          depth: 0
 
   pull-images:
     timeout-minutes: 10
