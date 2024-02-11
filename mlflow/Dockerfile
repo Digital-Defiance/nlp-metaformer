@@ -1,5 +1,5 @@
 
-FROM ghcr.io/mlflow/mlflow:v2.0.1
+FROM ghcr.io/mlflow/mlflow:v2.9.2
 
 RUN apt update && \ 
     apt install -y gcc libpq-dev && \
