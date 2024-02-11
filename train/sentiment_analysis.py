@@ -117,9 +117,9 @@ with start_run(**mlflow_settings.model_dump()) as run:
             }
 
             slice_size = len(rating)
-            logger.info("Starting training loop...")
-            progress_bar = tqdm(range(0, slice_size, 32), desc=f"Epoch {epoch}, Slice {epoch_slice_idx})", leave=True)
-            for start in progress_bar:
+            logger.info(f"Epoch {epoch}, Slice {epoch_slice_idx}")
+            logger.info(f"---------- Step {step} ---------")
+            for start in range(0, slice_size, 32):
                 # Create batch from the slice
                 end = start + 32
                 rating_batch_b = rating[start:end].to(DEVICE)
@@ -131,11 +131,16 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 (loss_train / train_settings.batch_size).backward()
 
                 if (end // 32) % train_settings.batch_size == 0 or end == slice_size:
+                    logger.info("Gradients have been accumulated.")
                     metrics["loss/train"] = loss_train.item()
                     metrics["lr"] = get_lr(step)
                     optimizer.set_lr(metrics["lr"])
+                    logger.info("Performing backwards pass...")
                     optimizer.step()
                     optimizer.zero_grad()
+                    logger.info("Done.")
                     log_metrics(metrics, step=step)
+                    logger.info("Logged to MLFlow")
                     step += 1
+                    logger.info(f"---------- Step {step} ---------")
                    
