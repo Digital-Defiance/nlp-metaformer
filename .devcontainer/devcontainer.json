@@ -1,6 +1,7 @@
 {
     "name": "Development Environment for LLM VC",
-    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "dockerFIle": "../train/Dockerfile",
+    // "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
     // "dockerComposeFile": "docker-compose.yml",
     // "service": "data-worker",
     // "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
@@ -25,7 +26,7 @@
     "features": {
         "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
         "ghcr.io/devcontainers/features/git:1": {},
-        "ghcr.io/devcontainers/features/aws-cli:1": {}
+        "ghcr.io/devcontainers/features/aws-cli:1": {},
         "ghcr.io/devcontainers/features/python:1": {
             "version": "3.11",
             "installTools": true,
