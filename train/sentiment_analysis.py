@@ -41,6 +41,7 @@ class TrainSettings(BaseSettings, MyBaseSettingsMixin):
     beta_2: float = 0.98
     epsilon: float = 1e-9
     warmup_steps: int = 4000
+    lr_schedule_scaling: float = 1
 
     class Config:
         env_prefix = "TRAIN_"
@@ -61,10 +62,10 @@ class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
 mlflow_settings = MLFlowSettings()
 train_settings = TrainSettings()
 
-def get_lr(step):
+def get_lr(step: int) -> float:
     lr = min(step ** -0.5, step * train_settings.warmup_steps ** -1.5)
     lr = lr * model_factory.coordinates ** -0.5
-    return lr
+    return lr * train_settings.lr_schedule_scaling
 
 with start_run(**mlflow_settings.model_dump()) as run:
     logger.info("Connected to MLFlow and started run.")
