@@ -89,7 +89,7 @@ jobs:
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [100]
 
-        TRAIN_BATCH_SIZE: [1000, 1000, 1000] # This is using gradient accumulation, batch size of 1 = 32 data points
+        TRAIN_BATCH_SIZE: [100, 100, 100] # This is using gradient accumulation, batch size of 1 = 32 data points
         TRAIN_NUMBER_OF_EPOCHS: [1]
         TRAIN_WARMUP_STEPS: [4000]
         TRAIN_L1_REGULARIZATION: [0]
