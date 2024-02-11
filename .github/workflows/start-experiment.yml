@@ -9,6 +9,8 @@ jobs:
     name: Start experiment
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'experiment:')
     runs-on: ubuntu-latest
+    outputs:
+      experiment_id: ${{ steps.get_experiment_id.outputs.experiment_id }}
     container:
       image: ghcr.io/digital-defiance/mlflow:main
       env:
