@@ -1,4 +1,4 @@
-name: Create experimen on PR
+name: Create experiment from PR
 
 on:
   pull_request:
@@ -20,11 +20,16 @@ jobs:
       shell: python
       run: |
         from mlflow import MlflowClient
-        client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}",)
+        client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
+        experiment_name = "${{ github.event.pull_request.title }}"
+        experiment_name = experiment_name[11:]
         experiment_id = client.create_experiment(
-            "${{ github.event.pull_request.title }} (${{ github.event.pull_request.number }})",
+            "${{ github.event.pull_request.number }}:" + experiment_name,
             artifact_location="s3://digitaldefiancemlartifacts",
-            tags={"pr_number": "${{ github.event.pull_request.number }}"},
+            tags={
+              "pr_number": "${{ github.event.pull_request.number }}",
+              "description": "${{ github.event.pull_request.number }}",
+            },
         )
         experiment = client.get_experiment(experiment_id)
         print(f"Name: {experiment.name}")
@@ -33,6 +38,13 @@ jobs:
         print(f"Tags: {experiment.tags}")
         print(f"Lifecycle_stage: {experiment.lifecycle_stage}")
         print(f"Creation timestamp: {experiment.creation_time}")
-        
+
+        with open("experiment_id.txt", "w") as file:
+            file.write(experiment_id)
       
- 
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: pr-${{ github.event.pull_request.number }}
+        path: experiment_id.txt
+
