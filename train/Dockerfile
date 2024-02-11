@@ -6,3 +6,9 @@ ENV C_FORCE_ROOT="true"
 
 RUN mkdir /app
 WORKDIR /app
+
+
+
+RUN apt update && \ 
+    apt install -y gcc libpq-dev && \
+    pip install psycopg2==2.8.5
