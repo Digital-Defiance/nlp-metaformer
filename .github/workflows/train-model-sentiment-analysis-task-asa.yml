@@ -67,7 +67,7 @@ jobs:
     strategy:
       fail-fast: true 
       matrix:
-        IMAGE: ["ghcr.io/digital-defiance/data-worker:main", "ghcr.io/digital-defiance/mlflow:main", "ghcr.io/digital-defiance/training-loop-worker:main", "redis:5.0.0"]
+        IMAGE: ["ghcr.io/digital-defiance/data-worker:main", "ghcr.io/digital-defiance/mlflow:main", "ghcr.io/digital-defiance/training-loop-worker:main", "redis:5.0.0", "mher/flower"]
     steps:
       - name: Pull ${{ matrix.IMAGE }}
         run: docker pull ${{ matrix.IMAGE }} 
