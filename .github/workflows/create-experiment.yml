@@ -26,7 +26,10 @@ jobs:
         experiment_id = client.create_experiment(
             "${{ github.event.pull_request.number }}:" + experiment_name,
             artifact_location="s3://digitaldefiancemlartifacts",
-            tags={"pr_number": "${{ github.event.pull_request.number }}"},
+            tags={
+              "pr_number": "${{ github.event.pull_request.number }}",
+              "description": "${{ github.event.pull_request.number }}",
+            },
         )
         experiment = client.get_experiment(experiment_id)
         print(f"Name: {experiment.name}")
