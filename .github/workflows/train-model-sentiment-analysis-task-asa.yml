@@ -123,6 +123,12 @@ jobs:
         volumes:
           - /data:/data
           - ${{ github.workspace }}:/app
+      flower:
+        image: mher/flower
+        env:
+          CELERY_BROKER_URL: redis://redis:6379/0
+        ports:
+          - "80:5555"
     container:
       image: ghcr.io/digital-defiance/training-loop-worker:main
       options: --gpus all --cpus 1 --memory=6g  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=trainingloop  --log-opt awslogs-create-group=true
