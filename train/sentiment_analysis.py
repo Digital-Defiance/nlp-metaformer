@@ -119,9 +119,9 @@ with start_run(**mlflow_settings.model_dump()) as run:
             slice_size = len(rating)
             logger.info(f"Epoch {epoch}, Slice {epoch_slice_idx}")
             logger.info(f"---------- Step {step} ---------")
-            for start in range(0, slice_size, 128):
+            for start in range(0, slice_size, 32):
                 # Create batch from the slice
-                end = start + 128
+                end = start + 32
                 rating_batch_b = rating[start:end].to(DEVICE)
                 text_batch_bw = text[start:end].to(DEVICE)
 
@@ -130,7 +130,7 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 loss_train = loss_function(pred_logits_b5, rating_batch_b)
                 (loss_train / train_settings.batch_size).backward()
 
-                if (end // 128) % train_settings.batch_size == 0 or end == slice_size:
+                if (end // 32) % train_settings.batch_size == 0 or end == slice_size:
                     logger.info("Gradients have been accumulated.")
                     metrics["loss/train"] = loss_train.item()
                     metrics["lr"] = get_lr(step)
