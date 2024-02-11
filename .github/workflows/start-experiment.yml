@@ -21,20 +21,34 @@ jobs:
         id: get_experiment_id
         run: |
           from mlflow import MlflowClient
+          import requests
+          import json
+
           client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
           experiment_name = "${{ github.event.pull_request.title }}"
           experiment_name = experiment_name[11:]
           experiment_name = "${{ github.event.pull_request.number }}:" + experiment_name
           experiment = client.get_experiment_by_name(experiment_name)
-          experiment_id = experiment.experiment_id
-          print(f"::set-output name=experiment_id::{experiment_id}")
+
+          response = requests.post(
+              'https://api.github.com/repos/${{ github.repository }}/actions/workflows/train-model-sentiment-analysis-task-asa.yml/dispatches',
+              headers={
+                  'Authorization': 'token ${{ secrets.PERSONAL_ACCESS_TOKEN }}',
+                  'Accept': 'application/vnd.github.v3+json',
+              },
+              data=json.dumps({
+                  'ref': 'main',
+                  'inputs': {
+                      'experiment_id': experiment.experiment_id
+                  }
+              })
+          )
           
-      - name: Trigger Target Workflow
-        run: |
-          curl -X POST -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/${{ github.repository }}/actions/workflows/train-model-sentiment-analysis-task-asa.yml/dispatches \
-          -d '{"ref":"main", "inputs": {"experiment_id": "${{ steps.get_experiment_id.outputs.experiment_id }}"}}'
+          if response.status_code == 204:
+              print('Workflow dispatched successfully.')
+          else:
+              print(f'Failed to dispatch workflow. Status code: {response.status_code} Response: {response.text}')
+
 
 
 
