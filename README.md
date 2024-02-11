@@ -4,6 +4,7 @@ Speak with a language model.
 
 
 
+
 | Name and Status | Dataset | Usability | Workflow Badge |
 |-----------------|---------|-----------|----------------|
 | Sentiment Analysis Task (On-Going) | [asa-v0.2.0](https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/asa-v0.2.0) | Up to date | [![train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml/badge.svg?branch=main)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml) |
