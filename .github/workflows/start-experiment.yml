@@ -8,16 +8,34 @@ jobs:
   trigger-sentiment-analysis-task-asa:
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'experiment:')
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/digital-defiance/mlflow:main
+      env:
+        MLFLOW_BACKEND_STORE_URI: ${{ secrets.DB_URI }}
+        AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: pr-${{ github.event.pull_request.number }}
-
+      - name: Get experiment id
+        shell: python
+        id: get_experiment_id
+        run: |
+          from mlflow import MlflowClient
+          client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
+          experiment_name = "${{ github.event.pull_request.title }}"
+          experiment_name = experiment_name[11:]
+          experiment_name = "${{ github.event.pull_request.number }}:" + experiment_name
+          experiment = client.get_experiment_by_name(experiment_name)
+          experiment_id = experiment.experiment_id
+          print(f"::set-output name=experiment_id::{experiment_id}")
+          
       - name: Trigger Target Workflow
         run: |
-          EXPERIMENT_ID=$(cat experiment_id.txt)
           curl -X POST -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
           -H "Accept: application/vnd.github.v3+json" \
           https://api.github.com/repos/${{ github.repository }}/actions/workflows/train-model-sentiment-analysis-task-asa.yml/dispatches \
-          -d '{"ref":"main", "inputs": {"experiment_id": "'"$EXPERIMENT_ID"'"}}'
+          -d '{"ref":"main", "inputs": {"experiment_id": "${{ steps.get_experiment_id.outputs.experiment_id }}"}}'
+
+
+
+
