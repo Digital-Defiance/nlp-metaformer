@@ -22,7 +22,7 @@ jobs:
         from mlflow import MlflowClient
         client = MlflowClient()
         experiment_id = client.create_experiment(
-            "${{ github.event.pull_request.title }} (${{ github.event.pull_request.number }})",
+            "${{ github.event.pull_request.title }} (#${{ github.event.pull_request.number }})",
             tags={"pr_number": "${{ github.event.pull_request.number }}"},
         )
         experiment = client.get_experiment(experiment_id)
