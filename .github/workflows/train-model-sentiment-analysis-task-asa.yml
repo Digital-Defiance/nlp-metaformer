@@ -2,6 +2,13 @@ name: "train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot"
 
 
 on:
+  workflow_call:
+    inputs:
+      experiment_id:
+        type: string
+        description: 'Experiment ID'
+        required: true
+        default: "1"
   workflow_dispatch:
     inputs:
       experiment_id:
