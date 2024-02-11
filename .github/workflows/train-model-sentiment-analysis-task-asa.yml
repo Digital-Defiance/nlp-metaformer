@@ -167,6 +167,8 @@ jobs:
     steps:
       - name: Check if container sees gpu
         run: nvidia-smi
+      - name: Get instance public ip
+        run: curl ifconfig.me
       - name: Run training loop
         run: python -m train.sentiment_analysis
         timeout-minutes: 90
