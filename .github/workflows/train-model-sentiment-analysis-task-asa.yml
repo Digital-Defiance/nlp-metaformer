@@ -89,13 +89,13 @@ jobs:
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [100]
 
-        TRAIN_BATCH_SIZE: [2] # This is using gradient accumulation, batch size of 1 = 16 data points
+        TRAIN_BATCH_SIZE: [10] # This is using gradient accumulation, batch size of 1 = 32 data points
         TRAIN_NUMBER_OF_EPOCHS: [1]
         TRAIN_WARMUP_STEPS: [4000]
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
         TRAIN_NUMBER_OF_SLICES: [5]
-        TRAIN_LR_SCHEDULE_SCALING: [1, 2, 5, 10, 100, 500, 1000]
+        TRAIN_LR_SCHEDULE_SCALING: [1]
     
 
     services:
@@ -145,7 +145,7 @@ jobs:
         TRAIN_L2_REGULARIZATION: ${{ matrix.TRAIN_L2_REGULARIZATION }}
         TRAIN_WARMUP_STEPS: ${{ matrix.TRAIN_WARMUP_STEPS }}
 
-        MLFLOW_EXPERIMENT_ID: 1
+        MLFLOW_EXPERIMENT_ID: 2
         MLFLOW_TRACKING_URI: "http://mlflow:80"
         MLFLOW_RUN_NAME: ${{ github.sha }}
   
