@@ -1,6 +1,6 @@
 {
     "name": "Development Environment for LLM VC",
-    "dockerFile": "../train/Dockerfile",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
     // "dockerComposeFile": "docker-compose.yml",
     // "service": "data-worker",
     // "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
