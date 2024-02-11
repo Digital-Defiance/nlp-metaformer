@@ -36,6 +36,6 @@ jobs:
     needs: get-experiment-id
     secrets: inherit
     with:
-      experiment_id: ${{ steps.get-experiment-id.outputs.experiment_id }}
+      experiment_id: ${{ needs.get-experiment-id.outputs.experiment_id }}
     
 
