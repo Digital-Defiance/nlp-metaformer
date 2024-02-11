@@ -6,6 +6,7 @@ on:
 
 jobs:
   trigger-sentiment-analysis-task-asa:
+    name: Start experiment
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'experiment:')
     runs-on: ubuntu-latest
     container:
@@ -16,7 +17,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
     steps:
-      - name: Get experiment id
+      - name: Get experiment id and dispatch workflow
         shell: python
         id: get_experiment_id
         run: |
@@ -48,7 +49,7 @@ jobs:
               print('Workflow dispatched successfully.')
           else:
               print(f'Failed to dispatch workflow. Status code: {response.status_code} Response: {response.text}')
-
+              raise RuntimeError
 
 
 
