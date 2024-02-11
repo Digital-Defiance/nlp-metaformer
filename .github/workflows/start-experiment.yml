@@ -9,9 +9,15 @@ jobs:
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'experiment:')
     runs-on: ubuntu-latest
     steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: pr-${{ github.event.pull_request.number }}
+
       - name: Trigger Target Workflow
         run: |
+          EXPERIMENT_ID=$(cat experiment_id.txt)
           curl -X POST -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
           -H "Accept: application/vnd.github.v3+json" \
           https://api.github.com/repos/${{ github.repository }}/actions/workflows/train-model-sentiment-analysis-task-asa.yml/dispatches \
-          -d '{"ref":"main", "inputs": {"experiment_id": "${{ github.event.pull_request.id }}"}}'
+          -d '{"ref":"main", "inputs": {"experiment_id": "'"$EXPERIMENT_ID"'"}}'
