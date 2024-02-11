@@ -5,7 +5,7 @@ on:
     types: [closed]
 
 jobs:
-  trigger-sentiment-analysis-task-asa:
+  get-experiment-id:
     name: Start experiment
     if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'experiment:')
     runs-on: ubuntu-latest
@@ -24,31 +24,18 @@ jobs:
           from mlflow import MlflowClient
           import requests
           import json
-
           client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
           experiment_name = "${{ github.event.pull_request.title }}"
           experiment_name = experiment_name[11:]
           experiment_name = "${{ github.event.pull_request.number }}:" + experiment_name
           experiment = client.get_experiment_by_name(experiment_name)
+          print(experiment.experiment_id)
 
-          response = requests.post(
-              'https://api.github.com/repos/${{ github.repository }}/actions/workflows/train-model-sentiment-analysis-task-asa.yml/dispatches',
-              headers={
-                  'Authorization': 'token ${{ secrets.PERSONAL_ACCESS_TOKEN }}',
-                  'Accept': 'application/vnd.github.v3+json',
-              },
-              data=json.dumps({
-                  'ref': 'main',
-                  'inputs': {
-                      'experiment_id': experiment.experiment_id
-                  }
-              })
-          )
-          
-          if response.status_code == 204:
-              print('Workflow dispatched successfully.')
-          else:
-              print(f'Failed to dispatch workflow. Status code: {response.status_code} Response: {response.text}')
-              raise RuntimeError
+  call-workflow-passing-data:
+    uses: digital-defiance/llm-voice-chat/.github/workflows/train-model-sentiment-analysis-task-asa.yml@main
+    needs: get-experiment-id
+    with:
+      experiment_id: ${{ needs.get-experiment-id.output.experiment_id }}
+    secrets: inherit
 
 
