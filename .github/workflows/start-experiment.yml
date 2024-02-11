@@ -31,11 +31,11 @@ jobs:
           experiment = client.get_experiment_by_name(experiment_name)
           print(f'"experiment_id={experiment.experiment_id}" >> "$GITHUB_OUTPUT"')
 
-  call-workflow-passing-data:
+  run-experiment:
     uses: digital-defiance/llm-voice-chat/.github/workflows/train-model-sentiment-analysis-task-asa.yml@main
     needs: get-experiment-id
-    with:
-      experiment_id: ${{ needs.get-experiment-id.output.experiment_id }}
     secrets: inherit
-
+    with:
+      experiment_id: ${{ steps.get-experiment-id.outputs.experiment_id }}
+    
 
