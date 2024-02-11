@@ -91,7 +91,7 @@ jobs:
       max-parallel: 1
       matrix:
         MODEL_COORDINATES: [200]
-        MODEL_NUMBER_OF_HEADS: [30]  # note that coordinates must be divisible by these
+        MODEL_NUMBER_OF_HEADS: [20]  # note that coordinates must be divisible by these
         MODEL_NUMBER_OF_BLOCKS: [1, 2, 3, 4, 5, 6]
         MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
