@@ -1,0 +1,17 @@
+name: Start Experiment
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  trigger-sentiment-analysis-task-asa:
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'experiment:')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Target Workflow
+        run: |
+          curl -X POST -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/actions/workflows/train-model-sentiment-analysis-task-asa.yml/dispatches \
+          -d '{"ref":"main", "inputs": {"details": "Experiment PR titled '${{ github.event.pull_request.title }}' was merged."}}'
