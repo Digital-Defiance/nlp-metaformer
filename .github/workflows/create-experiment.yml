@@ -5,7 +5,7 @@ on:
     types: [opened]
 
 jobs:
-  append-info:
+  create-experiment:
     runs-on: ubuntu-latest
     if: startsWith(github.event.pull_request.title, 'experiment:')
     container:
