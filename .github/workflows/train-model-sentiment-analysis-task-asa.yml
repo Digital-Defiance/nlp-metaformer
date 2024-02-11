@@ -39,6 +39,7 @@ jobs:
   download-data:
     name: Download data
     needs: start-runner 
+    timeout-minutes: 5
     runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
     steps:
       - name: Download data
@@ -49,7 +50,8 @@ jobs:
 
   clone-repo:
     name: Clone repository
-    needs: start-runner 
+    needs: start-runner
+    timeout-minutes: 1
     runs-on: ${{ needs.start-runner.outputs.label }}
     steps:
       - name: Checkout repository
@@ -58,6 +60,7 @@ jobs:
           depth: 0
 
   pull-images:
+    timeout-minutes: 10
     name: Pull image
     needs: start-runner 
     runs-on: ${{ needs.start-runner.outputs.label }}
