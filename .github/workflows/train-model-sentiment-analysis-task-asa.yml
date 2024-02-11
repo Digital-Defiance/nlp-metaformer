@@ -159,6 +159,7 @@ jobs:
         run: nvidia-smi
       - name: Run training loop
         run: python -m train.sentiment_analysis
+        timeout-minutes: 90
       - name: Evaluate model
         run: echo "Not implemented."
 
