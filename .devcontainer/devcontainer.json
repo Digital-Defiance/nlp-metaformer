@@ -1,5 +1,5 @@
 {
-    "name": "Python",
+    "name": "Development Environment for LLM VC",
     "dockerFile": "../train/Dockerfile",
     // "dockerComposeFile": "docker-compose.yml",
     // "service": "data-worker",
