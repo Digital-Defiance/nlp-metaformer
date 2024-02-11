@@ -1,9 +1,9 @@
 {
     "name": "Python",
-    // "dockerFile": "../train/Dockerfile",
-    "dockerComposeFile": "docker-compose.yml",
-    "service": "data-worker",
-    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "dockerFile": "../train/Dockerfile",
+    // "dockerComposeFile": "docker-compose.yml",
+    // "service": "data-worker",
+    // "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
     "customizations": {
         "settings": {
             "python.pythonPath": "/usr/local/bin/python",
