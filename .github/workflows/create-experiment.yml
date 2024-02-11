@@ -20,6 +20,17 @@ jobs:
       shell: python
       run: |
         import mlflow
+        experiment_id = mlflow.create_experiment(
+            "${{ github.event.pull_request.title }} (${{ github.event.pull_request.number }})",
+            tags={"pr_number": "${{ github.event.pull_request.number }}"},
+        )
+        experiment = mlflow.get_experiment(experiment_id)
+        print(f"Name: {experiment.name}")
+        print(f"Experiment_id: {experiment.experiment_id}")
+        print(f"Artifact Location: {experiment.artifact_location}")
+        print(f"Tags: {experiment.tags}")
+        print(f"Lifecycle_stage: {experiment.lifecycle_stage}")
+        print(f"Creation timestamp: {experiment.creation_time}")
         
       
  
