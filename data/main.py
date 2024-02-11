@@ -26,6 +26,16 @@ class TrainSettings(BaseSettings):
 train_settings = TrainSettings()
 
 
+@celery_app.task(name='cleanup_task')
+def cleanup_task(task_id):
+    try:
+        task = cleanup_task.AsyncResult(task_id)
+        task.forget()
+        print(f"Successfully cleaned up task {task_id}")
+    except Exception as e:
+        print(f"Failed to clean up task {task_id}: {e}")
+
+
 @celery_app.task(name='prepare_data')
 def prepare_data(idx: int, context_window_size: int):
     print(f"Slice of index {idx} has been requested.")
