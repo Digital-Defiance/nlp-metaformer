@@ -12,6 +12,7 @@ from mlflow import log_metrics, start_run, log_param
 import mlflow
 import gc
 import os
+import numpy as np
 
 spark_seed = 1 # torch.randint(low=1, high=10_000, size=(1,)).item()
 torch_seed = 1 # torch.randint(low=1, high=10_000, size=(1,)).item()
