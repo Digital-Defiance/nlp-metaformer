@@ -27,6 +27,7 @@ jobs:
         shell: python
         run: |
           from mlflow import MlflowClient
+          import subprocess
           client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
           experiment_name = """${{ github.event.head_commit.message }}"""
           experiment_name = experiment_name.splitlines()[0][3:]
