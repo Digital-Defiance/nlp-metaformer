@@ -13,8 +13,8 @@ import mlflow
 import gc
 import os
 
-spark_seed = torch.randint(low=1, high=10_000, size=(1,)).item()
-torch_seed = torch.randint(low=1, high=10_000, size=(1,)).item()
+spark_seed = 1 # torch.randint(low=1, high=10_000, size=(1,)).item()
+torch_seed = 1 # torch.randint(low=1, high=10_000, size=(1,)).item()
 torch.manual_seed(torch_seed)
 
 
