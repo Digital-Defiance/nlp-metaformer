@@ -4,6 +4,7 @@ from functools import cache
 from pydantic_settings import BaseSettings
 import numpy as np
 from data.worker import celery_app
+import redis
 
 
 class SparkSettings(BaseSettings):
@@ -40,6 +41,10 @@ def cleanup_task(task_id):
 @celery_app.task(name='prepare_data')
 def prepare_data(idx: int, context_window_size: int, seed: int):
     print(f"Slice of index {idx} has been requested.")
+
+    print("Flushing db1")
+    redis.Redis(host='redis', port=6379, db=1).flushdb()
+    
 
     
     print("Starting spark session")
