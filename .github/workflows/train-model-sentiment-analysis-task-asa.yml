@@ -14,7 +14,7 @@ jobs:
     if: startsWith(github.event.head_commit.message, 'run:')
     runs-on: ubuntu-latest
     outputs:
-      experiment_id: ${{ steps.get_experiment_id.outputs.experiment_id }}
+      experiment_id: ${{ steps.create_experiment.outputs.experiment_id }}
     container:
       image: ghcr.io/digital-defiance/mlflow:main
       env:
@@ -24,6 +24,7 @@ jobs:
         MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
     steps:
       - name: Create experiment
+        id: create_experiment
         shell: python
         run: |
           from mlflow import MlflowClient
