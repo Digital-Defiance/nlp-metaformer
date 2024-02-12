@@ -68,6 +68,7 @@ train_settings = TrainSettings()
 def get_lr(step: int) -> float:
     lr = min(step ** -0.5, step * train_settings.warmup_steps ** -1.5)
     lr = lr * model_factory.coordinates ** -0.5
+    lr = min(lr, 1e-3)
     return lr * train_settings.lr_schedule_scaling
 
 with start_run(**mlflow_settings.model_dump()) as run:
