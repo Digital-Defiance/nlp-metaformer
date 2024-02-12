@@ -12,6 +12,10 @@ from mlflow import log_metrics, start_run, log_param
 import mlflow
 import gc
 
+spark_seed = torch.randint(low=1, high=10_000, size=(1,)).item()
+torch_seed = torch.randint(low=1, high=10_000, size=(1,)).item()
+torch.manual_seed(torch_seed)
+
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -21,7 +25,6 @@ logger.info(f"Using torch version {torch.__version__}")
 logger.info(f"Using mlflow version {mlflow.__version__}")
 
 model_factory =  ModelFactory()
-spark_seed = torch.randint(low=1, high=10_000, size=(1,)).item()
 task = request_data(0, model_factory.words, spark_seed)
 logger.info(f"Requested slice 0")
 
@@ -70,6 +73,7 @@ def get_lr(step: int) -> float:
 with start_run(**mlflow_settings.model_dump()) as run:
     logger.info("Connected to MLFlow and started run.")
     log_param("spark_seed", spark_seed)
+    log_param("torch_seed", torch_seed)
 
     model = SentimentAnalysisModel(model_factory).to(DEVICE)
     logger.info(f"Created model and moved it to {DEVICE}")
