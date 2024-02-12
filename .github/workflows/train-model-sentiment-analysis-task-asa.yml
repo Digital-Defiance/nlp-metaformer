@@ -138,20 +138,20 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        MODEL_COORDINATES: [25]
-        MODEL_NUMBER_OF_HEADS: [5]  # note that coordinates must be divisible by these
+        MODEL_COORDINATES: [60]
+        MODEL_NUMBER_OF_HEADS: [30]  # note that coordinates must be divisible by these
         MODEL_NUMBER_OF_BLOCKS: [1]
         MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
-        MODEL_WORDS: [624]
+        MODEL_WORDS: [50]
 
         TRAIN_BATCH_SIZE: [1] # This is using gradient accumulation, batch size of 1 = 32 data points
         TRAIN_NUMBER_OF_EPOCHS: [1]
         TRAIN_WARMUP_STEPS: [500]
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
-        TRAIN_NUMBER_OF_SLICES: ["2", "2"]
+        TRAIN_NUMBER_OF_SLICES: ["50"]
         TRAIN_LR_SCHEDULE_SCALING: ["1"]
     
 
