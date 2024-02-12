@@ -148,11 +148,11 @@ jobs:
 
         TRAIN_BATCH_SIZE: [1] # This is using gradient accumulation, batch size of 1 = 32 data points
         TRAIN_NUMBER_OF_EPOCHS: [1]
-        TRAIN_WARMUP_STEPS: [15000]
+        TRAIN_WARMUP_STEPS: [10000]
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
         TRAIN_NUMBER_OF_SLICES: [25]
-        TRAIN_LR_SCHEDULE_SCALING: ["0.1"]
+        TRAIN_LR_SCHEDULE_SCALING: ["1"]
     
 
     services:
