@@ -107,6 +107,8 @@ with start_run(**mlflow_settings.model_dump()) as run:
     
             logger.info(f"Fetching slice {epoch_slice_idx} from worker...")
             rating_b_path, text_bw_path = task.get()
+            rating_b_path = rating_b_path + ".npy"
+            text_bw_path = text_bw_path + ".npy"
             rating = np.load(rating_b_path)
             text = np.load(text_bw_path)
             os.remove(rating_b_path)
