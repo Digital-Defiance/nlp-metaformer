@@ -21,7 +21,8 @@ logger.info(f"Using torch version {torch.__version__}")
 logger.info(f"Using mlflow version {mlflow.__version__}")
 
 model_factory =  ModelFactory()
-task = request_data(0, model_factory.words)
+spark_seed = torch.randint(low=1, high=10_000, size=(1,)).item()
+task = request_data(0, model_factory.words, spark_seed)
 logger.info(f"Requested slice 0")
 
 
@@ -68,6 +69,7 @@ def get_lr(step: int) -> float:
 
 with start_run(**mlflow_settings.model_dump()) as run:
     logger.info("Connected to MLFlow and started run.")
+    log_param("spark_seed", spark_seed)
 
     model = SentimentAnalysisModel(model_factory).to(DEVICE)
     logger.info(f"Created model and moved it to {DEVICE}")
@@ -107,7 +109,7 @@ with start_run(**mlflow_settings.model_dump()) as run:
             rating, text = rating[random_idx], text[random_idx]
             del random_idx
 
-            task = request_data(epoch_slice_idx, model_factory.words)
+            task = request_data(epoch_slice_idx, model_factory.words, spark_seed)
             logger.info(f"Scheduled slice {epoch_slice_idx}, task id is {task.id}.")
 
             metrics: dict[str, str | int ] = {
