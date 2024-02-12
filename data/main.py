@@ -36,6 +36,7 @@ def cleanup_task(task_id):
         print(f"Failed to clean up task {task_id}: {e}")
 
 
+
 @celery_app.task(name='prepare_data')
 def prepare_data(idx: int, context_window_size: int, seed: int):
     print(f"Slice of index {idx} has been requested.")
@@ -48,6 +49,7 @@ def prepare_data(idx: int, context_window_size: int, seed: int):
                 .config("spark.driver.memory", spark_settings.driver_memory) \
                 .config("spark.executor.memory", spark_settings.executor_memory) \
                 .getOrCreate()
+
     print("Started spark session")
 
     train_slices = spark.read.parquet("/data/train.parquet").randomSplit(
@@ -67,7 +69,11 @@ def prepare_data(idx: int, context_window_size: int, seed: int):
     text_bw = np.array(text)[:, :context_window_size]
     rating_b5 = np.array(rating)
 
-    # transform to index of along last dimension
+    print("Cleaning up spark resources...")
+    spark.stop()
+    print("Done.")
+
+    # transform to index of along last dimension TODO: should also cut along the largest ctx window to reduce padding
     rating_b = np.argmax(rating_b5 == 1, axis=-1)
     return rating_b, text_bw
 
