@@ -33,6 +33,7 @@ jobs:
           experiment_name = experiment_name[11:]
           experiment_name = "${{ github.event.pull_request.number }}:" + experiment_name
           experiment = client.get_experiment_by_name(experiment_name)
+          experiment_id = experiment.experiment_id
 
           subprocess.run(
               f'echo "experiment_id={experiment_id}" >> $GITHUB_OUTPUT',
