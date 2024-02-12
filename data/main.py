@@ -37,7 +37,7 @@ def cleanup_task(task_id):
 
 
 @celery_app.task(name='prepare_data')
-def prepare_data(idx: int, context_window_size: int):
+def prepare_data(idx: int, context_window_size: int, seed: int):
     print(f"Slice of index {idx} has been requested.")
 
     
@@ -51,7 +51,8 @@ def prepare_data(idx: int, context_window_size: int):
     print("Started spark session")
 
     train_slices = spark.read.parquet("/data/train.parquet").randomSplit(
-        [1.]*train_settings.n_slices
+        [1.]*train_settings.n_slices,
+        seed
     )
     
     print("Generated random split.")
