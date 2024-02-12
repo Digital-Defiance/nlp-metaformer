@@ -12,6 +12,8 @@ celery_app = Celery(
     accept_content=['pickle', 'json'],
 )
 
+celery_app.conf.worker_max_memory_per_child=4_000_000
+
 def request_data(idx: int, ctx_window: int, seed: int) -> AsyncResult:
     return celery_app.send_task('prepare_data', args=[idx, ctx_window, seed])
 
