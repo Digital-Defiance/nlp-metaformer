@@ -6,7 +6,6 @@ import numpy as np
 from data.worker import celery_app
 import redis
 
-
 class SparkSettings(BaseSettings):
     driver_memory: str = "2g"
     executor_memory: str = "2g"
@@ -79,8 +78,8 @@ def prepare_data(idx: int, context_window_size: int, seed: int):
     import uuid
     rating_b_path = f"/data/{uuid.uuid4().hex}"
     text_bw_path = f"/data/{uuid.uuid4().hex}"
-    numpy.save(rating_b_path, rating_b)
-    numpy.save(text_bw_path, text_bw)
+    np.save(rating_b_path, rating_b)
+    np.save(text_bw_path, text_bw)
     return rating_b_path, text_bw_path
 
 
