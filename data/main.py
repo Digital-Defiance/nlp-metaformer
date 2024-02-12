@@ -36,8 +36,7 @@ def cleanup_task(task_id):
         print(f"Failed to clean up task {task_id}: {e}")
 
 
-
-@celery_app.task(name='prepare_data')
+@celery_app.task(name='prepare_data', soft_time_limit=600, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def prepare_data(idx: int, context_window_size: int, seed: int):
     print(f"Slice of index {idx} has been requested.")
 
