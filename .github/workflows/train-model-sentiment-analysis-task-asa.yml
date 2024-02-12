@@ -2,26 +2,56 @@ name: "train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot"
 
 
 on:
-  workflow_call:
-    inputs:
-      experiment_id:
-        type: string
-        description: 'Experiment ID'
-        required: true
-        default: "1"
-  workflow_dispatch:
-    inputs:
-      experiment_id:
-        description: 'Experiment ID'
-        required: true
-        default: "1"
+  push:
+  
 
 env:
   AWS_REGION: eu-south-1
  
 jobs:
+  create-experiment:
+    name: Start experiment
+    if: startsWith(github.event.head_commit.message, 'experiment:')
+    runs-on: ubuntu-latest
+    outputs:
+      experiment_id: ${{ steps.get_experiment_id.outputs.experiment_id }}
+    container:
+      image: ghcr.io/digital-defiance/mlflow:main
+      env:
+        MLFLOW_BACKEND_STORE_URI: ${{ secrets.DB_URI }}
+        AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
+    steps:
+      - name: Create experiment
+        shell: python
+        run: |
+          from mlflow import MlflowClient
+          client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
+          experiment_name = "${{ github.event.head_commit.message }}"
+          experiment_name = experiment_name[11:]
+          experiment_id = client.create_experiment(
+              experiment_name,
+              artifact_location="s3://digitaldefiancemlartifacts",
+          )
+          experiment = client.get_experiment(experiment_id)
+          print(f"Name: {experiment.name}")
+          print(f"Experiment_id: {experiment.experiment_id}")
+          print(f"Artifact Location: {experiment.artifact_location}")
+          print(f"Tags: {experiment.tags}")
+          print(f"Lifecycle_stage: {experiment.lifecycle_stage}")
+          print(f"Creation timestamp: {experiment.creation_time}")
+
+          subprocess.run(
+              f'echo "experiment_id={experiment_id}" >> $GITHUB_OUTPUT',
+              shell=True,
+              check=True
+          )
+
+
   start-runner:
     name: "Start EC2 Spot Instance: g4dn.xlarge"
+    needs: create-experiment
     runs-on: ubuntu-latest
     outputs:
       label: ${{ steps.start-ec2-runner.outputs.label }}
@@ -100,6 +130,7 @@ jobs:
       - download-data
       - clone-repo
       - pull-images
+      - create-experiment
     runs-on: ${{ needs.start-runner.outputs.label }}
     strategy:
       fail-fast: false
@@ -167,7 +198,7 @@ jobs:
         TRAIN_WARMUP_STEPS: ${{ matrix.TRAIN_WARMUP_STEPS }}
         TRAIN_LR_SCHEDULE_SCALING: ${{ matrix.TRAIN_LR_SCHEDULE_SCALING }}
 
-        MLFLOW_EXPERIMENT_ID: ${{ inputs.experiment_id }}
+        MLFLOW_EXPERIMENT_ID: ${{ needs.create-experiment.outputs.experiment_id }}
         MLFLOW_TRACKING_URI: ${{ secrets.DB_URI }}
         MLFLOW_RUN_NAME: ${{ github.sha }}-${{ matrix.TRAIN_BATCH_SIZE }}
         MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
