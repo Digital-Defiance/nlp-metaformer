@@ -61,7 +61,15 @@ jobs:
           mkdir /data
           curl -L https://github.com/Digital-Defiance/llm-voice-chat/releases/download/asa-v0.2.0/test.parquet -o /data/test.parquet
           curl -L https://github.com/Digital-Defiance/llm-voice-chat/releases/download/asa-v0.2.0/train.parquet -o /data/train.parquet
-          curl ifconfig.me
+          
+  get-ip:
+    name: Get the instance ip
+    needs: start-runner 
+    timeout-minutes: 5
+    runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
+    steps:
+      - name: Send request to ifconfig.me
+        run: curl ifconfig.me
 
   clone-repo:
     name: Clone repository
@@ -97,7 +105,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        MODEL_COORDINATES: [100]
+        MODEL_COORDINATES: [200]
         MODEL_NUMBER_OF_HEADS: [10]  # note that coordinates must be divisible by these
         MODEL_NUMBER_OF_BLOCKS: [1]
         MODEL_TOKENS: [50263]
@@ -105,7 +113,7 @@ jobs:
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [624]
 
-        TRAIN_BATCH_SIZE: [1] # This is using gradient accumulation, batch size of 1 = 32 data points
+        TRAIN_BATCH_SIZE: [10] # This is using gradient accumulation, batch size of 1 = 32 data points
         TRAIN_NUMBER_OF_EPOCHS: [1]
         TRAIN_WARMUP_STEPS: [4000]
         TRAIN_L1_REGULARIZATION: [0]
@@ -174,7 +182,6 @@ jobs:
         run: nvidia-smi
       - name: Run training loop
         run: python -m train.sentiment_analysis
-        timeout-minutes: 90
       - name: Evaluate model
         run: echo "Not implemented."
 
