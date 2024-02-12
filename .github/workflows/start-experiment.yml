@@ -24,14 +24,22 @@ jobs:
         id: get_experiment_id
         run: |
           from mlflow import MlflowClient
+          import subprocess
           import requests
           import json
+
           client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
           experiment_name = "${{ github.event.pull_request.title }}"
           experiment_name = experiment_name[11:]
           experiment_name = "${{ github.event.pull_request.number }}:" + experiment_name
           experiment = client.get_experiment_by_name(experiment_name)
-          print(f'"experiment_id={experiment.experiment_id}" >> "$GITHUB_OUTPUT"')
+
+          subprocess.run(
+              f'echo "experiment_id={experiment_id}" >> $GITHUB_OUTPUT',
+              shell=True,
+              check=True
+          )
+
 
   run-experiment:
     uses: digital-defiance/llm-voice-chat/.github/workflows/train-model-sentiment-analysis-task-asa.yml@main
