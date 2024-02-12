@@ -11,7 +11,7 @@ env:
 jobs:
   create-experiment:
     name: Start experiment
-    if: startsWith(github.event.head_commit.message, 'experiment:')
+    if: startsWith(github.event.head_commit.message, 'run:')
     runs-on: ubuntu-latest
     outputs:
       experiment_id: ${{ steps.get_experiment_id.outputs.experiment_id }}
@@ -29,7 +29,7 @@ jobs:
           from mlflow import MlflowClient
           client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
           experiment_name = "${{ github.event.head_commit.message }}"
-          experiment_name = experiment_name[11:]
+          experiment_name = experiment_name[3:]
           experiment_id = client.create_experiment(
               experiment_name,
               artifact_location="s3://digitaldefiancemlartifacts",
@@ -222,7 +222,7 @@ jobs:
       - start-runner
       - training-loop-worker
     runs-on: ubuntu-latest
-    if: ${{ always() && startsWith(github.event.head_commit.message, 'experiment:') }} # required to stop the runner even if the error happened in the previous jobs
+    if: ${{ always() && startsWith(github.event.head_commit.message, 'run:') }} # required to stop the runner even if the error happened in the previous jobs
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
