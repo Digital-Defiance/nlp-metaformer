@@ -11,6 +11,7 @@ from data.worker import request_data, request_task_cleanup
 from mlflow import log_metrics, start_run, log_param
 import mlflow
 import gc
+import os
 
 spark_seed = torch.randint(low=1, high=10_000, size=(1,)).item()
 torch_seed = torch.randint(low=1, high=10_000, size=(1,)).item()
@@ -104,11 +105,11 @@ with start_run(**mlflow_settings.model_dump()) as run:
                 logger.info(f"Emptied gpu cache.")
     
             logger.info(f"Fetching slice {epoch_slice_idx} from worker...")
-            rating, text = task.get()
-            logger.info("Fetched slice from worker.")
-            request_task_cleanup(task.id)
-            logger.info("Requested task cleanup.")
-            
+            rating_b_path, text_bw_path = task.get()
+            rating = np.load(rating_b_path)
+            text = np.load(text_bw_path)
+            os.remove(rating_b_path)
+            os.remove(text_bw_path)
             rating, text = torch.tensor(rating), torch.tensor(text)
             random_idx = torch.randperm(len(rating))
             rating, text = rating[random_idx], text[random_idx]
