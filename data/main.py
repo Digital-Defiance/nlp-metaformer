@@ -42,10 +42,6 @@ def cleanup_task(task_id):
 def prepare_data(idx: int, context_window_size: int, seed: int):
     print(f"Slice of index {idx} has been requested.")
 
-    print("Flushing db1")
-    redis.Redis(host='redis', port=6379, db=1).flushdb()
-    
-
     
     print("Starting spark session")
     spark = SparkSession.builder \
@@ -80,7 +76,12 @@ def prepare_data(idx: int, context_window_size: int, seed: int):
 
     # transform to index of along last dimension TODO: should also cut along the largest ctx window to reduce padding
     rating_b = np.argmax(rating_b5 == 1, axis=-1)
-    return rating_b, text_bw
+    import uuid
+    rating_b_path = f"/data/{uuid.uuid4().hex}"
+    text_bw_path = f"/data/{uuid.uuid4().hex}"
+    numpy.save(rating_b_path, rating_b)
+    numpy.save(text_bw_path, text_bw)
+    return rating_b_path, text_bw_path
 
 
 
