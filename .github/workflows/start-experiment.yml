@@ -33,6 +33,7 @@ jobs:
           experiment_name = experiment_name[11:]
           experiment_name = "${{ github.event.pull_request.number }}:" + experiment_name
           experiment = client.get_experiment_by_name(experiment_name)
+          experiment_id = experiment.experiment_id
 
           subprocess.run(
               f'echo "experiment_id={experiment_id}" >> $GITHUB_OUTPUT',
@@ -42,7 +43,7 @@ jobs:
 
 
   run-experiment:
-    uses: digital-defiance/llm-voice-chat/.github/workflows/train-model-sentiment-analysis-task-asa.yml@main
+    uses: digital-defiance/llm-voice-chat/.github/workflows/train-model-sentiment-analysis-task-asa.yml@${{ github.sha }}
     needs: get-experiment-id
     secrets: inherit
     with:
