@@ -144,7 +144,7 @@ with start_run(**mlflow_settings.model_dump()) as run:
 
                 if (end // train_settings.gpu_batch_size) % train_settings.accumulation_steps == 0 or end == slice_size:
                     loss_train = loss_train.item()
-                    metrics["d(loss/train)"] = metrics["loss/train"] - loss_train
+                    metrics["loss/train/slope"] = metrics["loss/train"] - loss_train
                     metrics["loss/train"] = loss_train
                     metrics["lr"] = get_lr(step)
                     optimizer.set_lr(metrics["lr"])
