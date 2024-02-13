@@ -138,6 +138,7 @@ jobs:
 
   training-loop-worker:
     name: Train and evaluate model
+    timeout-minutes: 10080 # = 60*24*7 (7 days)
     needs:
       - start-runner
       - download-data
@@ -225,10 +226,12 @@ jobs:
     steps:
       - name: Check if container sees gpu
         run: nvidia-smi
+        timeout-minutes: 1
       - name: Run training loop
         timeout-minutes: 10080 # = 60*24*7 (7 days)
         run: python -m train.sentiment_analysis
       - name: Evaluate model
+        timeout-minutes: 1
         run: echo "Not implemented."
 
   stop-runner:
