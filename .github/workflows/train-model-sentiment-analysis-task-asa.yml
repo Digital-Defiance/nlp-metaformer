@@ -48,7 +48,6 @@ jobs:
               check=True
           )
 
-
   start-runner:
     name: "Start EC2 Spot Instance: g4dn.xlarge"
     needs: create-experiment
