@@ -143,16 +143,16 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        MODEL_COORDINATES: [64]
+        MODEL_COORDINATES: [128]
         MODEL_NUMBER_OF_HEADS: [8]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [2]
+        MODEL_NUMBER_OF_BLOCKS: [3]
         MODEL_TOKENS: [50263]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [50]
 
-        TRAIN_GPU_BATCH_SIZE: [2048]
-        TRAIN_ACCUMULATION_STEPS: [2]
+        TRAIN_GPU_BATCH_SIZE: [1024]
+        TRAIN_ACCUMULATION_STEPS: [4]
         TRAIN_NUMBER_OF_EPOCHS: [100]
         TRAIN_WARMUP_STEPS: [1000]
         TRAIN_L1_REGULARIZATION: [0]
