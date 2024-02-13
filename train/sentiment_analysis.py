@@ -14,33 +14,11 @@ import gc
 import os
 import numpy as np
 
-spark_seed = 1 # torch.randint(low=1, high=10_000, size=(1,)).item()
-torch_seed = 1 # torch.randint(low=1, high=10_000, size=(1,)).item()
-torch.manual_seed(torch_seed)
-
-BATCH_SIZE = 1024 # todo
-
-
-torch.autograd.set_detect_anomaly(True)
-
-logger = get_logger(__name__)
-logger.info(f"Using device {DEVICE}")
-logger.info(f"Using torch version {torch.__version__}")
-logger.info(f"Using mlflow version {mlflow.__version__}")
-
-model_factory =  ModelFactory()
-task = request_data(0, model_factory.words, spark_seed)
-logger.info(f"Requested slice 0")
-
-
-class Adam(torch.optim.Adam):
-    def set_lr(self, lr: float) -> None:
-        for param_group in self.param_groups:
-            param_group['lr'] = lr
-
 class TrainSettings(BaseSettings, MyBaseSettingsMixin):
     number_of_epochs: int = 100
-    batch_size: int = 2
+    gpu_batch_size: int = 1024
+    accumulation_steps: int = 1
+
     number_of_slices: int = 2
     l1_regularization: float = 0
     l2_regularization: float = 0
@@ -49,9 +27,36 @@ class TrainSettings(BaseSettings, MyBaseSettingsMixin):
     epsilon: float = 1e-9
     warmup_steps: int = 4000
     lr_schedule_scaling: float = 1
+    spark_seed: int = 1 # torch.randint(low=1, high=10_000, size=(1,)).item()
+    torch_seed: int = 1 # torch.randint(low=1, high=10_000, size=(1,)).item()
 
     class Config:
         env_prefix = "TRAIN_"
+        
+train_settings = TrainSettings()
+model_factory =  ModelFactory()
+
+task = request_data(0, model_factory.words, train_settings.spark_seed)
+logger.info(f"Requested slice 0")
+
+
+torch.manual_seed(train_settings.torch_seed)
+torch.autograd.set_detect_anomaly(True)
+
+logger = get_logger(__name__)
+logger.info(f"Using device {DEVICE}")
+logger.info(f"Using torch version {torch.__version__}")
+logger.info(f"Using mlflow version {mlflow.__version__}")
+
+
+
+class Adam(torch.optim.Adam):
+    def set_lr(self, lr: float) -> None:
+        for param_group in self.param_groups:
+            param_group['lr'] = lr
+
+
+
 
 class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
     run_id: Optional[str] = None
@@ -67,7 +72,6 @@ class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
 
 
 mlflow_settings = MLFlowSettings()
-train_settings = TrainSettings()
 
 def get_lr(step: int) -> float:
     lr = min(step ** -0.5, step * train_settings.warmup_steps ** -1.5)
@@ -77,8 +81,6 @@ def get_lr(step: int) -> float:
 
 with start_run(**mlflow_settings.model_dump()) as run:
     logger.info("Connected to MLFlow and started run.")
-    log_param("spark_seed", spark_seed)
-    log_param("torch_seed", torch_seed)
 
     model = SentimentAnalysisModel(model_factory).to(DEVICE)
     logger.info(f"Created model and moved it to {DEVICE}")
@@ -120,33 +122,36 @@ with start_run(**mlflow_settings.model_dump()) as run:
             rating, text = rating[random_idx], text[random_idx]
             del random_idx
 
-            task = request_data(epoch_slice_idx, model_factory.words, spark_seed)
-            logger.info(f"Scheduled slice {epoch_slice_idx}, task id is {task.id}.")
+            task = request_data(epoch_slice_idx + 1, model_factory.words, train_settings.spark_seed)
+            logger.info(f"Scheduled slice {epoch_slice_idx + 1}, task id is {task.id}.")
 
             metrics: dict[str, str | int ] = {
                 "epoch": epoch,
                 "slice_idx": epoch_slice_idx,
+                "loss/train": 0
             }
 
             slice_size = len(rating)
             logger.info(f"Epoch {epoch}, Slice {epoch_slice_idx}")
-            for start in range(0, slice_size, BATCH_SIZE):
+            for start in range(0, slice_size, train_settings.gpu_batch_size):
                 # Create batch from the slice
-                end = start + BATCH_SIZE
+                end = start + train_settings.gpu_batch_size
                 rating_batch_b = rating[start:end].to(DEVICE)
                 text_batch_bw = text[start:end].to(DEVICE)
 
                 # Perform feed forward + backwards propagation + gradient descent
                 pred_logits_b5 = model(text_batch_bw)
                 loss_train = loss_function(pred_logits_b5, rating_batch_b)
-                (loss_train / train_settings.batch_size).backward()
+                (loss_train / train_settings.accumulation_steps).backward()
 
-                if (end // BATCH_SIZE) % train_settings.batch_size == 0 or end == slice_size:
-                    metrics["loss/train"] = loss_train.item()
+                if (end // train_settings.gpu_batch_size) % train_settings.accumulation_steps == 0 or end == slice_size:
+                    loss_train = loss_train.item()
+                    metrics["d(loss/train)"] = metrics["loss/train"] - loss_train
+                    metrics["loss/train"] = loss_train
                     metrics["lr"] = get_lr(step)
                     optimizer.set_lr(metrics["lr"])
                     optimizer.step()
                     optimizer.zero_grad()
                     log_metrics(metrics, step=step)
                     step += 1
-                   
+
