@@ -111,15 +111,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-  run-web-ssh:
-    name: Start ssh webapp
-    needs: start-runner
-    timeout-minutes: 1
-    runs-on: ${{ needs.start-runner.outputs.label }}
-    steps:
-      - name: Checkout repository
-        run: docker run -d -p 3000:3000 --name wetty wettyoss/wetty --ssh-host 172.17.0.1
-
   pull-images:
     timeout-minutes: 10
     name: Pull image
