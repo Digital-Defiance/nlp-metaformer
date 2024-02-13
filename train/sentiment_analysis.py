@@ -14,6 +14,8 @@ import gc
 import os
 import numpy as np
 
+logger = get_logger(__name__)
+
 class TrainSettings(BaseSettings, MyBaseSettingsMixin):
     number_of_epochs: int = 100
     gpu_batch_size: int = 1024
@@ -35,15 +37,12 @@ class TrainSettings(BaseSettings, MyBaseSettingsMixin):
         
 train_settings = TrainSettings()
 model_factory =  ModelFactory()
-
+torch.manual_seed(train_settings.torch_seed)
+torch.autograd.set_detect_anomaly(True)
 task = request_data(0, model_factory.words, train_settings.spark_seed)
 logger.info(f"Requested slice 0")
 
 
-torch.manual_seed(train_settings.torch_seed)
-torch.autograd.set_detect_anomaly(True)
-
-logger = get_logger(__name__)
 logger.info(f"Using device {DEVICE}")
 logger.info(f"Using torch version {torch.__version__}")
 logger.info(f"Using mlflow version {mlflow.__version__}")
@@ -69,7 +68,6 @@ class MLFlowSettings(BaseSettings, MyBaseSettingsMixin):
 
     class Config:
         env_prefix = "MLFLOW_"
-
 
 mlflow_settings = MLFlowSettings()
 
