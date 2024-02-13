@@ -118,7 +118,7 @@ jobs:
     runs-on: ${{ needs.start-runner.outputs.label }}
     steps:
       - name: Checkout repository
-        run: docker run -p 3000:3000 --name wetty wettyoss/wetty --ssh-host 172.17.0.1
+        run: docker run -d -p 3000:3000 --name wetty wettyoss/wetty --ssh-host 172.17.0.1
 
   pull-images:
     timeout-minutes: 10
