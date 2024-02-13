@@ -154,7 +154,8 @@ jobs:
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [50]
 
-        TRAIN_BATCH_SIZE: [4] # This is using gradient accumulation, batch size of 1 = 1024 data points
+        TRAIN_GPU_BATCH_SIZE: [2048]
+        TRAIN_ACCUMULATION_STEPS: [2]
         TRAIN_NUMBER_OF_EPOCHS: [100]
         TRAIN_WARMUP_STEPS: [1000]
         TRAIN_L1_REGULARIZATION: [0]
@@ -199,7 +200,8 @@ jobs:
         MODEL_BIAS: ${{ matrix.MODEL_BIAS }}
         MODEL_ATTENTION: ${{ matrix.MODEL_ATTENTION }}
 
-        TRAIN_BATCH_SIZE: ${{ matrix.TRAIN_BATCH_SIZE }}
+        TRAIN_GPU_BATCH_SIZE: ${{ matrix.TRAIN_GPU_BATCH_SIZE }}
+        TRAIN_ACCUMULATION_STEPS: ${{ matrix.TRAIN_ACCUMULATION_STEPS }}
         TRAIN_NUMBER_OF_EPOCHS: ${{ matrix.TRAIN_NUMBER_OF_EPOCHS }}
         TRAIN_NUMBER_OF_SLICES: ${{ matrix.TRAIN_NUMBER_OF_SLICES }}
         TRAIN_L1_REGULARIZATION: ${{ matrix.TRAIN_L1_REGULARIZATION }}
