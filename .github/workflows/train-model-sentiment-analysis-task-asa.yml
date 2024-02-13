@@ -31,10 +31,16 @@ jobs:
           client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
           experiment_name = """${{ github.event.head_commit.message }}"""
           experiment_name = experiment_name.splitlines()[0][4:]
-          experiment_id = client.create_experiment(
-              experiment_name + " (${{ github.sha }})",
-              artifact_location="s3://digitaldefiancemlartifacts",
-          )
+          experiment_name = experiment_name + " (${{ github.sha }})"
+
+          experiment_id = client.get_experiment_by_name(experiment_name)
+
+          if experiment_id is None:
+              experiment_id = client.create_experiment(
+                  experiment_name,
+                  artifact_location="s3://digitaldefiancemlartifacts",
+              )
+
           experiment = client.get_experiment(experiment_id)
           print(f"Name: {experiment.name}")
           print(f"Experiment_id: {experiment.experiment_id}")
