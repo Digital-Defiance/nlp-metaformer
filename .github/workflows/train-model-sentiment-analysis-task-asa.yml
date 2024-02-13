@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       experiment_id: ${{ steps.create_experiment.outputs.experiment_id }}
+      experiment_name: ${{ steps.create_experiment.outputs.experiment_name }}
     container:
       image: ghcr.io/digital-defiance/mlflow:main
       env:
@@ -44,6 +45,12 @@ jobs:
 
           subprocess.run(
               f'echo "experiment_id={experiment_id}" >> $GITHUB_OUTPUT',
+              shell=True,
+              check=True
+          )
+
+          subprocess.run(
+              f'echo "experiment_name={experiment.name}" >> $GITHUB_OUTPUT',
               shell=True,
               check=True
           )
@@ -200,8 +207,8 @@ jobs:
         TRAIN_LR_SCHEDULE_SCALING: ${{ matrix.TRAIN_LR_SCHEDULE_SCALING }}
 
         MLFLOW_EXPERIMENT_ID: ${{ needs.create-experiment.outputs.experiment_id }}
+        MLFLOW_RUN_NAME: "${{ needs.create-experiment.outputs.experiment_id }}/1"
         MLFLOW_TRACKING_URI: ${{ secrets.DB_URI }}
-        MLFLOW_RUN_NAME: ${{ github.sha }}
         MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
 
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
