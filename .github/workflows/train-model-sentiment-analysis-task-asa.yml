@@ -5,7 +5,7 @@ on:
 
 env:
   AWS_REGION: eu-south-1
- 
+
 jobs:
   create-experiment:
     name: Start experiment
@@ -207,7 +207,7 @@ jobs:
         TRAIN_LR_SCHEDULE_SCALING: ${{ matrix.TRAIN_LR_SCHEDULE_SCALING }}
 
         MLFLOW_EXPERIMENT_ID: ${{ needs.create-experiment.outputs.experiment_id }}
-        MLFLOW_RUN_NAME: "${{ needs.create-experiment.outputs.experiment_id }}/1"
+        MLFLOW_RUN_NAME: "${{ needs.create-experiment.outputs.experiment_name }}/1"
         MLFLOW_TRACKING_URI: ${{ secrets.DB_URI }}
         MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
 
