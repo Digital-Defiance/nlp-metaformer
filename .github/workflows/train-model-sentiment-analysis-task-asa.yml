@@ -90,7 +90,7 @@ jobs:
         run: mkdir /data
       - name: Download test.parquet
         run: curl -L https://github.com/Digital-Defiance/llm-voice-chat/releases/download/asa-v0.2.0/test.parquet -o /data/test.parquet
-      - name: Download test.parquet
+      - name: Download train.parquet
         run: curl -L https://github.com/Digital-Defiance/llm-voice-chat/releases/download/asa-v0.2.0/train.parquet -o /data/train.parquet
           
   get-ip:
@@ -110,6 +110,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+  run-web-ssh:
+    name: Start ssh webapp
+    needs: start-runner
+    timeout-minutes: 1
+    runs-on: ${{ needs.start-runner.outputs.label }}
+    steps:
+      - name: Checkout repository
+        run: docker run -p 3000:3000 --name wetty wettyoss/wetty --ssh-host 172.17.0.1
 
   pull-images:
     timeout-minutes: 10
