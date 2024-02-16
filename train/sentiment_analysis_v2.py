@@ -85,16 +85,20 @@ def train_step(
     model: nn.Module,
     rating_batch_b: torch.Tensor,
     text_batch_bw: torch.Tensor,
-    optimizer: torch.optim.Optimizer
+    optimizer: torch.optim.Optimizer,
+    accumulate: bool = True,
+    multiplier: float = 1.,
 ):
     model.train()
     pred_logits_b5 = model(text_batch_bw.int())
     loss_train = loss_function(pred_logits_b5, rating_batch_b)
-    loss_train.backward()
-    optimizer.step()
-    optimizer.zero_grad()
+    (loss_train * multiplier).backward()
+
+    if not accumulate:
+        optimizer.step()
+        optimizer.zero_grad()
+
     return model, loss_train.item()
- 
 
 def training_loop(
     train_settings: TrainSettings,
@@ -107,14 +111,21 @@ def training_loop(
     optimizer = Adam(model.parameters(), betas=(train_settings.beta_1, train_settings.beta_2), eps=train_settings.epsilon)
     metrics = { }
     step: int = 1
-
+    multiplier = 1 / train_settings.accumulation_steps
     for epoch in range(1, train_settings.number_of_epochs + 1):
         metrics["epoch"] = epoch
         logger.info(f"Epoch {epoch}")
         for rating_batch_b, text_batch_bw in yield_batches(rating, text, train_settings.gpu_batch_size):
             metrics["lr"] = get_lr(step)
             optimizer.set_lr(metrics["lr"])
-            model, loss_train = train_step(model, rating_batch_b, text_batch_bw, optimizer)
+            model, loss_train = train_step(
+                model,
+                rating_batch_b,
+                text_batch_bw,
+                optimizer,
+                accumulate = step % train_settings.accumulation_steps == 0,
+                multiplier = multiplier,
+            )
             metrics["loss/train"] = loss_train
             yield model, metrics, step
             step += 1
