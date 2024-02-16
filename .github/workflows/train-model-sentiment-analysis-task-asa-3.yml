@@ -1,7 +1,8 @@
 name: "train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot"
 
+
 on:
-  workflow_dispatch:
+  push:
 
 env:
   AWS_REGION: eu-south-1
@@ -88,77 +89,31 @@ jobs:
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
           ec2-image-id: ami-0d1e2ba0458f0cd7a  # ami-04251dba4c4572e05  # base = ami-02fbad1683bc61f9f
-          ec2-instance-type: g4dn.xlarge
+          ec2-instance-type: g4dn.2xlarge
           subnet-id: subnet-0fc7dea0969cca860
           security-group-id: sg-0c4cc0c0be64f1b08
 
-  download-data:
-    name: Download dataset
-    needs: start-runner 
-    timeout-minutes: 5
-    runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
-    steps:
-      - name: Create /data folder
-        run: mkdir /data
-      - name: Download test.parquet
-        run: curl -L https://github.com/Digital-Defiance/llm-voice-chat/releases/download/asa-v0.2.0/test.parquet -o /data/test.parquet
-      - name: Download train.parquet
-        run: curl -L https://github.com/Digital-Defiance/llm-voice-chat/releases/download/asa-v0.2.0/train.parquet -o /data/train.parquet
-          
-  get-ip:
-    name: Get the instance ip
-    needs: start-runner 
-    timeout-minutes: 5
-    runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
-    steps:
-      - name: Send request to ifconfig.me
-        run: curl ifconfig.me
-
-  clone-repo:
-    name: Clone repository
-    needs: start-runner
-    timeout-minutes: 1
-    runs-on: ${{ needs.start-runner.outputs.label }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-  pull-images:
-    timeout-minutes: 10
-    name: Pull image
-    needs: start-runner 
-    runs-on: ${{ needs.start-runner.outputs.label }}
-    strategy:
-      fail-fast: true 
-      matrix:
-        IMAGE: ["ghcr.io/digital-defiance/data-worker:main", "ghcr.io/digital-defiance/training-loop-worker:main", "redis:5.0.0", "mher/flower"]
-    steps:
-      - name: Pull ${{ matrix.IMAGE }}
-        run: docker pull ${{ matrix.IMAGE }}
 
   training-loop-worker:
     name: Train and evaluate model
     timeout-minutes: 10080 # = 60*24*7 (7 days)
     needs:
       - start-runner
-      - download-data
-      - clone-repo
-      - pull-images
       - create-experiment
     runs-on: ${{ needs.start-runner.outputs.label }}
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        MODEL_COORDINATES: [256]
+        MODEL_COORDINATES: [96]
         MODEL_NUMBER_OF_HEADS: [16]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [5, 4, 3, 2, 1]
-        MODEL_TOKENS: [50263]
+        MODEL_NUMBER_OF_BLOCKS: [3]
+        MODEL_TOKENS: [50284]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
-        MODEL_WORDS: [128]
+        MODEL_WORDS: [250]
 
-        TRAIN_GPU_BATCH_SIZE: [512]
+        TRAIN_GPU_BATCH_SIZE: [256]
         TRAIN_ACCUMULATION_STEPS: [8]
         TRAIN_NUMBER_OF_EPOCHS: [100]
         TRAIN_WARMUP_STEPS: [1000]
@@ -167,33 +122,10 @@ jobs:
         TRAIN_NUMBER_OF_SLICES: ["59"]
         TRAIN_LR_SCHEDULE_SCALING: ["1"]
 
-    services:
-      redis:
-        image: redis:5.0.0
-        env:
-          REDIS_ARGS: "--client-output-buffer-limit normal 0 0 0 --client-output-buffer-limit replica 256mb 64mb 60 --client-output-buffer-limit pubsub 1000mb 2000mb 500"
-        options: --memory=3g --cpus 1  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=redis-queue --log-opt awslogs-create-group=true
-      data-worker:
-        image: ghcr.io/digital-defiance/data-worker:main
-        options: --memory=10g --cpus 3 --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=dataworker  --log-opt awslogs-create-group=true 
-        env:
-          TRAIN_N_SLICES: 60
-          SPARK_DRIVER_MEMORY: 5g
-          SPARK_EXECUTOR_MEMORY: 5g
-        volumes:
-          - /data:/data
-          - ${{ github.workspace }}:/app
-      flower:
-        image: mher/flower
-        env:
-          CELERY_BROKER_URL: redis://redis:6379/0
-        ports:
-          - "80:5555"
     container:
       image: ghcr.io/digital-defiance/training-loop-worker:main
-      options: --gpus all --cpus 1 --memory=6g  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=trainingloop  --log-opt awslogs-create-group=true
+      options: --gpus all  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=trainingloop  --log-opt awslogs-create-group=true
       volumes:
-        - /data:/data
         - ${{ github.workspace }}:/app
       env:
         MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
@@ -227,9 +159,19 @@ jobs:
       - name: Check if container sees gpu
         run: nvidia-smi
         timeout-minutes: 1
+      - name: Install git and git lfs
+        run: |
+          apt update
+          apt install git -y
+          apt install git-lfs -y
+          git lfs install
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          lfs: true
       - name: Run training loop
         timeout-minutes: 10080 # = 60*24*7 (7 days)
-        run: python -m train.sentiment_analysis
+        run: python -m train.sentiment_analysis_v2
       - name: Evaluate model
         timeout-minutes: 1
         run: echo "Not implemented."

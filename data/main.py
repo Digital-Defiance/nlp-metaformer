@@ -4,7 +4,7 @@ from functools import cache
 from pydantic_settings import BaseSettings
 import numpy as np
 from data.worker import celery_app
-
+import redis
 
 class SparkSettings(BaseSettings):
     driver_memory: str = "2g"
@@ -26,28 +26,18 @@ class TrainSettings(BaseSettings):
 train_settings = TrainSettings()
 
 
-@celery_app.task(name='cleanup_task')
-def cleanup_task(task_id):
-    try:
-        task = cleanup_task.AsyncResult(task_id)
-        task.forget()
-        print(f"Successfully cleaned up task {task_id}")
-    except Exception as e:
-        print(f"Failed to clean up task {task_id}: {e}")
-
-
-@celery_app.task(name='prepare_data')
+@celery_app.task(name='prepare_data', soft_time_limit=600, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def prepare_data(idx: int, context_window_size: int, seed: int):
     print(f"Slice of index {idx} has been requested.")
 
-    
     print("Starting spark session")
     spark = SparkSession.builder \
-                .master("local[*]") \
-                .appName("DATA_WORKER") \
-                .config("spark.driver.memory", spark_settings.driver_memory) \
-                .config("spark.executor.memory", spark_settings.executor_memory) \
-                .getOrCreate()
+        .master("local[*]") \
+        .appName("DATA_WORKER") \
+        .config("spark.driver.memory", spark_settings.driver_memory) \
+        .config("spark.executor.memory", spark_settings.executor_memory) \
+        .getOrCreate()
+
     print("Started spark session")
 
     train_slices = spark.read.parquet("/data/train.parquet").randomSplit(
@@ -67,9 +57,18 @@ def prepare_data(idx: int, context_window_size: int, seed: int):
     text_bw = np.array(text)[:, :context_window_size]
     rating_b5 = np.array(rating)
 
-    # transform to index of along last dimension
+    print("Cleaning up spark resources...")
+    spark.stop()
+    print("Done.")
+
+    # transform to index of along last dimension TODO: should also cut along the largest ctx window to reduce padding
     rating_b = np.argmax(rating_b5 == 1, axis=-1)
-    return rating_b, text_bw
+    import uuid
+    rating_b_path = f"/data/{uuid.uuid4().hex}"
+    text_bw_path = f"/data/{uuid.uuid4().hex}"
+    np.save(rating_b_path, rating_b)
+    np.save(text_bw_path, text_bw)
+    return rating_b_path, text_bw_path
 
 
 

@@ -1,0 +1,4 @@
+-P ubuntu-latest=-self-hosted
+--action-cache-path /workspaces/llm-voice-chat/data/pipeline_runs
+ --action-offline-mode
+ --artifact-server-path /workspaces/llm-voice-chat/data/pipeline_runs
