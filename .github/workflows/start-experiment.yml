@@ -1,0 +1,53 @@
+name: Start Experiment
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  get-experiment-id:
+    name: Start experiment
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'experiment:')
+    runs-on: ubuntu-latest
+    outputs:
+      experiment_id: ${{ steps.get_experiment_id.outputs.experiment_id }}
+    container:
+      image: ghcr.io/digital-defiance/mlflow:main
+      env:
+        MLFLOW_BACKEND_STORE_URI: ${{ secrets.DB_URI }}
+        AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
+    steps:
+      - name: Get experiment id and dispatch workflow
+        shell: python
+        id: get_experiment_id
+        run: |
+          from mlflow import MlflowClient
+          import subprocess
+          import requests
+          import json
+
+          client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
+          experiment_name = "${{ github.event.pull_request.title }}"
+          experiment_name = experiment_name[11:]
+          experiment_name = "${{ github.event.pull_request.number }}:" + experiment_name
+          experiment = client.get_experiment_by_name(experiment_name)
+          experiment_id = experiment.experiment_id
+
+          subprocess.run(
+              f'echo "experiment_id={experiment_id}" >> $GITHUB_OUTPUT',
+              shell=True,
+              check=True
+          )
+
+
+  run-experiment:
+    uses: digital-defiance/llm-voice-chat/.github/workflows/train-model-sentiment-analysis-task-asa.yml@${{ github.sha }}
+    needs: get-experiment-id
+    secrets: inherit
+    with:
+      experiment_id: ${{ needs.get-experiment-id.outputs.experiment_id }}
+    
+
+
