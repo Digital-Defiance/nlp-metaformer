@@ -147,7 +147,7 @@ jobs:
 
     container:
       image: ghcr.io/digital-defiance/training-loop-worker:main
-      options: --gpus all --cpus 1 --memory=6g  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=trainingloop  --log-opt awslogs-create-group=true
+      options: --gpus all  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=trainingloop  --log-opt awslogs-create-group=true
       volumes:
         - ${{ github.workspace }}:/app
       env:
