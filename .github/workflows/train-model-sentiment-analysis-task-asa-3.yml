@@ -1,0 +1,223 @@
+name: "train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot"
+
+on:
+  push:
+
+env:
+  AWS_REGION: eu-south-1
+
+jobs:
+  create-experiment:
+    name: Start experiment
+    if: startsWith(github.event.head_commit.message, 'run:')
+    runs-on: ubuntu-latest
+    outputs:
+      experiment_id: ${{ steps.create_experiment.outputs.experiment_id }}
+      experiment_name: ${{ steps.create_experiment.outputs.experiment_name }}
+    container:
+      image: ghcr.io/digital-defiance/mlflow:main
+      env:
+        MLFLOW_BACKEND_STORE_URI: ${{ secrets.DB_URI }}
+        AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
+    steps:
+      - name: Create experiment
+        id: create_experiment
+        shell: python
+        run: |
+          from mlflow import MlflowClient
+          import subprocess
+          client = MlflowClient(tracking_uri="${{ secrets.DB_URI }}")
+          experiment_name = """${{ github.event.head_commit.message }}"""
+          experiment_name = experiment_name.splitlines()[0][4:]
+          experiment_name = experiment_name + " (${{ github.sha }})"
+
+          experiment_id = client.get_experiment_by_name(experiment_name)
+
+          if experiment_id is None:
+              experiment_id = client.create_experiment(
+                  experiment_name,
+                  artifact_location="s3://digitaldefiancemlartifacts",
+              )
+
+          experiment = client.get_experiment(experiment_id)
+          print(f"Name: {experiment.name}")
+          print(f"Experiment_id: {experiment.experiment_id}")
+          print(f"Artifact Location: {experiment.artifact_location}")
+          print(f"Tags: {experiment.tags}")
+          print(f"Lifecycle_stage: {experiment.lifecycle_stage}")
+          print(f"Creation timestamp: {experiment.creation_time}")
+
+          subprocess.run(
+              f'echo "experiment_id={experiment_id}" >> $GITHUB_OUTPUT',
+              shell=True,
+              check=True
+          )
+
+          subprocess.run(
+              f'echo "experiment_name={experiment.name}" >> $GITHUB_OUTPUT',
+              shell=True,
+              check=True
+          )
+
+  start-runner:
+    name: "Start EC2 Spot Instance: g4dn.xlarge"
+    needs: create-experiment
+    runs-on: ubuntu-latest
+    outputs:
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:  ${{ env.AWS_REGION }}
+      - name: Start EC2 runner
+        id: start-ec2-runner
+        uses: digital-defiance/ec2-github-runner@feature/add-storage-option
+        with:
+          mode: start
+          root-volume-size: 50
+          iam-role-name: ec2-logs
+          pre-runner-script: |  # sudo yum update -y && sudo yum install docker git libicu -y
+              sudo systemctl enable docker
+              sudo systemctl start docker
+          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          market-type: spot
+          ec2-image-id: ami-0d1e2ba0458f0cd7a  # ami-04251dba4c4572e05  # base = ami-02fbad1683bc61f9f
+          ec2-instance-type: g4dn.xlarge
+          subnet-id: subnet-0fc7dea0969cca860
+          security-group-id: sg-0c4cc0c0be64f1b08
+
+ 
+  get-ip:
+    name: Get the instance ip
+    needs: start-runner 
+    timeout-minutes: 5
+    runs-on: ${{ needs.start-runner.outputs.label }} # run the job on the newly created runner
+    steps:
+      - name: Send request to ifconfig.me
+        run: curl ifconfig.me
+
+  clone-repo:
+    name: Clone repository
+    needs: start-runner
+    timeout-minutes: 1
+    runs-on: ${{ needs.start-runner.outputs.label }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+
+  pull-images:
+    timeout-minutes: 10
+    name: Pull image
+    needs: start-runner 
+    runs-on: ${{ needs.start-runner.outputs.label }}
+    strategy:
+      fail-fast: true 
+      matrix:
+        IMAGE: [ "ghcr.io/digital-defiance/training-loop-worker:main"]
+    steps:
+      - name: Pull ${{ matrix.IMAGE }}
+        run: docker pull ${{ matrix.IMAGE }}
+
+  training-loop-worker:
+    name: Train and evaluate model
+    timeout-minutes: 10080 # = 60*24*7 (7 days)
+    needs:
+      - start-runner
+      - clone-repo
+      - pull-images
+      - create-experiment
+    runs-on: ${{ needs.start-runner.outputs.label }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        MODEL_COORDINATES: [256]
+        MODEL_NUMBER_OF_HEADS: [16]  # note that coordinates must be divisible by these
+        MODEL_NUMBER_OF_BLOCKS: [5, 4, 3, 2, 1]
+        MODEL_TOKENS: [50263]
+        MODEL_BIAS: [false]
+        MODEL_ATTENTION: ["metric"]
+        MODEL_WORDS: [250]
+
+        TRAIN_GPU_BATCH_SIZE: [512]
+        TRAIN_ACCUMULATION_STEPS: [8]
+        TRAIN_NUMBER_OF_EPOCHS: [100]
+        TRAIN_WARMUP_STEPS: [1000]
+        TRAIN_L1_REGULARIZATION: [0]
+        TRAIN_L2_REGULARIZATION: [0]
+        TRAIN_NUMBER_OF_SLICES: ["59"]
+        TRAIN_LR_SCHEDULE_SCALING: ["1"]
+
+    container:
+      image: ghcr.io/digital-defiance/training-loop-worker:main
+      options: --gpus all --cpus 1 --memory=6g  --log-driver=awslogs --log-opt awslogs-region=eu-south-1 --log-opt awslogs-group=trainingloop  --log-opt awslogs-create-group=true
+      volumes:
+        - ${{ github.workspace }}:/app
+      env:
+        MODEL_COORDINATES: ${{ matrix.MODEL_COORDINATES }}
+        MODEL_NUMBER_OF_BLOCKS: ${{ matrix.MODEL_NUMBER_OF_BLOCKS }}
+        MODEL_NUMBER_OF_HEADS: ${{ matrix.MODEL_NUMBER_OF_HEADS }}
+        MODEL_WORDS:  ${{ matrix.MODEL_WORDS }}
+        MODEL_TOKENS: ${{ matrix.MODEL_TOKENS }}
+        MODEL_BIAS: ${{ matrix.MODEL_BIAS }}
+        MODEL_ATTENTION: ${{ matrix.MODEL_ATTENTION }}
+
+        TRAIN_GPU_BATCH_SIZE: ${{ matrix.TRAIN_GPU_BATCH_SIZE }}
+        TRAIN_ACCUMULATION_STEPS: ${{ matrix.TRAIN_ACCUMULATION_STEPS }}
+        TRAIN_NUMBER_OF_EPOCHS: ${{ matrix.TRAIN_NUMBER_OF_EPOCHS }}
+        TRAIN_NUMBER_OF_SLICES: ${{ matrix.TRAIN_NUMBER_OF_SLICES }}
+        TRAIN_L1_REGULARIZATION: ${{ matrix.TRAIN_L1_REGULARIZATION }}
+        TRAIN_L2_REGULARIZATION: ${{ matrix.TRAIN_L2_REGULARIZATION }}
+        TRAIN_WARMUP_STEPS: ${{ matrix.TRAIN_WARMUP_STEPS }}
+        TRAIN_LR_SCHEDULE_SCALING: ${{ matrix.TRAIN_LR_SCHEDULE_SCALING }}
+
+        MLFLOW_EXPERIMENT_ID: ${{ needs.create-experiment.outputs.experiment_id }}
+        MLFLOW_RUN_NAME: "${{ needs.create-experiment.outputs.experiment_name }}/1"
+        MLFLOW_TRACKING_URI: ${{ secrets.DB_URI }}
+        MLFLOW_ARTIFACTS_DESTINATION: s3://digitaldefiancemlartifacts
+
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ env.AWS_REGION }}
+
+        GIT_PYTHON_REFRESH: quiet
+    steps:
+      - name: Check if container sees gpu
+        run: nvidia-smi
+        timeout-minutes: 1
+      - name: Run training loop
+        timeout-minutes: 10080 # = 60*24*7 (7 days)
+        run: python -m train.sentiment_analysis_v2
+      - name: Evaluate model
+        timeout-minutes: 1
+        run: echo "Not implemented."
+
+  stop-runner:
+    name: Stop EC2 Spot instance
+    needs:
+      - start-runner
+      - training-loop-worker
+    runs-on: ubuntu-latest
+    if: ${{ always() && startsWith(github.event.head_commit.message, 'run:') }} # required to stop the runner even if the error happened in the previous jobs
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Stop EC2 runner
+        uses: digital-defiance/ec2-github-runner@v2
+        with:
+          mode: stop
+          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          label: ${{ needs.start-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
