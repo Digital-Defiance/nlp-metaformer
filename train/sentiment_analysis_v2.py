@@ -123,7 +123,7 @@ def training_loop(
         metrics["epoch"] = epoch
         logger.info(f"Epoch {epoch}")
         for rating_batch_b, text_batch_bw in yield_batches(rating, text, train_settings.gpu_batch_size):
-            metrics["lr"] = get_lr(1 + step // train_settings.accumulation_steps ) 
+            metrics["lr"] = get_lr(1 + step // train_settings.accumulation_steps )
             optimizer.set_lr(metrics["lr"])
             model, loss_train = train_step(
                 model,
@@ -148,12 +148,14 @@ def eval_model(model: nn.Module, rating: torch.Tensor, text: torch.Tensor):
         pred_rating_b = torch.argmax(pred_probs_b5, dim=1)
 
         # metric: confusion matrix
+        """
         confusion_matrix = torch.zeros(5, 5)
         for t, p in zip(rating.view(-1), pred_rating_b.view(-1)):
             confusion_matrix[t.long(), p.long()] += 1
         confusion_matrix = confusion_matrix / confusion_matrix.sum(1, keepdim=True)
+        """
 
-    return model, loss_eval.item(), confusion_matrix.tolist()
+    return model, loss_eval.item()# , confusion_matrix.tolist()
 
 
 
@@ -201,9 +203,9 @@ if __name__ == "__main__":
         for model, metrics, step in training_loop(train_settings, model, rating, text, get_lr):
             log_metrics(metrics, step=step)
             if step % train_settings.eval_interval == 0:
-                model, loss_eval, confusion_matrix = eval_model(model, test_rating, test_text)
+                model, loss_eval = eval_model(model, test_rating, test_text)
                 log_metrics({"loss/eval": loss_eval}, step=step)
-                log_metrics({"confusion_matrix": confusion_matrix}, step=step)
+                # log_metrics({"confusion_matrix": confusion_matrix}, step=step)
                 logger.info(f"Logged eval metrics for step {step}")
 
             if train_settings.model_save_interval > 0 and step % train_settings.model_save_interval == 0:
