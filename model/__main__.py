@@ -103,9 +103,9 @@ class SentimentAnalysisModel(nn.Module):
         super().__init__()
         self.transformer = model_factory.create_model(kind="encoder")
         self.transformer[-1] = nn.Sequential(
-            nn.Linear(model_factory.coordinates, model_factory.coordinates // 2, bias=model_factory.bias)
+            nn.Linear(model_factory.coordinates, model_factory.coordinates // 2, bias=model_factory.bias),
             nn.GELU(),
-            nn.Linear(model_factory.coordinates // 2, 5, bias=model_factory.bias)
+            nn.Linear(model_factory.coordinates // 2, 5, bias=model_factory.bias),
         )
         self.projection_w1 = nn.Linear(model_factory.words, 1)
 
