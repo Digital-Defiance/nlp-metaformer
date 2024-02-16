@@ -107,7 +107,7 @@ jobs:
         MODEL_COORDINATES: [256]
         MODEL_NUMBER_OF_HEADS: [16]  # note that coordinates must be divisible by these
         MODEL_NUMBER_OF_BLOCKS: [5, 4, 3, 2, 1]
-        MODEL_TOKENS: [50263]
+        MODEL_TOKENS: [60000]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [250]
