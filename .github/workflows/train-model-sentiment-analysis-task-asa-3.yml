@@ -108,6 +108,8 @@ jobs:
     timeout-minutes: 1
     runs-on: ${{ needs.start-runner.outputs.label }}
     steps:
+      - name: Install git lfs
+        run: git lfs install
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
