@@ -102,12 +102,18 @@ class SentimentAnalysisModel(nn.Module):
     def __init__(self, model_factory: ModelFactory):
         super().__init__()
         self.transformer = model_factory.create_model(kind="encoder")
-        self.transformer[-1] = nn.Linear(model_factory.coordinates, 5, bias=model_factory.bias)
+        self.transformer[-1] = nn.Sequential(
+            nn.Linear(model_factory.coordinates, model_factory.coordinates // 2, bias=model_factory.bias)
+            nn.GELU(),
+            nn.Linear(model_factory.coordinates // 2, 5, bias=model_factory.bias)
+        )
+        self.projection_w1 = nn.Linear(model_factory.words, 1)
 
     def forward(self, x_bw: Tensor) -> Tensor:
         x_bw5: Tensor = self.transformer(x_bw)
-        x_b5 = x_bw5.mean(dim=1)
-        return x_b5
+        x_b5w = x_bw5.transpose(-1, -2)
+        x_b51 = self.projection_w1(x_b5w)
+        return x_b51[:, :, 0]
     
 
 if __name__ == "__main__":
