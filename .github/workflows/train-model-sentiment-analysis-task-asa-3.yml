@@ -107,14 +107,14 @@ jobs:
       matrix:
         MODEL_COORDINATES: [96]
         MODEL_NUMBER_OF_HEADS: [16]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [3]
+        MODEL_NUMBER_OF_BLOCKS: [6]
         MODEL_TOKENS: [50284]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [250]
 
         TRAIN_GPU_BATCH_SIZE: [256]
-        TRAIN_ACCUMULATION_STEPS: [8]
+        TRAIN_ACCUMULATION_STEPS: [12]
         TRAIN_NUMBER_OF_EPOCHS: [100]
         TRAIN_WARMUP_STEPS: [1000]
         TRAIN_L1_REGULARIZATION: [0]
