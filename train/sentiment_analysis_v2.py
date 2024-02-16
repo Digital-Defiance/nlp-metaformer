@@ -67,6 +67,13 @@ def load_data():
     text = torch.tensor(text.astype(np.int32))
     return rating - 1, text
 
+def load_test_data():
+    test = np.load("data/asa/test.npz")
+    rating, text = test["rating"], test["text"]
+    rating = torch.tensor(rating.astype(np.int64))
+    text = torch.tensor(text.astype(np.int32))
+    return rating - 1, text
+
 loss_function = nn.CrossEntropyLoss()
 
 def yield_batches(rating: torch.Tensor, text: torch.Tensor, gpu_batch_size: int):
@@ -116,7 +123,7 @@ def training_loop(
         metrics["epoch"] = epoch
         logger.info(f"Epoch {epoch}")
         for rating_batch_b, text_batch_bw in yield_batches(rating, text, train_settings.gpu_batch_size):
-            metrics["lr"] = get_lr(step)
+            metrics["lr"] = get_lr(step // train_settings.accumulation_steps ) 
             optimizer.set_lr(metrics["lr"])
             model, loss_train = train_step(
                 model,
@@ -180,6 +187,10 @@ if __name__ == "__main__":
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"Model has {n_parameters} parameters")
 
+    test_rating, test_text = load_test_data()
+    test_rating = test_rating[:32].to(DEVICE)
+    test_text = test_text[:32].to(DEVICE)
+
     with start_run(**mlflow_settings.model_dump()) as run:
         logger.info("Connected to MLFlow and started run.")
         model_factory.save_to_mlflow()
@@ -190,8 +201,7 @@ if __name__ == "__main__":
         for model, metrics, step in training_loop(train_settings, model, rating, text, get_lr):
             log_metrics(metrics, step=step)
             if step % train_settings.eval_interval == 0:
-                continue
-                model, loss_eval, confusion_matrix = eval_model(model, rating, text)
+                model, loss_eval, confusion_matrix = eval_model(model, test_rating, test_text)
                 log_metrics({"loss/eval": loss_eval}, step=step)
                 log_metrics({"confusion_matrix": confusion_matrix}, step=step)
                 logger.info(f"Logged eval metrics for step {step}")
