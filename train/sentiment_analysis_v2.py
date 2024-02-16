@@ -78,7 +78,7 @@ loss_function = nn.CrossEntropyLoss()
 
 def yield_batches(rating: torch.Tensor, text: torch.Tensor, gpu_batch_size: int):
     cleanup_memory()
-    random_idx = np.random.permutation(len(rating))
+    random_idx = torch.randperm(len(rating))
     rating = rating[random_idx]
     text = text[random_idx]
     del random_idx
