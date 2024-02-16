@@ -4,7 +4,7 @@ from celery.result import AsyncResult
 celery_app = Celery(
     'celery_app',
     broker=f"redis://redis:6379/0",
-    backend=f"data.backend.CustomBackend://redis:6379/1",
+    backend=f"redis://redis:6379/1",
     broker_connection_retry_on_startup=True,
     result_serializer='json',
     accept_content=['json'],

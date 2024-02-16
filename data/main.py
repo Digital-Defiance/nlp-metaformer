@@ -26,28 +26,17 @@ class TrainSettings(BaseSettings):
 train_settings = TrainSettings()
 
 
-@celery_app.task(name='cleanup_task')
-def cleanup_task(task_id):
-    try:
-        task = cleanup_task.AsyncResult(task_id)
-        task.forget()
-        print(f"Successfully cleaned up task {task_id}")
-    except Exception as e:
-        print(f"Failed to clean up task {task_id}: {e}")
-
-
 @celery_app.task(name='prepare_data', soft_time_limit=600, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def prepare_data(idx: int, context_window_size: int, seed: int):
     print(f"Slice of index {idx} has been requested.")
 
-    
     print("Starting spark session")
     spark = SparkSession.builder \
-                .master("local[*]") \
-                .appName("DATA_WORKER") \
-                .config("spark.driver.memory", spark_settings.driver_memory) \
-                .config("spark.executor.memory", spark_settings.executor_memory) \
-                .getOrCreate()
+        .master("local[*]") \
+        .appName("DATA_WORKER") \
+        .config("spark.driver.memory", spark_settings.driver_memory) \
+        .config("spark.executor.memory", spark_settings.executor_memory) \
+        .getOrCreate()
 
     print("Started spark session")
 
