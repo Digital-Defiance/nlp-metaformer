@@ -12,3 +12,7 @@ WORKDIR /app
 RUN apt update && \ 
     apt install -y gcc libpq-dev && \
     pip install psycopg2==2.8.5
+
+RUN apt update && \ 
+    apt install -y git && \
+    apt install -y git-lfs
