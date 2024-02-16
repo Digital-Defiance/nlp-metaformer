@@ -179,6 +179,7 @@ if __name__ == "__main__":
         for model, metrics, step in training_loop(train_settings, model, rating, text, get_lr):
             log_metrics(metrics, step=step)
             if step % train_settings.eval_interval == 0:
+                continue
                 model, loss_eval, confusion_matrix = eval_model(model, rating, text)
                 log_metrics({"loss/eval": loss_eval}, step=step)
                 log_metrics({"confusion_matrix": confusion_matrix}, step=step)
