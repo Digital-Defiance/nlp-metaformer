@@ -137,6 +137,36 @@ def training_loop(
             yield model, metrics, step
             step += 1
 
+
+def accuracy(preds, labels):
+    return torch.sum(preds == labels).item() / len(preds)
+
+def precision_recall_f1(preds, labels, average='macro'):
+    precision = torch.zeros(num_classes)
+    recall = torch.zeros(num_classes)
+    f1 = torch.zeros(num_classes)
+
+    for class_idx in range(5):
+        true_positive = torch.sum((preds == class_idx) & (labels == class_idx)).item()
+        false_positive = torch.sum((preds == class_idx) & (labels != class_idx)).item()
+        false_negative = torch.sum((preds != class_idx) & (labels == class_idx)).item()
+
+        if true_positive + false_positive > 0:
+            precision[class_idx] = true_positive / (true_positive + false_positive)
+        if true_positive + false_negative > 0:
+            recall[class_idx] = true_positive / (true_positive + false_negative)
+        if precision[class_idx] + recall[class_idx] > 0:
+            f1[class_idx] = 2 * (precision[class_idx] * recall[class_idx]) / (precision[class_idx] + recall[class_idx])
+
+    if average == 'macro':
+        precision = torch.mean(precision)
+        recall = torch.mean(recall)
+        f1 = torch.mean(f1)
+
+    return precision.item(), recall.item(), f1.item()
+
+
+
 def eval_model(model: nn.Module, rating: torch.Tensor, text: torch.Tensor):
     model.eval()
     with torch.no_grad():
@@ -147,6 +177,10 @@ def eval_model(model: nn.Module, rating: torch.Tensor, text: torch.Tensor):
         pred_probs_b5 = torch.softmax(pred_logits_b5, dim=1)
         pred_rating_b = torch.argmax(pred_probs_b5, dim=1)
 
+        acc = accuracy(pred_rating_b, rating)
+        precision, recall, f1 = precision_recall_f1(pred_rating_b, rating)
+        
+
         # metric: confusion matrix
         """
         confusion_matrix = torch.zeros(5, 5)
@@ -155,7 +189,7 @@ def eval_model(model: nn.Module, rating: torch.Tensor, text: torch.Tensor):
         confusion_matrix = confusion_matrix / confusion_matrix.sum(1, keepdim=True)
         """
 
-    return model, loss_eval.item()# , confusion_matrix.tolist()
+    return model, loss_eval.item(), acc, precision, recall, f1 # , confusion_matrix.tolist()
 
 
 
@@ -203,8 +237,13 @@ if __name__ == "__main__":
         for model, metrics, step in training_loop(train_settings, model, rating, text, get_lr):
             log_metrics(metrics, step=step)
             if step % train_settings.eval_interval == 0:
-                model, loss_eval = eval_model(model, test_rating, test_text)
-                log_metrics({"loss/eval": loss_eval}, step=step)
+                model, loss_eval, precision, recall, f1 = eval_model(model, test_rating, test_text)
+                log_metrics({
+                    "loss/eval": loss_eval,
+                    "precision/eval": precision,
+                    "recall/eval": recall,
+                    "f1/eval": f1,
+                }, step=step)
                 # log_metrics({"confusion_matrix": confusion_matrix}, step=step)
                 logger.info(f"Logged eval metrics for step {step}")
 
