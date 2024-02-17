@@ -113,8 +113,8 @@ jobs:
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [250]
 
-        TRAIN_GPU_BATCH_SIZE: [1024. 512, 256]
-        TRAIN_ACCUMULATION_STEPS: [1, 2, 4, 6, 8]
+        TRAIN_GPU_BATCH_SIZE: ["1024", "512", "256"]
+        TRAIN_ACCUMULATION_STEPS: ["1", "2", "4", "6", "8"]
         TRAIN_NUMBER_OF_EPOCHS: [1]
         TRAIN_WARMUP_STEPS: [1000]
         TRAIN_L1_REGULARIZATION: [0]
