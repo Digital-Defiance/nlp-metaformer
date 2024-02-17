@@ -121,6 +121,7 @@ jobs:
         TRAIN_L2_REGULARIZATION: [0]
         TRAIN_NUMBER_OF_SLICES: ["59"]
         TRAIN_LR_SCHEDULE_SCALING: ["1"]
+    
 
     container:
       image: ghcr.io/digital-defiance/training-loop-worker:main
