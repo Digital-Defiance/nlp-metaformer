@@ -239,12 +239,13 @@ if __name__ == "__main__":
         for model, metrics, step in training_loop(train_settings, model, rating, text, get_lr):
             log_metrics(metrics, step=step)
             if step % train_settings.eval_interval == 0:
-                model, loss_eval, precision, recall, f1 = eval_model(model, test_rating, test_text)
+                model, loss_eval, acc, precision, recall, f1 = eval_model(model, test_rating, test_text)
                 log_metrics({
                     "loss/eval": loss_eval,
                     "precision/eval": precision,
                     "recall/eval": recall,
                     "f1/eval": f1,
+                    "acc/eval": acc,
                 }, step=step)
                 # log_metrics({"confusion_matrix": confusion_matrix}, step=step)
                 logger.info(f"Logged eval metrics for step {step}")
