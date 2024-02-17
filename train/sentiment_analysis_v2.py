@@ -170,6 +170,9 @@ def precision_recall_f1(preds, labels, average='macro'):
 def eval_model(model: nn.Module, rating: torch.Tensor, text: torch.Tensor):
     model.eval()
     with torch.no_grad():
+        rating = rating[:1024].to(DEVICE)
+        text = text[:1024].to(DEVICE)
+
         pred_logits_b5 = model(text.int())
         loss_eval = loss_function(pred_logits_b5, rating)
 
@@ -224,8 +227,7 @@ if __name__ == "__main__":
     logger.info(f"Model has {n_parameters} parameters")
 
     test_rating, test_text = load_test_data()
-    test_rating = test_rating[:32].to(DEVICE)
-    test_text = test_text[:32].to(DEVICE)
+
 
     with start_run(**mlflow_settings.model_dump()) as run:
         logger.info("Connected to MLFlow and started run.")
