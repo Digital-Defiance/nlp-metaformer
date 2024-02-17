@@ -142,9 +142,9 @@ def accuracy(preds, labels):
     return torch.sum(preds == labels).item() / len(preds)
 
 def precision_recall_f1(preds, labels, average='macro'):
-    precision = torch.zeros(num_classes)
-    recall = torch.zeros(num_classes)
-    f1 = torch.zeros(num_classes)
+    precision = torch.zeros(5)
+    recall = torch.zeros(5)
+    f1 = torch.zeros(5)
 
     for class_idx in range(5):
         true_positive = torch.sum((preds == class_idx) & (labels == class_idx)).item()
