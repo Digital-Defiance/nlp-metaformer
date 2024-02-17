@@ -130,7 +130,7 @@ def training_loop(
                 rating_batch_b,
                 text_batch_bw,
                 optimizer,
-                accumulate = step % train_settings.accumulation_steps == 0,
+                apply_grad_desc = step % train_settings.accumulation_steps == 0,
                 multiplier = multiplier,
             )
             metrics["loss/train"] = loss_train
