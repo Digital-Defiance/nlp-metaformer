@@ -93,7 +93,7 @@ def train_step(
     rating_batch_b: torch.Tensor,
     text_batch_bw: torch.Tensor,
     optimizer: torch.optim.Optimizer,
-    accumulate: bool = True,
+    apply_grad_desc: bool = True,
     multiplier: float = 1.,
 ):
     model.train()
@@ -101,7 +101,7 @@ def train_step(
     loss_train = loss_function(pred_logits_b5, rating_batch_b)
     (loss_train * multiplier).backward()
 
-    if not accumulate:
+    if apply_grad_desc:
         optimizer.step()
         optimizer.zero_grad()
 
