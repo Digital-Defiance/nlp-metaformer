@@ -113,9 +113,9 @@ jobs:
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [250]
 
-        TRAIN_GPU_BATCH_SIZE: ["128", "64", "32", "16", "8", "4", "2"]
+        TRAIN_GPU_BATCH_SIZE: ["4096", "2048"]
         TRAIN_ACCUMULATION_STEPS: ["1"]
-        TRAIN_NUMBER_OF_EPOCHS: [1]
+        TRAIN_NUMBER_OF_EPOCHS: [100]
         TRAIN_WARMUP_STEPS: [1000]
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
@@ -171,7 +171,7 @@ jobs:
         with:
           lfs: true
       - name: Run training loop
-        timeout-minutes: 17 # 10080 # = 60*24*7 (7 days)
+        timeout-minutes: 10080 # = 60*24*7 (7 days)
         run: python -m train.sentiment_analysis_v2
       - name: Evaluate model
         timeout-minutes: 1
