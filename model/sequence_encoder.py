@@ -26,6 +26,9 @@ class SequenceEncoder(nn.Module):
         self.vocabolary_enconding_tc = nn.Embedding(params.tokens, params.coordinates)
         self.positional_encoding_wc = nn.Embedding(params.words, params.coordinates)
 
+
+        self.dropout = nn.Dropout(0.2)
+
         buffers = {
             "POSITION_INDICES_1w": torch.arange(0, params.words, dtype=torch.long, device=DEVICE).unsqueeze(0)
         }
@@ -39,4 +42,4 @@ class SequenceEncoder(nn.Module):
         assert words <= max_words, f"Size of sequence exceeds context window size of {max_words}"
         sentence_tokens_bwc = self.vocabolary_enconding_tc(sequence_bw)
         sentence_position_1wc = self.positional_encoding_wc(self.POSITION_INDICES_1w[:, :words])
-        return sentence_tokens_bwc + sentence_position_1wc
+        return self.dropout(sentence_tokens_bwc + sentence_position_1wc)
