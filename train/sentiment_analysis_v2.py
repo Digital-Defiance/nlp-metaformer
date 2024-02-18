@@ -26,7 +26,7 @@ class TrainSettings(BaseSettings, MyBaseSettingsMixin):
     lr_schedule_scaling: float = 1
     torch_seed: int = 1
 
-    eval_interval: int = 1000
+    eval_interval: int = 200
     model_save_interval: int = -1
 
 
@@ -123,7 +123,7 @@ def training_loop(
         metrics["epoch"] = epoch
         logger.info(f"Epoch {epoch}")
         for rating_batch_b, text_batch_bw in yield_batches(rating, text, train_settings.gpu_batch_size):
-            metrics["lr"] = .5e-3 # get_lr(1 + step // train_settings.accumulation_steps )
+            metrics["lr"] = .1e-3 # get_lr(1 + step // train_settings.accumulation_steps )
             optimizer.set_lr(metrics["lr"])
             model, loss_train = train_step(
                 model,
