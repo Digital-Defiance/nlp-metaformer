@@ -105,22 +105,23 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        MODEL_COORDINATES: [96]
-        MODEL_NUMBER_OF_HEADS: [16]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [3]
+        MODEL_COORDINATES: [256] 
+        MODEL_NUMBER_OF_HEADS: [8]  # note that coordinates must be divisible by these
+        MODEL_NUMBER_OF_BLOCKS: [1]
         MODEL_TOKENS: [50284]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [250]
 
-        TRAIN_GPU_BATCH_SIZE: [256]
-        TRAIN_ACCUMULATION_STEPS: [8]
-        TRAIN_NUMBER_OF_EPOCHS: [100]
+        TRAIN_GPU_BATCH_SIZE: ["512"]
+        TRAIN_ACCUMULATION_STEPS: ["1"]
+        TRAIN_NUMBER_OF_EPOCHS: [3]
         TRAIN_WARMUP_STEPS: [1000]
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
         TRAIN_NUMBER_OF_SLICES: ["59"]
         TRAIN_LR_SCHEDULE_SCALING: ["1"]
+    
 
     container:
       image: ghcr.io/digital-defiance/training-loop-worker:main

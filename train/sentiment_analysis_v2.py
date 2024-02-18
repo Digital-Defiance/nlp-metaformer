@@ -26,7 +26,7 @@ class TrainSettings(BaseSettings, MyBaseSettingsMixin):
     lr_schedule_scaling: float = 1
     torch_seed: int = 1
 
-    eval_interval: int = 1000
+    eval_interval: int = 200
     model_save_interval: int = -1
 
 
@@ -55,7 +55,7 @@ def cleanup_memory():
 
 
 
-class Adam(torch.optim.Adam):
+class Adam(torch.optim.AdamW):
     def set_lr(self, lr: float) -> None:
         for param_group in self.param_groups:
             param_group['lr'] = lr
@@ -78,7 +78,7 @@ loss_function = nn.CrossEntropyLoss()
 
 def yield_batches(rating: torch.Tensor, text: torch.Tensor, gpu_batch_size: int):
     cleanup_memory()
-    random_idx = np.random.permutation(len(rating))
+    random_idx = torch.randperm(len(rating))
     rating = rating[random_idx]
     text = text[random_idx]
     del random_idx
@@ -93,7 +93,7 @@ def train_step(
     rating_batch_b: torch.Tensor,
     text_batch_bw: torch.Tensor,
     optimizer: torch.optim.Optimizer,
-    accumulate: bool = True,
+    apply_grad_desc: bool = True,
     multiplier: float = 1.,
 ):
     model.train()
@@ -101,7 +101,7 @@ def train_step(
     loss_train = loss_function(pred_logits_b5, rating_batch_b)
     (loss_train * multiplier).backward()
 
-    if not accumulate:
+    if apply_grad_desc:
         optimizer.step()
         optimizer.zero_grad()
 
@@ -123,23 +123,56 @@ def training_loop(
         metrics["epoch"] = epoch
         logger.info(f"Epoch {epoch}")
         for rating_batch_b, text_batch_bw in yield_batches(rating, text, train_settings.gpu_batch_size):
-            metrics["lr"] = get_lr(1 + step // train_settings.accumulation_steps ) 
+            metrics["lr"] = .1e-3 # get_lr(1 + step // train_settings.accumulation_steps )
             optimizer.set_lr(metrics["lr"])
             model, loss_train = train_step(
                 model,
                 rating_batch_b,
                 text_batch_bw,
                 optimizer,
-                accumulate = step % train_settings.accumulation_steps == 0,
+                apply_grad_desc = step % train_settings.accumulation_steps == 0,
                 multiplier = multiplier,
             )
             metrics["loss/train"] = loss_train
             yield model, metrics, step
             step += 1
 
+
+def accuracy(preds, labels):
+    return torch.sum(preds == labels).item() / len(preds)
+
+def precision_recall_f1(preds, labels, average='macro'):
+    precision = torch.zeros(5)
+    recall = torch.zeros(5)
+    f1 = torch.zeros(5)
+
+    for class_idx in range(5):
+        true_positive = torch.sum((preds == class_idx) & (labels == class_idx)).item()
+        false_positive = torch.sum((preds == class_idx) & (labels != class_idx)).item()
+        false_negative = torch.sum((preds != class_idx) & (labels == class_idx)).item()
+
+        if true_positive + false_positive > 0:
+            precision[class_idx] = true_positive / (true_positive + false_positive)
+        if true_positive + false_negative > 0:
+            recall[class_idx] = true_positive / (true_positive + false_negative)
+        if precision[class_idx] + recall[class_idx] > 0:
+            f1[class_idx] = 2 * (precision[class_idx] * recall[class_idx]) / (precision[class_idx] + recall[class_idx])
+
+    if average == 'macro':
+        precision = torch.mean(precision)
+        recall = torch.mean(recall)
+        f1 = torch.mean(f1)
+
+    return precision.item(), recall.item(), f1.item()
+
+
+
 def eval_model(model: nn.Module, rating: torch.Tensor, text: torch.Tensor):
     model.eval()
     with torch.no_grad():
+        rating = rating[:1024].to(DEVICE)
+        text = text[:1024].to(DEVICE)
+
         pred_logits_b5 = model(text.int())
         loss_eval = loss_function(pred_logits_b5, rating)
 
@@ -147,13 +180,19 @@ def eval_model(model: nn.Module, rating: torch.Tensor, text: torch.Tensor):
         pred_probs_b5 = torch.softmax(pred_logits_b5, dim=1)
         pred_rating_b = torch.argmax(pred_probs_b5, dim=1)
 
+        acc = accuracy(pred_rating_b, rating)
+        precision, recall, f1 = precision_recall_f1(pred_rating_b, rating)
+        
+
         # metric: confusion matrix
+        """
         confusion_matrix = torch.zeros(5, 5)
         for t, p in zip(rating.view(-1), pred_rating_b.view(-1)):
             confusion_matrix[t.long(), p.long()] += 1
         confusion_matrix = confusion_matrix / confusion_matrix.sum(1, keepdim=True)
+        """
 
-    return model, loss_eval.item(), confusion_matrix.tolist()
+    return model, loss_eval.item(), acc, precision, recall, f1 # , confusion_matrix.tolist()
 
 
 
@@ -188,8 +227,7 @@ if __name__ == "__main__":
     logger.info(f"Model has {n_parameters} parameters")
 
     test_rating, test_text = load_test_data()
-    test_rating = test_rating[:32].to(DEVICE)
-    test_text = test_text[:32].to(DEVICE)
+
 
     with start_run(**mlflow_settings.model_dump()) as run:
         logger.info("Connected to MLFlow and started run.")
@@ -201,9 +239,15 @@ if __name__ == "__main__":
         for model, metrics, step in training_loop(train_settings, model, rating, text, get_lr):
             log_metrics(metrics, step=step)
             if step % train_settings.eval_interval == 0:
-                model, loss_eval, confusion_matrix = eval_model(model, test_rating, test_text)
-                log_metrics({"loss/eval": loss_eval}, step=step)
-                log_metrics({"confusion_matrix": confusion_matrix}, step=step)
+                model, loss_eval, acc, precision, recall, f1 = eval_model(model, test_rating, test_text)
+                log_metrics({
+                    "loss/eval": loss_eval,
+                    "precision/eval": precision,
+                    "recall/eval": recall,
+                    "f1/eval": f1,
+                    "acc/eval": acc,
+                }, step=step)
+                # log_metrics({"confusion_matrix": confusion_matrix}, step=step)
                 logger.info(f"Logged eval metrics for step {step}")
 
             if train_settings.model_save_interval > 0 and step % train_settings.model_save_interval == 0:

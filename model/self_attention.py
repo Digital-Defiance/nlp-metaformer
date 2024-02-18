@@ -81,6 +81,9 @@ class MetricSelfAttention(nn.Module, SelfAttention):
 
         self.set_common_parameters(params, is_causal)
 
+        self.dropout_1 = nn.Dropout(0.1)
+        self.dropout_2 = nn.Dropout(0.1)
+
         buffers = {
             "INDICES": torch.triu_indices(row=self.K_DIMENSION, col=self.K_DIMENSION, offset=1, device=DEVICE),
         }
@@ -138,12 +141,14 @@ class MetricSelfAttention(nn.Module, SelfAttention):
             )
         
         all_scaled_dot_products_bnww = F.softmax(all_scaled_dot_products_bnww, dim=-1)
+        all_scaled_dot_products_bnww = self.dropout_1(all_scaled_dot_products_bnww)
 
         nudged_vectors_bnwk = all_dot_products_bnww @ all_projections1_bnwk
         nudged_vectors_bwnk = nudged_vectors_bnwk.transpose(1, 2).contiguous()
         nudged_vectors_bwc = nudged_vectors_bwnk.view(batch1, words1, coordinates1)
 
         out_sequence_bwc = self.mixer_cc(nudged_vectors_bwc)
+        out_sequence_bwc = self.dropout_2(out_sequence_bwc)
         return out_sequence_bwc
 
 
