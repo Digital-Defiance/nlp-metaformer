@@ -19,9 +19,9 @@ def make_perceptron_layer(coordinates: int) -> nn.Sequential:
 
     return nn.Sequential(
         nn.LayerNorm(coordinates),
-        nn.Linear(coordinates, 4*coordinates),
+        nn.Linear(coordinates, coordinates // 4),
         nn.GELU(),
-        nn.Linear(4*coordinates, coordinates),
+        nn.Linear(coordinates // 4, coordinates),
     )
 
 def make_attention_layer(params, is_causal: bool) -> nn.Sequential:
