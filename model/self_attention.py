@@ -82,6 +82,7 @@ class MetricSelfAttention(nn.Module, SelfAttention):
         self.set_common_parameters(params, is_causal)
 
         self.dropout_1 = nn.Dropout(0.1)
+        self.dropout_2 = nn.Dropout(0.1)
 
         buffers = {
             "INDICES": torch.triu_indices(row=self.K_DIMENSION, col=self.K_DIMENSION, offset=1, device=DEVICE),
@@ -147,6 +148,7 @@ class MetricSelfAttention(nn.Module, SelfAttention):
         nudged_vectors_bwc = nudged_vectors_bwnk.view(batch1, words1, coordinates1)
 
         out_sequence_bwc = self.mixer_cc(nudged_vectors_bwc)
+        out_sequence_bwc = self.dropout_2(out_sequence_bwc)
         return out_sequence_bwc
 
 
