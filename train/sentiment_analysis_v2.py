@@ -55,7 +55,7 @@ def cleanup_memory():
 
 
 
-class Adam(torch.optim.Adam):
+class Adam(torch.optim.AdamW):
     def set_lr(self, lr: float) -> None:
         for param_group in self.param_groups:
             param_group['lr'] = lr
