@@ -113,7 +113,7 @@ jobs:
         MODEL_ATTENTION: ["metric"]
         MODEL_WORDS: [250]
 
-        TRAIN_GPU_BATCH_SIZE: ["256"]
+        TRAIN_GPU_BATCH_SIZE: ["512"]
         TRAIN_ACCUMULATION_STEPS: ["1"]
         TRAIN_NUMBER_OF_EPOCHS: [3]
         TRAIN_WARMUP_STEPS: [1000]
