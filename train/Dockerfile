@@ -8,7 +8,6 @@ RUN mkdir /app
 WORKDIR /app
 
 
-
 RUN apt update && \ 
     apt install -y gcc libpq-dev && \
     pip install psycopg2==2.8.5
@@ -16,3 +15,6 @@ RUN apt update && \
 RUN apt update && \ 
     apt install -y git && \
     apt install -y git-lfs
+
+RUN pip install --upgrade huggingface_hub
+RUN pip install transformers

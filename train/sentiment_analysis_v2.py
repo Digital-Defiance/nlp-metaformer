@@ -1,3 +1,5 @@
+# type: ignore
+
 import torch
 from torch import nn
 from pydantic_settings import BaseSettings
