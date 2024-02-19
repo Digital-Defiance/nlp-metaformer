@@ -169,7 +169,7 @@ def precision_recall_f1(preds: torch.Tensor, labels: torch.Tensor, average: str 
 
 def eval_model(model: nn.Module):
     model.eval()
-    text, rating = load_test_data()
+    rating, text = load_test_data()
     with torch.no_grad():
         rating = rating[:1024].to(DEVICE)
         text = text[:1024].to(DEVICE)
