@@ -112,8 +112,10 @@ def training_loop(
     train_settings: TrainSettings,
     model: nn.Module,
 ):
-
-    optimizer = Adam(model.parameters(), betas=(train_settings.beta_1, train_settings.beta_2), eps=train_settings.epsilon)
+    
+    optimizer = Adam(
+        [p for p in model.parameters() if p.requires_grad],
+        betas=(train_settings.beta_1, train_settings.beta_2), eps=train_settings.epsilon)
     metrics: dict[str, int | float] = { }
     step: int = 1
     multiplier = 1 / train_settings.accumulation_steps
