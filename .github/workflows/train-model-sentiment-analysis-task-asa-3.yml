@@ -107,7 +107,7 @@ jobs:
       matrix:
         MODEL_COORDINATES: [128] 
         MODEL_NUMBER_OF_HEADS: [8]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [24, 12, 6, 3]
+        MODEL_NUMBER_OF_BLOCKS: [24, 12, 6, 3, 1]
         MODEL_TOKENS: [50284]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
