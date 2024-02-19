@@ -111,7 +111,7 @@ jobs:
         MODEL_TOKENS: [50284]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
-        MODEL_WORDS: [250]
+        MODEL_WORDS: [300]
 
         TRAIN_GPU_BATCH_SIZE: ["512"]
         TRAIN_ACCUMULATION_STEPS: ["1"]
