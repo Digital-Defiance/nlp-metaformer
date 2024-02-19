@@ -166,6 +166,8 @@ jobs:
           apt install git -y
           apt install git-lfs -y
           git lfs install
+          pip install --upgrade huggingface_hub
+          pip install transformers
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
