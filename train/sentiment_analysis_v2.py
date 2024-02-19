@@ -1,4 +1,3 @@
-# type: ignore
 
 import torch
 from torch import nn
@@ -62,15 +61,15 @@ class Adam(torch.optim.AdamW):
         for param_group in self.param_groups:
             param_group['lr'] = lr
 
-def load_data():
-    train = np.load("data/asa/train.npz")
+def load_data(path: str):
+    train = np.load(path)
     rating, text = train["rating"], train["text"]
     rating = torch.tensor(rating.astype(np.int64))
     text = torch.tensor(text.astype(np.int32))
     return rating - 1, text
 
 def load_test_data():
-    test = np.load("data/asa/test.npz")
+    test = np.load("data/test.npz")
     rating, text = test["rating"], test["text"]
     rating = torch.tensor(rating.astype(np.int64))
     text = torch.tensor(text.astype(np.int32))
@@ -112,45 +111,44 @@ def train_step(
 def training_loop(
     train_settings: TrainSettings,
     model: nn.Module,
-    rating: torch.Tensor,
-    text: torch.Tensor,
-    get_lr: callable,
 ):
 
     optimizer = Adam(model.parameters(), betas=(train_settings.beta_1, train_settings.beta_2), eps=train_settings.epsilon)
-    metrics = { }
+    metrics: dict[str, int | float] = { }
     step: int = 1
     multiplier = 1 / train_settings.accumulation_steps
     for epoch in range(1, train_settings.number_of_epochs + 1):
         metrics["epoch"] = epoch
         logger.info(f"Epoch {epoch}")
-        for rating_batch_b, text_batch_bw in yield_batches(rating, text, train_settings.gpu_batch_size):
-            metrics["lr"] = .1e-3 # get_lr(1 + step // train_settings.accumulation_steps )
-            optimizer.set_lr(metrics["lr"])
-            model, loss_train = train_step(
-                model,
-                rating_batch_b,
-                text_batch_bw,
-                optimizer,
-                apply_grad_desc = step % train_settings.accumulation_steps == 0,
-                multiplier = multiplier,
-            )
-            metrics["loss/train"] = loss_train
-            yield model, metrics, step
-            step += 1
+        for i in [0, 1]:
+            rating, text = load_data(f"data/train_{i}.npz")
+            for rating_batch_b, text_batch_bw in yield_batches(rating, text, train_settings.gpu_batch_size):
+                metrics["lr"] = .1e-3 # get_lr(1 + step // train_settings.accumulation_steps )
+                optimizer.set_lr(metrics["lr"])
+                model, loss_train = train_step(
+                    model,
+                    rating_batch_b,
+                    text_batch_bw,
+                    optimizer,
+                    apply_grad_desc = step % train_settings.accumulation_steps == 0,
+                    multiplier = multiplier,
+                )
+                metrics["loss/train"] = loss_train
+                yield model, metrics, step
+                step += 1
 
 
-def accuracy(preds, labels):
+def accuracy(preds: torch.Tensor, labels: torch.Tensor)-> float:
     return torch.sum(preds == labels).item() / len(preds)
 
-def precision_recall_f1(preds, labels, average='macro'):
+def precision_recall_f1(preds: torch.Tensor, labels: torch.Tensor, average: str ='macro') -> tuple[float, float, float]:
     precision = torch.zeros(5)
     recall = torch.zeros(5)
     f1 = torch.zeros(5)
 
     for class_idx in range(5):
-        true_positive = torch.sum((preds == class_idx) & (labels == class_idx)).item()
-        false_positive = torch.sum((preds == class_idx) & (labels != class_idx)).item()
+        true_positive = torch.sum((preds == class_idx) & (labels == class_idx)).item() 
+        false_positive = torch.sum((preds == class_idx) & (labels != class_idx)).item() 
         false_negative = torch.sum((preds != class_idx) & (labels == class_idx)).item()
 
         if true_positive + false_positive > 0:
@@ -169,8 +167,9 @@ def precision_recall_f1(preds, labels, average='macro'):
 
 
 
-def eval_model(model: nn.Module, rating: torch.Tensor, text: torch.Tensor):
+def eval_model(model: nn.Module):
     model.eval()
+    text, rating = load_test_data()
     with torch.no_grad():
         rating = rating[:1024].to(DEVICE)
         text = text[:1024].to(DEVICE)
@@ -199,15 +198,15 @@ def eval_model(model: nn.Module, rating: torch.Tensor, text: torch.Tensor):
 
 
 if __name__ == "__main__":
-    from mlflow import log_metrics, start_run, log_param, log_artifact, log_metrics
-    import mlflow
+    from mlflow import log_metrics, start_run, log_param, log_metrics # type: ignore
+    import mlflow # type: ignore
 
     train_settings = TrainSettings()
     model_factory =  ModelFactory()
     mlflow_settings = MLFlowSettings()
 
-    torch.manual_seed(train_settings.torch_seed)
-    torch.autograd.set_detect_anomaly(True)
+    torch.manual_seed(train_settings.torch_seed) # type: ignore
+    torch.autograd.set_detect_anomaly(True) # type: ignore
 
     logger.info(f"Using device {DEVICE}")
     logger.info(f"Using torch version {torch.__version__}")
@@ -219,16 +218,13 @@ if __name__ == "__main__":
         lr = min(lr, 1e-3)
         return lr * train_settings.lr_schedule_scaling
 
-    rating, text = load_data()
-    text = text[:, :model_factory.words]
+
 
     model = SentimentAnalysisModel(model_factory).to(DEVICE)
     logger.info(f"Created model and moved it to {DEVICE}")
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"Model has {n_parameters} parameters")
-
-    test_rating, test_text = load_test_data()
 
 
     with start_run(**mlflow_settings.model_dump()) as run:
@@ -238,10 +234,11 @@ if __name__ == "__main__":
         log_param("number_of_parameters", n_parameters)
         logger.info("Saved training info and hyperparameters to MLFLow")
 
-        for model, metrics, step in training_loop(train_settings, model, rating, text, get_lr):
+
+        for model, metrics, step in training_loop(train_settings, model):
             log_metrics(metrics, step=step)
             if step % train_settings.eval_interval == 0:
-                model, loss_eval, acc, precision, recall, f1 = eval_model(model, test_rating, test_text)
+                model, loss_eval, acc, precision, recall, f1 = eval_model(model)
                 log_metrics({
                     "loss/eval": loss_eval,
                     "precision/eval": precision,
@@ -252,12 +249,12 @@ if __name__ == "__main__":
                 # log_metrics({"confusion_matrix": confusion_matrix}, step=step)
                 logger.info(f"Logged eval metrics for step {step}")
 
-            if train_settings.model_save_interval > 0 and step % train_settings.model_save_interval == 0:
-                torch.save(model.state_dict(), f"model_{step}.pt")
-                log_artifact(f"model_{step}.pt")
-                logger.info(f"Saved model for step {step}")
+            # if train_settings.model_save_interval > 0 and step % train_settings.model_save_interval == 0:
+            #     torch.save(model.state_dict(), f"model_{step}.pt") # type: ignore
+            #     log_artifact(f"model_{step}.pt")
+            #    logger.info(f"Saved model for step {step}")
         
 
 
-            
+        
 
