@@ -125,7 +125,7 @@ def training_loop(
         for i in [0, 1]:
             rating, text = load_data(f"data/train_{i}.npz")
             for rating_batch_b, text_batch_bw in yield_batches(rating, text, train_settings.gpu_batch_size):
-                metrics["lr"] = .1e-3 # get_lr(1 + step // train_settings.accumulation_steps )
+                metrics["lr"] = .5e-4 # get_lr(1 + step // train_settings.accumulation_steps )
                 optimizer.set_lr(metrics["lr"])
                 model, loss_train = train_step(
                     model,
