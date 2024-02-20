@@ -1,3 +1,4 @@
+# type: ignore
 
 import torch.nn as nn
 from torch import Tensor
@@ -12,14 +13,18 @@ from typing import Literal, Optional
 from pydantic import model_validator
 from core.types import PositiveInt, TensorFloat, TensorInt
 import torch
+from transformers import AutoTokenizer, AutoModelForMaskedLM
+from functools import cache
 
+tokenizer = AutoTokenizer.from_pretrained("google-bert/bert-base-uncased")
+
+
+  
 gpt2_encoder = tiktoken.get_encoding("gpt2")
 
-
-
 class EncoderDecoder(nn.Module):
-    def __init__(self, params: "ModelFactory", encoder: nn.Sequential):
-        super(EncoderDecoder, self).__init__()
+    def __init__(self, params: "ModelFactory", encoder: nn.Sequential) -> None:
+        super(EncoderDecoder, self).__init__() # type: ignore
 
         self.sequence_encoder = encoder.pop(0)
         self.encoder = encoder
@@ -54,7 +59,7 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
     number_of_blocks: PositiveInt = 10
     number_of_heads: PositiveInt = 20
     bias: bool = False
-    attention: Literal["metric", "scaled_dot_product"] = "scaled_dot_product"
+    attention: Literal["metric", "scaled_dot_product"] = "metric"
 
     class Config:
         env_prefix = "MODEL_"
@@ -98,11 +103,19 @@ class ModelFactory(BaseSettings, MyBaseSettingsMixin):
 
 
 class SentimentAnalysisModel(nn.Module):
+    transformer: nn.Module
 
     def __init__(self, model_factory: ModelFactory):
         super().__init__()
-        self.transformer = model_factory.create_model(kind="encoder")
+    
+        self.transformer: nn.Module = model_factory.create_model(kind="encoder")
+        self.transformer[0] = nn.Sequential(
+            self._get_bert_embeddings(),
+            nn.Linear(768, model_factory.coordinates, bias=model_factory.bias),
+            nn.Dropout(0.1),
+        )
         self.transformer[-1] = nn.Sequential(
+            nn.LayerNorm(model_factory.coordinates),
             nn.Linear(model_factory.coordinates, model_factory.coordinates // 2, bias=model_factory.bias),
             nn.GELU(),
             nn.Linear(model_factory.coordinates // 2, 5, bias=model_factory.bias),
@@ -114,6 +127,14 @@ class SentimentAnalysisModel(nn.Module):
         x_b5w = x_bw5.transpose(-1, -2)
         x_b51 = self.projection_w1(x_b5w)
         return x_b51[:, :, 0]
+    
+    @staticmethod
+    def _get_bert_embeddings():# -> Any:
+        bert_base_uncased = AutoModelForMaskedLM.from_pretrained("google-bert/bert-base-uncased")
+        bert_embeddings = bert_base_uncased.bert.embeddings
+        for param in bert_embeddings.parameters():
+            param.requires_grad = False
+        return bert_embeddings
     
 
 if __name__ == "__main__":

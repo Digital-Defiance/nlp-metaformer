@@ -105,17 +105,17 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        MODEL_COORDINATES: [256] 
-        MODEL_NUMBER_OF_HEADS: [8]  # note that coordinates must be divisible by these
-        MODEL_NUMBER_OF_BLOCKS: [1]
+        MODEL_COORDINATES: [128]
+        MODEL_NUMBER_OF_HEADS: [8, 4]  # note that coordinates must be divisible by these
+        MODEL_NUMBER_OF_BLOCKS: [24, 23, 22, 21, 20, 19, 17, 15, 12, 6, 3, 1]
         MODEL_TOKENS: [50284]
         MODEL_BIAS: [false]
         MODEL_ATTENTION: ["metric"]
-        MODEL_WORDS: [250]
+        MODEL_WORDS: [300]
 
-        TRAIN_GPU_BATCH_SIZE: ["512"]
+        TRAIN_GPU_BATCH_SIZE: ["64"]
         TRAIN_ACCUMULATION_STEPS: ["1"]
-        TRAIN_NUMBER_OF_EPOCHS: [3]
+        TRAIN_NUMBER_OF_EPOCHS: [1000]
         TRAIN_WARMUP_STEPS: [1000]
         TRAIN_L1_REGULARIZATION: [0]
         TRAIN_L2_REGULARIZATION: [0]
@@ -166,6 +166,8 @@ jobs:
           apt install git -y
           apt install git-lfs -y
           git lfs install
+          pip install --upgrade huggingface_hub
+          pip install transformers
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
