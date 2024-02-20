@@ -120,7 +120,6 @@ class SentimentAnalysisModel(nn.Module):
             nn.GELU(),
             nn.Linear(model_factory.coordinates // 2, 5, bias=model_factory.bias),
         )
-
         self.projection_w1 = nn.Linear(model_factory.words, 1)
 
     def forward(self, x_bw: Tensor) -> Tensor:
