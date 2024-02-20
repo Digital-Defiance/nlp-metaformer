@@ -2,15 +2,16 @@
 
 Speak with a language model.
 
+---
 
-
+## Experiments
 
 | Name and Status | Dataset | Usability | Workflow Badge |
 |-----------------|---------|-----------|----------------|
-| Sentiment Analysis Task (On-Going) | [asa-v0.2.0](https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/asa-v0.2.0) | Deprecated | [![train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml/badge.svg?branch=main)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml) |
-| Sentiment Analysis Task (Completed) | stanford dataset | Outdated | [![train-model: Sentiment Analysis @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml) |
-| GPT Shakespeare Textgen (Completed) | [sha-v0.1.0](https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/sha-v0.1.0) | Outdated | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml) |
-| GPT Array Sorter Experiment (Completed) | Generated | Outdated | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml) |
+| Sentiment Analysis Task (Completed with success) | [asa-v0.2.0](https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/asa-v0.2.0) | Deprecated | [![train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml/badge.svg?branch=main)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml) |
+| Sentiment Analysis Task (Completed without success, model overfits easily) | stanford dataset | Outdated | [![train-model: Sentiment Analysis @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml) |
+| GPT Shakespeare Textgen (Completed with success) | [sha-v0.1.0](https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/sha-v0.1.0) | Outdated | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml) |
+| GPT Array Sorter Experiment (Completed with success) | Generated | Outdated | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml) |
 
 
 
