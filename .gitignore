@@ -3,3 +3,8 @@ __pycache__/
 var.sh
 *.log
 *.parquet
+
+
+# Added by cargo
+
+/target
