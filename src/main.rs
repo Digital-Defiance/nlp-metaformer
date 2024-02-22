@@ -1,59 +1,89 @@
+/*
 
+    TODO: residual connections
+    TODO: output tokenizer
+    TODO: the 1/sqrt(q) scale before the softmax in the self attention module
+*/
 use tch;
 use tch::nn::{self, Module };
 
-// export LD_LIBRARY_PATH=/workspace/.pyenv_mirror/user/current/lib/python3.12/site-packages/torch/lib
-// export LIBTORCH_USE_PYTORCH=1
-// export RUST_BACKTRACE=full
 
-struct ModelParameters {
+/*
+export LD_LIBRARY_PATH=/workspace/.pyenv_mirror/user/current/lib/python3.12/site-packages/torch/lib
+export LIBTORCH_USE_PYTORCH=1
+export RUST_BACKTRACE=full
+*/
+
+
+
+/// Defines structure of the quadratic attention model
+pub struct ModelParameters {
+
+    /// Dimension of the vector space that the network
+    /// uses internally to represent tokens 
     embedding_dimenson: i64,
+
+    /// Maximum number of tokens in the input sequence
     size_of_context_window: i64,
+
+    /// Total number of tokens that the network recognizes
     size_of_vocabolary: i64,
+
+    /// Number of attention modules per transformer block
     number_of_heads: i64
 }
 
 fn generate_init() -> nn::Init {
-    nn::Init::Randn { mean: 0., stdev: 3. }
+    nn::Init::Randn { mean: 0., stdev: 1. }
 }
 
-fn embedding_table(vs_path: &nn::Path, num_embeddings: i64, embedding_dim: i64) -> impl nn::Module {
-    let config = nn::EmbeddingConfig{
+
+/// Transforms integer valued tokens into positionally encoded embeddings.
+fn create_embedder_module(vs: &nn::Path, hp: &ModelParameters) -> impl nn::Module {
+ 
+    let config: nn::EmbeddingConfig = nn::EmbeddingConfig{
+    
+        /*
+        If True, gradient w.r.t. weight matrix will be a sparse tensor.
+        See Notes for more details regarding sparse gradients
+         */
         sparse: false,
+
+        // If given, this will scale gradients by the inverse of frequency of the words in the mini-batch
         scale_grad_by_freq: false,
+
+        /*
+        If specified, the entries at padding_idx do not contribute to the gradient; 
+        therefore, the embedding vector at padding_idx is not updated during training, 
+        i.e. it remains as a fixed “pad”. For a newly constructed Embedding, the embedding 
+        vector at padding_idx will default to all zeros, but can be updated to another
+        value to be used as the padding vector.
+         */
+        padding_idx: 0,
+
         ws_init: generate_init(),
-        padding_idx: 0
     };
-    nn::embedding(vs_path, num_embeddings, embedding_dim, config)
-}
 
+    let d: i64 = hp.embedding_dimenson;
+    let v: i64 = hp.size_of_vocabolary;
+    let c: i64 = hp.size_of_context_window;
 
-fn create_embedder_module(vs_path: &nn::Path, hyper_parameters: &ModelParameters) -> impl nn::Module {
+    let vocabolary_vd = nn::embedding(vs, v, d, config);
+    let positional_encoding_cd = nn::embedding(vs, c, d, config);
 
-    let vocabolary = embedding_table(
-        vs_path,
-        hyper_parameters.size_of_vocabolary, 
-        hyper_parameters.embedding_dimenson
-    );
-
-    let positional_encoding = embedding_table(
-        vs_path, 
-        hyper_parameters.size_of_context_window,
-        hyper_parameters.embedding_dimenson
-    );
-
-    nn::func(move |x_bc| {
-        vocabolary.forward(&x_bc) + positional_encoding.forward(&x_bc)
+    nn::func(move |x_bc: &tch::Tensor| {
+        vocabolary_vd.forward(&x_bc) + positional_encoding_cd.forward(&x_bc)
     })
 }
 
+/// Performs self attention N times using the quadratic form $xW_nx.T$ where $W_n$ is a learnable matrix.
+/// This is an early version of the metric self attention, where $W$ is forced to have the properties a metric tensor.
+fn quadratic_self_attention_module(vs_path: &nn::Path, hyper_parameters: &ModelParameters) -> impl nn::Module {
 
-fn self_attention_module(vs_path: &nn::Path, hyper_parameters: &ModelParameters) -> impl nn::Module {
-
-    let n = hyper_parameters.number_of_heads;
-    let d = hyper_parameters.embedding_dimenson;
-    let q = hyper_parameters.embedding_dimenson / hyper_parameters.number_of_heads;
-    let c = hyper_parameters.size_of_context_window;
+    let n: i64 = hyper_parameters.number_of_heads;
+    let d: i64 = hyper_parameters.embedding_dimenson;
+    let q: i64 = hyper_parameters.embedding_dimenson / hyper_parameters.number_of_heads;
+    let c: i64 = hyper_parameters.size_of_context_window;
 
     assert!(d % n == 0, "Embeddings dimension must be divisible by the requested number of heads.");
     debug_assert_eq!(n*q, d);
@@ -99,35 +129,72 @@ fn self_attention_module(vs_path: &nn::Path, hyper_parameters: &ModelParameters)
 
 
 
+/// Enforces z-normalization across each batch independently and applies an affine transformation.
+fn create_layer_norm(vs_path: &nn::Path, embedding_dimension: i64) -> impl nn::Module {
 
-fn create_layer_norm(vs_path: &nn::Path, bcd: Vec<i64>) -> impl nn::Module {
-    // TODO
-    let config = nn::LayerNormConfig {
-        cudnn_enabled: false,
-        eps: 1e-9,
+    let config: nn::LayerNormConfig = nn::LayerNormConfig {
+        /*a value added to the denominator for numerical stability. Default: 1e-5 */
+        eps: 1e-5,
+    
+        /*
+        a boolean value that when set to True, this module has learnable
+        per-element affine parameters initialized to ones (for weights)
+        and zeros (for biases).
+         */
         elementwise_affine: true,
+    
         ws_init: generate_init(),
         bs_init: generate_init(),
+        cudnn_enabled: false,
     };
-    nn::layer_norm(vs_path, bcd, config)
+
+    nn::layer_norm(vs_path, vec![embedding_dimension], config)
 }
 
 
-fn metric_tensor_network(vs_path: &nn::Path, hyper_parameters: &ModelParameters) -> impl nn::Module 
+
+/// Dense feed forward with GELU activation
+fn mlp_module(vs: &nn::Path, embedding_dimension: i64) -> impl nn::Module {
+
+    let d: i64 = embedding_dimension;
+    let q: i64 = embedding_dimension / 2;
+
+    let projection_1dq = vs.var("projection_1dq", &[1, d, q], generate_init());
+    let expansion_1qd = vs.var("expansion_1qd", &[1, q, d], generate_init());
+
+    nn::func(move |x_bcd: &tch::Tensor| {
+        let x_bcq = &x_bcd.matmul(&projection_1dq);
+        let activations_bcq = x_bcq.gelu("none");
+        activations_bcq.matmul(&expansion_1qd)
+    })
+}
+
+
+fn create_transformer_module(vs_path: &nn::Path, hyper_parameters: &ModelParameters) -> impl nn::Module 
+{
+    nn::seq()
+    .add(create_layer_norm(vs_path, hyper_parameters.embedding_dimenson))
+    .add(quadratic_self_attention_module(vs_path, hyper_parameters))
+    .add(create_layer_norm(vs_path, hyper_parameters.embedding_dimenson))
+    .add(mlp_module(vs_path, hyper_parameters.embedding_dimenson))
+}
+
+
+pub fn quadratic_tensor_network(vs_path: &nn::Path, hyper_parameters: &ModelParameters) -> impl nn::Module 
 {
 
-    fn create_transformer_module(vs_path: &nn::Path, hyper_parameters: &ModelParameters) -> impl nn::Module 
-    {
-        nn::seq()
-        .add(create_layer_norm(vs_path))
-        .add(self_attention_module(vs_path, hyper_parameters))
-    }
+
 
     nn::seq()
     .add(create_embedder_module(vs_path, hyper_parameters))
     .add(create_transformer_module(vs_path, hyper_parameters))
     .add(create_transformer_module(vs_path, hyper_parameters))
     .add(create_transformer_module(vs_path, hyper_parameters))
+    .add(create_transformer_module(vs_path, hyper_parameters))
+    .add(create_transformer_module(vs_path, hyper_parameters))
+    .add(create_transformer_module(vs_path, hyper_parameters))
+
+    // .add(create_output_tokenizer(vs_path, hyper_parameters.output_tokens))
 }
 
 
@@ -139,6 +206,28 @@ fn main() {
 
 }
 
+
+
+
+
+macro_rules! generate_test {
+    ($test_name:ident, $module_func:expr, $input_factory:expr) => {
+        #[test]
+        fn $test_name() {
+            let vs = nn::VarStore::new(Device::Cpu);
+            let hyper_parameters = create_hyper_parameters();
+            let module = $module_func(&vs.root(), &hyper_parameters);
+
+            let batch_size = 10; // Assuming batch size is constant for simplicity
+            let input = $input_factory(batch_size, &hyper_parameters);
+
+            let output = module.forward(&input);
+
+            let expected_size = vec![batch_size, hyper_parameters.size_of_context_window, hyper_parameters.embedding_dimenson];
+            assert_eq!(output.size(), expected_size, "Failed test: {:?}", stringify!($test_name));
+        }
+    };
+}
 
 #[cfg(test)]
 mod tests {
@@ -173,36 +262,23 @@ mod tests {
         )
     }
 
-    #[test]
-    fn test_embeding_module() {
-        let vs = nn::VarStore::new(Device::Cpu);
-        let hyper_parameters = create_hyper_parameters();
-        let module = embedder_module(&vs.root(), &hyper_parameters);
+    generate_test!(test_embedding_module, create_embedder_module, create_model_input);
 
-        let b = 10; // number of batches
-        let c = hyper_parameters.size_of_context_window;
-        let d = hyper_parameters.embedding_dimenson;
-        let input_bc = create_model_input(b, &hyper_parameters);
-        let output_bcd = module.forward(&input_bc);
+    generate_test!(test_transformer_module, create_transformer_module, create_latent_representation);
+    generate_test!(test_quadratic_attention_module, quadratic_self_attention_module, create_latent_representation);
 
-        assert_eq!(output_bcd.size(), vec![b, c, d]);
-    }
+    generate_test!(test_trasnformer_block, create_transformer_module, create_latent_representation);
 
-    #[test]
-    fn test_self_attention_module() {
-        let vs = nn::VarStore::new(Device::Cpu);
-        let hyper_parameters = create_hyper_parameters();
-        let module = self_attention_module(&vs.root(), &hyper_parameters);
+    generate_test!(
+        test_mlp_module,
+        |vs_path, hyper_parameters: &ModelParameters| mlp_module(vs_path, hyper_parameters.embedding_dimenson),
+        create_latent_representation
+    );
 
-        let b = 10; // number of batches
-        let c = hyper_parameters.size_of_context_window;
-        let d = hyper_parameters.embedding_dimenson;
-    
-        let input_bcd = create_latent_representation(b, &hyper_parameters);
-        let output_bcd = module.forward(&input_bcd);
 
-        assert_eq!(output_bcd.size(), vec![b, c, d]);
-        
-    }
+    generate_test!(test_quadratic_tensor_network, quadratic_tensor_network, create_model_input);
+
+
+
 
 }
