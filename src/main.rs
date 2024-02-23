@@ -2,7 +2,7 @@
 
     TODO: residual connections - https://arxiv.org/abs/1512.03385
     TODO: output tokenizer
-    TODO: the 1/sqrt(q) scale before the softmax in the self attention module - https://arxiv.org/abs/1706.03762
+    TODO: the 1/sqrt(q) scale before the softmax in the self attention module - https://arxiv.org/abs/1706.03762 (attention is all you need)
 */
 use tch;
 use tch::nn::{self, Module };
@@ -17,6 +17,7 @@ export RUST_BACKTRACE=full
 
 
 /// Defines structure of the quadratic attention model
+/// GPT2 paper - https://d4mucfpksywv.cloudfront.net/better-language-models/language-models.pdf
 pub struct ModelParameters {
 
     /// Dimension of the vector space that the network
