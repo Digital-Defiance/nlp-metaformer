@@ -1,5 +1,7 @@
 /*
 
+https://paperswithcode.com/paper/bert-pre-training-of-deep-bidirectional
+
     TODO: residual connections - https://arxiv.org/abs/1512.03385
     TODO: output tokenizer
     TODO: the 1/sqrt(q) scale before the softmax in the self attention module - https://arxiv.org/abs/1706.03762 (attention is all you need)
