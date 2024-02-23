@@ -1,8 +1,8 @@
 /*
 
-    TODO: residual connections
+    TODO: residual connections - https://arxiv.org/abs/1512.03385
     TODO: output tokenizer
-    TODO: the 1/sqrt(q) scale before the softmax in the self attention module
+    TODO: the 1/sqrt(q) scale before the softmax in the self attention module 
 */
 use tch;
 use tch::nn::{self, Module };
