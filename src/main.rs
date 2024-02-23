@@ -130,6 +130,7 @@ fn quadratic_self_attention_module(vs_path: &nn::Path, hyper_parameters: &ModelP
 
 
 /// Enforces z-normalization across each batch independently and applies an affine transformation.
+/// https://arxiv.org/abs/1607.06450
 fn create_layer_norm(vs_path: &nn::Path, embedding_dimension: i64) -> impl nn::Module {
 
     let config: nn::LayerNormConfig = nn::LayerNormConfig {
