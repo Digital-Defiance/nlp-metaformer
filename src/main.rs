@@ -154,10 +154,11 @@ fn create_layer_norm(vs_path: &nn::Path, embedding_dimension: i64) -> impl nn::M
 
 
 /// Dense feed forward with GELU activation
+/// https://arxiv.org/abs/2202.05262
 fn mlp_module(vs: &nn::Path, embedding_dimension: i64) -> impl nn::Module {
 
     let d: i64 = embedding_dimension;
-    let q: i64 = embedding_dimension / 2;
+    let q: i64 = embedding_dimension * 3;
 
     let projection_1dq = vs.var("projection_1dq", &[1, d, q], generate_init());
     let expansion_1qd = vs.var("expansion_1qd", &[1, q, d], generate_init());
