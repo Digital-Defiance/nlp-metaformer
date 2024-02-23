@@ -78,6 +78,7 @@ fn create_embedder_module(vs: &nn::Path, hp: &ModelParameters) -> impl nn::Modul
 
 /// Performs self attention N times using the quadratic form $xW_nx.T$ where $W_n$ is a learnable matrix.
 /// This is an early version of the metric self attention, where $W$ is forced to have the properties a metric tensor.
+/// https://arxiv.org/abs/2111.11418 - evidence that any of the attention mechanisms might have similar performance 
 fn quadratic_self_attention_module(vs_path: &nn::Path, hyper_parameters: &ModelParameters) -> impl nn::Module {
 
     let n: i64 = hyper_parameters.number_of_heads;
