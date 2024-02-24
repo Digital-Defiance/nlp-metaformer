@@ -8,6 +8,10 @@ https://paperswithcode.com/paper/bert-pre-training-of-deep-bidirectional
 export LD_LIBRARY_PATH=/workspace/.pyenv_mirror/user/current/lib/python3.12/site-packages/torch/lib
 export LIBTORCH_USE_PYTORCH=1
 export RUST_BACKTRACE=full
+
+
+for static linking torch:
+export LIBTORCH_STATIC=1
 */
 
 use tch::Device;
@@ -52,18 +56,24 @@ struct Cli {
     #[arg(long)]
     size_of_vocabolary: i64,
 
-    
     #[arg(short, long)]
     output_tokens: i64,
 }
 
 
 
-
-
 /// Implementation of gradient descent
 /// https://paperswithcode.com/method/adam
 fn main() {
+
+    for epoch in 1..10 {
+        for slice in 1..10 {
+            // let data = load_slice(slice);
+            print!("Epoch {}", epoch);
+            print!("Slice {}", slice);
+        }
+    }
+
 
 
     let vs = nn::VarStore::new(Device::Cpu);
@@ -85,20 +95,16 @@ fn main() {
         AttentionKind::Quadratic
     };
 
-    let model = metaformer.create(vs_path, kind);
-    let optimizer = nn::adamw(
+    let _model = metaformer.create(vs_path, kind);
+    let _optimizer = nn::adamw(
         0.9,
         0.9,
         0.1,
     );
 
-    for epoch in 1..10 {
-        for slice in 1..10 {
-            // let data = load_slice(slice);
-        }
-    }
 
      
+
 }
 
 

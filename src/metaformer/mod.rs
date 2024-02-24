@@ -16,9 +16,6 @@ use tch::nn::Module;
 #[derive(PartialEq, Clone, Copy)]
 
 
-
-
-
 pub enum AttentionKind {
     Quadratic,
     ScaledDotProduct,
