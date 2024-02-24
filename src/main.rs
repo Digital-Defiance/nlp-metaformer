@@ -199,7 +199,7 @@ pub fn quadratic_tensor_network(vs_path: &nn::Path, hyper_parameters: &ModelPara
 
 
 
-
+/// Implementation of gradient descent
 fn main() {
 
 
@@ -265,6 +265,7 @@ mod tests {
     generate_test!(test_embedding_module, create_embedder_module, create_model_input);
 
     generate_test!(test_transformer_module, create_transformer_module, create_latent_representation);
+
     generate_test!(test_quadratic_attention_module, quadratic_self_attention_module, create_latent_representation);
 
     generate_test!(test_trasnformer_block, create_transformer_module, create_latent_representation);
@@ -275,10 +276,7 @@ mod tests {
         create_latent_representation
     );
 
-
     generate_test!(test_quadratic_tensor_network, quadratic_tensor_network, create_model_input);
-
-
 
 
 }
