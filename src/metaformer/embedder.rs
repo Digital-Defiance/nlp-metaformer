@@ -1,7 +1,7 @@
 
 use tch::nn::{ self, Module };
 
-use crate::commons;
+use crate::metaformer::commons;
 use commons::{MetaformerParameters, generate_init };
 
 

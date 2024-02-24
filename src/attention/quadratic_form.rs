@@ -1,15 +1,27 @@
 
+use tch::nn;
+
+
+
+pub fn generate_init() -> nn::Init {
+    nn::Init::Randn { mean: 0., stdev: 1. }
+}
+
+
+
 
 
 /// Performs self attention N times using the quadratic form $xW_nx.T$ where $W_n$ is a learnable matrix.
 /// This is an early version of the metric self attention, where $W$ is forced to have the properties a metric tensor.
 /// https://arxiv.org/abs/2111.11418 - evidence that any of the attention mechanisms might have similar performance 
-fn quadratic_self_attention_module(vs_path: &nn::Path, hyper_parameters: &ModelParameters) -> impl nn::Module {
+pub fn quadratic_self_attention_module(
+    vs_path: &nn::Path,
+    n: i64,
+    d: i64,
+    q: i64,
+    c: i64,
+) -> impl nn::Module {
 
-    let n: i64 = hyper_parameters.number_of_heads;
-    let d: i64 = hyper_parameters.embedding_dimenson;
-    let q: i64 = hyper_parameters.embedding_dimenson / hyper_parameters.number_of_heads;
-    let c: i64 = hyper_parameters.size_of_context_window;
 
     assert!(d % n == 0, "Embeddings dimension must be divisible by the requested number of heads.");
     debug_assert_eq!(n*q, d);
@@ -24,17 +36,13 @@ fn quadratic_self_attention_module(vs_path: &nn::Path, hyper_parameters: &ModelP
 
     let sqrt_q = f64::sqrt(q as f64);
 
-    let layer_norm = create_layer_norm(
-        vs_path, 
-        hyper_parameters.embedding_dimenson
-    );
+ 
 
-    nn::func(move |input_bcd| {
+    nn::func(move |x_bcd| {
     
-        let b = input_bcd.size()[0];
-        assert_eq!(input_bcd.size(), vec![b, c, d]);
+        let b = x_bcd.size()[0];
+        assert_eq!(x_bcd.size(), vec![b, c, d]);
 
-        let x_bcd = &layer_norm.forward(input_bcd);
 
         // Apply n projections to the input 
         let x_b1cd = &x_bcd.unsqueeze(1);
@@ -57,6 +65,6 @@ fn quadratic_self_attention_module(vs_path: &nn::Path, hyper_parameters: &ModelP
         let y_bcd = &y_bnqc.reshape(x_bcd.size());
         debug_assert!(y_bcd.size() == vec![b, c, d]);
     
-        y_bcd.matmul(&mixer_1dd) + input_bcd // https://arxiv.org/abs/1512.03385
+        y_bcd.matmul(&mixer_1dd)
     })
 }

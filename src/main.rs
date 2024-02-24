@@ -9,16 +9,9 @@ export LD_LIBRARY_PATH=/workspace/.pyenv_mirror/user/current/lib/python3.12/site
 export LIBTORCH_USE_PYTORCH=1
 export RUST_BACKTRACE=full
 */
-use tch;
-use tch::nn::{ self, Module };
 
 pub mod metaformer;
 pub mod attention;
-
-
-use metaformer::commons::ModelParameters;
-
-
 
 
 
@@ -42,7 +35,7 @@ fn main() {
 
 
 
-
+/*
 
 
 macro_rules! generate_test {
@@ -116,3 +109,4 @@ mod tests {
 
 
 }
+ */

@@ -1,3 +1,5 @@
+use tch::nn;
+
 
 /// Defines structure of the quadratic attention model
 /// GPT2 paper - https://d4mucfpksywv.cloudfront.net/better-language-models/language-models.pdf
