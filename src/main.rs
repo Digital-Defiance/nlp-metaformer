@@ -1,8 +1,10 @@
 /*
 
-    TODO: residual connections
+https://paperswithcode.com/paper/bert-pre-training-of-deep-bidirectional
+
+    TODO: residual connections - https://arxiv.org/abs/1512.03385
     TODO: output tokenizer
-    TODO: the 1/sqrt(q) scale before the softmax in the self attention module
+    TODO: the 1/sqrt(q) scale before the softmax in the self attention module - https://arxiv.org/abs/1706.03762 (attention is all you need)
 */
 use tch;
 use tch::nn::{self, Module };
@@ -17,6 +19,7 @@ export RUST_BACKTRACE=full
 
 
 /// Defines structure of the quadratic attention model
+/// GPT2 paper - https://d4mucfpksywv.cloudfront.net/better-language-models/language-models.pdf
 pub struct ModelParameters {
 
     /// Dimension of the vector space that the network
@@ -78,6 +81,7 @@ fn create_embedder_module(vs: &nn::Path, hp: &ModelParameters) -> impl nn::Modul
 
 /// Performs self attention N times using the quadratic form $xW_nx.T$ where $W_n$ is a learnable matrix.
 /// This is an early version of the metric self attention, where $W$ is forced to have the properties a metric tensor.
+/// https://arxiv.org/abs/2111.11418 - evidence that any of the attention mechanisms might have similar performance 
 fn quadratic_self_attention_module(vs_path: &nn::Path, hyper_parameters: &ModelParameters) -> impl nn::Module {
 
     let n: i64 = hyper_parameters.number_of_heads;
@@ -130,6 +134,7 @@ fn quadratic_self_attention_module(vs_path: &nn::Path, hyper_parameters: &ModelP
 
 
 /// Enforces z-normalization across each batch independently and applies an affine transformation.
+/// https://arxiv.org/abs/1607.06450
 fn create_layer_norm(vs_path: &nn::Path, embedding_dimension: i64) -> impl nn::Module {
 
     let config: nn::LayerNormConfig = nn::LayerNormConfig {
@@ -154,10 +159,11 @@ fn create_layer_norm(vs_path: &nn::Path, embedding_dimension: i64) -> impl nn::M
 
 
 /// Dense feed forward with GELU activation
+/// https://arxiv.org/abs/2202.05262
 fn mlp_module(vs: &nn::Path, embedding_dimension: i64) -> impl nn::Module {
 
     let d: i64 = embedding_dimension;
-    let q: i64 = embedding_dimension / 2;
+    let q: i64 = embedding_dimension * 3;
 
     let projection_1dq = vs.var("projection_1dq", &[1, d, q], generate_init());
     let expansion_1qd = vs.var("expansion_1qd", &[1, q, d], generate_init());
@@ -200,6 +206,7 @@ pub fn quadratic_tensor_network(vs_path: &nn::Path, hyper_parameters: &ModelPara
 
 
 /// Implementation of gradient descent
+/// https://paperswithcode.com/method/adam
 fn main() {
 
 
