@@ -17,7 +17,6 @@ pub fn quadratic_self_attention_module(
     c: i64,
 ) ->  impl nn::Module {
 
-
     assert!(d % n == 0, "Embeddings dimension must be divisible by the requested number of heads.");
     debug_assert_eq!(n*q, d);
 
@@ -62,4 +61,37 @@ pub fn quadratic_self_attention_module(
     
         y_bcd.matmul(&mixer_1dd)
     })
+}
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*; 
+    use tch::{nn, Device, Kind, Tensor};
+    use tch::nn::Module;
+
+
+    #[test]
+    pub fn test_layer(){
+
+
+        let vs = nn::VarStore::new(Device::Cpu);
+        let vs_path = &vs.root();
+    
+        let b = 10;
+        let c = 5;
+        let d = 4;
+        let n = 2;
+        let q = 2;
+
+        let input_bcd = Tensor::randn( &[b, c, d],  (Kind::Float, Device::Cpu));
+        let layer = quadratic_self_attention_module(vs_path, n, d, q, c);
+        let output_bcd = layer.forward(&input_bcd);
+
+        debug_assert!(output_bcd.size() == input_bcd.size());
+
+    }
+
 }

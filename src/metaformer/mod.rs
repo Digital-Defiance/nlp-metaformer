@@ -8,9 +8,17 @@ pub mod commons;
 pub mod embedder;
 pub mod mlp;
 
+use layer_norm::create_layer_norm;
+use commons::generate_init;
 use tch::nn;
+use tch::nn::Module;
 
 #[derive(PartialEq, Clone, Copy)]
+
+
+
+
+
 pub enum AttentionKind {
     Quadratic,
     ScaledDotProduct,
@@ -38,8 +46,9 @@ pub struct MetaFormer {
 
     /// Total number of tokens that the network recognizes
     size_of_vocabolary: i64,
-}
 
+    output_tokens: i64,
+}
 
 
 impl MetaFormer {
@@ -50,6 +59,7 @@ impl MetaFormer {
         number_of_heads: i64,
         size_of_context_window: i64,
         size_of_vocabolary: i64,
+        output_tokens: i64,
     ) -> MetaFormer {
         MetaFormer {
             embedding_dimension: embedding_dimension,
@@ -57,6 +67,7 @@ impl MetaFormer {
             number_of_heads: number_of_heads,
             size_of_context_window: size_of_context_window,
             size_of_vocabolary: size_of_vocabolary,
+            output_tokens: output_tokens,
         }
     }
 
@@ -64,29 +75,41 @@ impl MetaFormer {
         if kind == AttentionKind::Quadratic {
             quadratic_self_attention_module(
                 vs,
-                self.embedding_dimension,
                 self.number_of_heads,
+                self.embedding_dimension,
+                self.embedding_dimension / self.number_of_heads,
                 self.size_of_context_window,
-                self.size_of_context_window / 3,
             )
         } else {
             quadratic_self_attention_module(
                 vs,
-                self.embedding_dimension,
                 self.number_of_heads,
+                self.embedding_dimension,
+                self.embedding_dimension / self.number_of_heads,
                 self.size_of_context_window,
-                self.size_of_context_window / 3,
             )
         }
     }
 
-    pub fn create<'a>(
-        &self, 
-        vs_path: &'a nn::Path<'a>,
-        kind: AttentionKind,
-    ) -> impl nn::Module {
+
+    fn create_output_layer(&self, vs: &nn::Path) -> impl nn::Module {
+
+        let d = self.embedding_dimension;
+        let t = self.output_tokens;
+
+        let linear_norm = create_layer_norm(vs, self.embedding_dimension);
+        let projection_1dt = vs.var("projection_1dt", &[1, d, t], generate_init());
+
+        nn::func(move |x_bcd| {
+            let y_bcd = &linear_norm.forward(x_bcd);
+            y_bcd.matmul(&projection_1dt)
+        })
+    }
+
+    pub fn create(&self, vs_path: & nn::Path, kind: AttentionKind,) -> impl nn::Module {
+
         let mut model = nn::seq().add(
-    create_embedder_module(
+            create_embedder_module(
                 vs_path, 
                 self.embedding_dimension,
                 self.size_of_vocabolary,
@@ -99,10 +122,7 @@ impl MetaFormer {
             model = model.add(create_mlp(vs_path, self.embedding_dimension));
         }
 
-        // model.add(self.create_output_layer());
-
-        // model = model.add(create_output_tokenizer(vs_path, hyper_parameters.output_tokens))
-    
-        model
+        model.add(self.create_output_layer(vs_path))
     }
 }
+

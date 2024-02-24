@@ -12,13 +12,39 @@ export RUST_BACKTRACE=full
 
 use metaformer::MetaFormer;
 use metaformer::AttentionKind;
-
-
 pub mod metaformer;
 pub mod attention;
-
+use clap::Parser;
 use tch::nn;
-use tch::Device;
+
+/// Train a MetaFormer model.
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// The kind of attention to use.
+    attention_kind: String,
+
+    path: String,
+
+    /// Dimension of the vector space that the network
+    /// uses internally to represent tokens 
+    embedding_dimension: i64,
+
+    /// Number of transformer blocks
+    model_depth: i64,
+
+    /// Number of attention modules per transformer block
+    number_of_heads: i64,
+
+    /// Maximum number of tokens in the input sequence
+    size_of_context_window: i64,
+
+    /// Total number of tokens that the network recognizes
+    size_of_vocabolary: i64,
+
+    output_tokens: i64,
+}
+
 
 
 
@@ -27,105 +53,76 @@ use tch::Device;
 /// https://paperswithcode.com/method/adam
 fn main() {
 
+    let args: Cli = Cli::parse();
     let metaformer: MetaFormer = MetaFormer::new(
-        32,
-        3,
-        2,
-        10,
-        5,
+        args.embedding_dimension,
+        args.model_depth,
+        args.number_of_heads,
+        args.size_of_context_window,
+        args.size_of_vocabolary,
+        args.output_tokens,
     );
 
-    let vs = nn::VarStore::new(Device::Cpu);
-    let vs_path = &vs.root();
-
-    let quadratic_network = metaformer.create(vs_path, AttentionKind::Quadratic);
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-
-macro_rules! generate_test {
-    ($test_name:ident, $module_func:expr, $input_factory:expr) => {
-        #[test]
-        fn $test_name() {
-            let vs = nn::VarStore::new(Device::Cpu);
-            let hyper_parameters = create_hyper_parameters();
-            let module = $module_func(&vs.root(), &hyper_parameters);
-
-            let batch_size = 10; // Assuming batch size is constant for simplicity
-            let input = $input_factory(batch_size, &hyper_parameters);
-
-            let output = module.forward(&input);
-
-            let expected_size = vec![batch_size, hyper_parameters.size_of_context_window, hyper_parameters.embedding_dimenson];
-            assert_eq!(output.size(), expected_size, "Failed test: {:?}", stringify!($test_name));
-        }
+    let kind = if args.attention_kind == "quadratic" {
+        AttentionKind::Quadratic
+    } else {
+        AttentionKind::Quadratic
     };
+
+    let model = metaformer.create(vs_path, kind);
+    let optimizer = nn::adamw(
+        0.9,
+        0.9,
+        0.1,
+    );
+
+    for epoch in 1..10 {
+        for slice in 1..10 {
+            let data = load_slice(slice);
+        }
+    }
+
+     
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #[cfg(test)]
 mod tests {
     use super::*; 
-    use tch::{nn, Device, Kind, Tensor};
+    use tch::{nn, Device};
 
-    fn create_hyper_parameters() -> ModelParameters {
-        ModelParameters {
-            number_of_heads: 16,
-            size_of_context_window: 10,
-            embedding_dimenson: 32,
-            size_of_vocabolary: 10,
-            model_depth: 6,
-        }
+    #[test]
+    pub fn test_model_creation(){
+
+        let metaformer: MetaFormer = MetaFormer::new(
+            32,
+            3,
+            2,
+            10,
+            5,
+            5,
+        );
+    
+        let vs = nn::VarStore::new(Device::Cpu);
+        let vs_path = &vs.root();
+        let _quadratic_network = metaformer.create(vs_path, AttentionKind::Quadratic);
+        let _transformer_network = metaformer.create(vs_path, AttentionKind::ScaledDotProduct);
+        let _metric_network = metaformer.create(vs_path, AttentionKind::Metric);
     }
-
-    fn create_model_input(batch_size: i64, hyper_parameters: &ModelParameters) -> tch::Tensor {
-        Tensor::randint(
-            hyper_parameters.size_of_vocabolary, 
-            &[batch_size, hyper_parameters.size_of_context_window],
-            (Kind::Int, Device::Cpu)
-        )
-    }
-
-    fn create_latent_representation(batch_size: i64, hyper_parameters: &ModelParameters) -> tch::Tensor {
-        Tensor::randn(
-            &[
-                batch_size,
-                hyper_parameters.size_of_context_window,
-                hyper_parameters.embedding_dimenson
-            ], 
-            (Kind::Float, Device::Cpu)
-        )
-    }
-
-    generate_test!(test_embedding_module, create_embedder_module, create_model_input);
-
-    generate_test!(test_transformer_module, create_transformer_module, create_latent_representation);
-
-    generate_test!(test_quadratic_attention_module, quadratic_self_attention_module, create_latent_representation);
-
-    generate_test!(test_trasnformer_block, create_transformer_module, create_latent_representation);
-
-    generate_test!(
-        test_mlp_module,
-        |vs_path, hyper_parameters: &ModelParameters| mlp_module(vs_path, hyper_parameters.embedding_dimenson),
-        create_latent_representation
-    );
-
-    generate_test!(test_quadratic_tensor_network, quadratic_tensor_network, create_model_input);
-
 
 }
- */
