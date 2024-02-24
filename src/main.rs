@@ -10,8 +10,16 @@ export LIBTORCH_USE_PYTORCH=1
 export RUST_BACKTRACE=full
 */
 
+use metaformer::MetaFormer;
+use metaformer::AttentionKind;
+
+
 pub mod metaformer;
 pub mod attention;
+
+use tch::nn;
+use tch::Device;
+
 
 
 
@@ -19,7 +27,18 @@ pub mod attention;
 /// https://paperswithcode.com/method/adam
 fn main() {
 
+    let metaformer: MetaFormer = MetaFormer::new(
+        32,
+        3,
+        2,
+        10,
+        5,
+    );
 
+    let vs = nn::VarStore::new(Device::Cpu);
+    let vs_path = &vs.root();
+
+    let quadratic_network = metaformer.create(vs_path, AttentionKind::Quadratic);
 
 }
 

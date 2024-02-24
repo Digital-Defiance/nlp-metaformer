@@ -2,7 +2,7 @@
 use tch::nn::{ self, Module };
 
 use crate::metaformer::commons;
-use commons::{MetaformerParameters, generate_init };
+use commons::generate_init;
 
 
 fn create_config() -> nn::EmbeddingConfig{
@@ -31,14 +31,19 @@ fn create_config() -> nn::EmbeddingConfig{
 }
 
 
-/// Creates the embedder module, which transforms integer valued tokens into positionally encoded embeddings.
-pub fn create_embedder_module(vs: &nn::Path, hp: &MetaformerParameters) -> impl nn::Module {
- 
 
+/// Creates the embedder module, which transforms integer valued tokens into positionally encoded embeddings.
+pub fn create_embedder_module(
+    vs: &nn::Path,
+    embedding_dimension: i64,
+    size_of_vocabolary: i64,
+    size_of_context_window: i64,
+) -> impl nn::Module {
+ 
     let config = create_config();
-    let d: i64 = hp.embedding_dimenson;
-    let v: i64 = hp.size_of_vocabolary;
-    let c: i64 = hp.size_of_context_window;
+    let d: i64 = embedding_dimension;
+    let v: i64 = size_of_vocabolary;
+    let c: i64 = size_of_context_window;
 
     let vocabolary_vd = nn::embedding(vs, v, d, config);
     let positional_encoding_cd = nn::embedding(vs, c, d, config);

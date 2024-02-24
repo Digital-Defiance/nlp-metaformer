@@ -2,14 +2,9 @@
 use tch::nn;
 
 
-
 pub fn generate_init() -> nn::Init {
     nn::Init::Randn { mean: 0., stdev: 1. }
 }
-
-
-
-
 
 /// Performs self attention N times using the quadratic form $xW_nx.T$ where $W_n$ is a learnable matrix.
 /// This is an early version of the metric self attention, where $W$ is forced to have the properties a metric tensor.
@@ -20,7 +15,7 @@ pub fn quadratic_self_attention_module(
     d: i64,
     q: i64,
     c: i64,
-) -> impl nn::Module {
+) ->  impl nn::Module {
 
 
     assert!(d % n == 0, "Embeddings dimension must be divisible by the requested number of heads.");
