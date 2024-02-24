@@ -1,6 +1,6 @@
 {
     "name": "Development Environment for LLM VC",
-    "dockerFIle": "Dockerfile",
+    "dockerFile": "Dockerfile",
     // "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
     // "dockerComposeFile": "docker-compose.yml",
     // "service": "data-worker",
@@ -22,17 +22,5 @@
                 "mathematic.vscode-pdf"
             ]
         }
-    },
-    "features": {
-        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
-        "ghcr.io/devcontainers/features/git:1": {},
-        "ghcr.io/devcontainers/features/aws-cli:1": {},
-        "ghcr.io/devcontainers/features/python:1": {
-            "version": "3.11",
-            "installTools": true,
-            "toolsToInstall": "flake8,autopep8,black,yapf,mypy,pydocstyle,pycodestyle,pytest,pylint",
-            "installJupyterlab": true
-        }
     }
-
 }
