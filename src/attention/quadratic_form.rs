@@ -1,0 +1,62 @@
+
+
+
+/// Performs self attention N times using the quadratic form $xW_nx.T$ where $W_n$ is a learnable matrix.
+/// This is an early version of the metric self attention, where $W$ is forced to have the properties a metric tensor.
+/// https://arxiv.org/abs/2111.11418 - evidence that any of the attention mechanisms might have similar performance 
+fn quadratic_self_attention_module(vs_path: &nn::Path, hyper_parameters: &ModelParameters) -> impl nn::Module {
+
+    let n: i64 = hyper_parameters.number_of_heads;
+    let d: i64 = hyper_parameters.embedding_dimenson;
+    let q: i64 = hyper_parameters.embedding_dimenson / hyper_parameters.number_of_heads;
+    let c: i64 = hyper_parameters.size_of_context_window;
+
+    assert!(d % n == 0, "Embeddings dimension must be divisible by the requested number of heads.");
+    debug_assert_eq!(n*q, d);
+
+    let projections_1ndq = vs_path.var("projections_1ndq", &[1, n, d, q], generate_init());
+    let metric_tensors_1nqq = vs_path.var("metric_tensors_1nqq", &[1, n, q, q], generate_init());
+    let mixer_1dd = vs_path.var("mixer_1dd", &[1, d, d], generate_init());
+
+    debug_assert_eq!(projections_1ndq.size(), vec![1, n, d, q]);
+    debug_assert_eq!(metric_tensors_1nqq.size(), vec![1, n, q, q]);
+    debug_assert_eq!(mixer_1dd.size(), vec![1, d, d]);
+
+    let sqrt_q = f64::sqrt(q as f64);
+
+    let layer_norm = create_layer_norm(
+        vs_path, 
+        hyper_parameters.embedding_dimenson
+    );
+
+    nn::func(move |input_bcd| {
+    
+        let b = input_bcd.size()[0];
+        assert_eq!(input_bcd.size(), vec![b, c, d]);
+
+        let x_bcd = &layer_norm.forward(input_bcd);
+
+        // Apply n projections to the input 
+        let x_b1cd = &x_bcd.unsqueeze(1);
+        let x_bncq = &x_b1cd.matmul(&projections_1ndq);
+        debug_assert_eq!(x_bncq.size(), vec![b, n, c, q]);
+
+
+        // Use n custom dot products to generate n score tables
+        let x_bnqc = &x_bncq.transpose(-1, -2);
+        let dotproducts_bncc = &x_bncq.matmul(&metric_tensors_1nqq.matmul(x_bnqc));
+        debug_assert!(dotproducts_bncc.size() == vec![b, n, c, c]);
+    
+        // From scaled dot product attention introduced in https://arxiv.org/abs/1706.03762
+        let scaled_dotproducts_bncc = &dotproducts_bncc.divide_scalar(sqrt_q);
+
+        let softmaxed_scaled_dotproducts_bncc = &scaled_dotproducts_bncc.softmax(-1, tch::kind::Kind::Float);
+        let y_bnqc = &x_bncq.transpose(-1, -2).matmul(softmaxed_scaled_dotproducts_bncc);
+        debug_assert!(y_bnqc.size() == vec![b, n, q, c]);
+
+        let y_bcd = &y_bnqc.reshape(x_bcd.size());
+        debug_assert!(y_bcd.size() == vec![b, c, d]);
+    
+        y_bcd.matmul(&mixer_1dd) + input_bcd // https://arxiv.org/abs/1512.03385
+    })
+}
