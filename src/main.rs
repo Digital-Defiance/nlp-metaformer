@@ -10,6 +10,9 @@ export LIBTORCH_USE_PYTORCH=1
 export RUST_BACKTRACE=full
 */
 
+use tch::Device;
+
+
 use metaformer::MetaFormer;
 use metaformer::AttentionKind;
 pub mod metaformer;
@@ -22,26 +25,35 @@ use tch::nn;
 #[command(version, about, long_about = None)]
 struct Cli {
     /// The kind of attention to use.
+    #[arg(short, long)]
     attention_kind: String,
 
+    #[arg(short, long)]
     path: String,
 
     /// Dimension of the vector space that the network
     /// uses internally to represent tokens 
+    #[arg(short, long)]
     embedding_dimension: i64,
 
     /// Number of transformer blocks
+    #[arg(short, long)]
     model_depth: i64,
 
     /// Number of attention modules per transformer block
+    #[arg(short, long)]
     number_of_heads: i64,
 
     /// Maximum number of tokens in the input sequence
+    #[arg(short, long)]
     size_of_context_window: i64,
 
     /// Total number of tokens that the network recognizes
+    #[arg(long)]
     size_of_vocabolary: i64,
 
+    
+    #[arg(short, long)]
     output_tokens: i64,
 }
 
@@ -52,6 +64,10 @@ struct Cli {
 /// Implementation of gradient descent
 /// https://paperswithcode.com/method/adam
 fn main() {
+
+
+    let vs = nn::VarStore::new(Device::Cpu);
+    let vs_path = &vs.root();
 
     let args: Cli = Cli::parse();
     let metaformer: MetaFormer = MetaFormer::new(
@@ -78,7 +94,7 @@ fn main() {
 
     for epoch in 1..10 {
         for slice in 1..10 {
-            let data = load_slice(slice);
+            // let data = load_slice(slice);
         }
     }
 
