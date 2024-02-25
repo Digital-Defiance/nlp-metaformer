@@ -2,14 +2,16 @@ import duckdb
 from contextlib import contextmanager
 
 
+DATASET_LINK = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/dataset.parquet"
+
 @contextmanager
 def get_connection(number_of_epochs, number_of_partions):
     with duckdb.connect() as conn:
 
-        conn.sql("""
+        conn.sql(f"""
             CREATE TABLE dataset AS
             SELECT id
-            FROM 'https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/dataset.parquet';
+            FROM '{DATASET_LINK}';
         """)
 
         for i in range(number_of_epochs):
@@ -27,7 +29,7 @@ def get_connection(number_of_epochs, number_of_partions):
         def yield_partition(epoch: int, idx: int):
             for sentiment, text in conn.sql(f"""
                 SELECT sentiment, review
-                FROM 'https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/dataset.parquet' as remote
+                FROM '{DATASET_LINK}' as remote
                 JOIN dataset ON (dataset.id = remote.id)
                 WHERE dataset.epoch_{epoch}={idx};
             """).fetchall():
