@@ -14,8 +14,10 @@ for static linking torch:
 export LIBTORCH_STATIC=1
 */
 
+use tch::kind;
+use tch::nn::Module;
 use tch::Device;
-
+use tch::nn::OptimizerConfig;
 
 use metaformer::MetaFormer;
 use metaformer::AttentionKind;
@@ -62,19 +64,41 @@ struct Cli {
 
 
 
-/// Implementation of gradient descent
-/// https://paperswithcode.com/method/adam
-fn main() {
+/*
 
-    for epoch in 1..10 {
-        for slice in 1..10 {
-            // let data = load_slice(slice);
-            print!("Epoch {}", epoch);
-            print!("Slice {}", slice);
+cargo run 
+  --attention-kind "quadratic"
+  --path "."
+  --embedding-dimension 10
+  --model-depth 1
+  --number-of-heads 2
+  --size-of-context-window 400
+  --size-of-vocabolary 60000
+  --output-tokens 2
+
+
+*/
+
+fn find_tensor_by_name(key: String, slice: & Vec<(String, tch::Tensor)>) -> &tch::Tensor {
+    let mut tmp: Option<&tch::Tensor> = None;
+    for (name, tensor) in slice {
+        if *name == key {
+            tmp = Some(tensor);
+            break;
         }
     }
 
+    match tmp {
+        Some(tensor) => tensor, 
+        None => panic!("No value found"),
+    }
+}
 
+
+
+/// Implementation of gradient descent
+/// https://paperswithcode.com/method/adam
+fn main() {
 
     let vs = nn::VarStore::new(Device::Cpu);
     let vs_path = &vs.root();
@@ -95,17 +119,37 @@ fn main() {
         AttentionKind::Quadratic
     };
 
-    let _model = metaformer.create(vs_path, kind);
-    let _optimizer = nn::adamw(
-        0.9,
-        0.9,
-        0.1,
-    );
+    let model = metaformer.create(vs_path, kind);
+    let mut opt = tch::nn::Adam::default().build(&vs, 1e-3).unwrap();
 
+    for epoch in 0..args.epochs {
+        for slice in 0..args.slices {
+            let filename = format!("epoch_{}_slice_{}.safetensors", epoch, slice);
+            let slice: Vec<(String, tch::Tensor)> = tch::Tensor::read_safetensors("epoch_0_slice_0.safetensors").unwrap();
+            let x_sc = find_tensor_by_name(String::from('X'), &slice);
+            let y_s = find_tensor_by_name(String::from('Y'), &slice);
+            
+            // slice size 
+            let s = y_s.size()[0];
+            let t = args.output_tokens;
+            let b = 32;
 
-     
+            for start in 0..s..b {
+                let end = start + b;
+                let x_bc = x_sc.slice(0, 0, b, 1);
+                let y_b = y_s.slice(0, 0, b, 1);
+            
+                let logits_bct = model.forward(&x_bc);
+                let logits_bt = logits_bct.mean_dim(1, false,  kind::Kind::Float);
+                let loss = logits_bt.cross_entropy_for_logits(&y_b);
+                opt.backward_step(&loss);
+            }
+        }
 
+    }
 }
+
+
 
 
 
