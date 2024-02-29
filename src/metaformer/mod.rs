@@ -10,12 +10,14 @@ pub mod mlp;
 
 use layer_norm::create_layer_norm;
 use commons::generate_init;
+use serde::Deserialize;
 use tch::nn;
 use tch::nn::Module;
 
-#[derive(PartialEq, Clone, Copy)]
+use tch::Device;
 
 
+#[derive(PartialEq, Clone, Copy, Deserialize)]
 pub enum AttentionKind {
     Quadratic,
     ScaledDotProduct,
@@ -59,32 +61,27 @@ impl MetaFormer {
         output_tokens: i64,
     ) -> MetaFormer {
         MetaFormer {
-            embedding_dimension: embedding_dimension,
-            model_depth: model_depth,
-            number_of_heads: number_of_heads,
-            size_of_context_window: size_of_context_window,
-            size_of_vocabolary: size_of_vocabolary,
-            output_tokens: output_tokens,
+            embedding_dimension,
+            model_depth,
+            number_of_heads,
+            size_of_context_window,
+            size_of_vocabolary,
+            output_tokens,
         }
     }
 
     fn create_attention(&self, vs: &nn::Path, kind: AttentionKind) -> impl nn::Module {
-        if kind == AttentionKind::Quadratic {
-            quadratic_self_attention_module(
+
+        match kind {
+            AttentionKind::Quadratic => quadratic_self_attention_module(
                 vs,
                 self.number_of_heads,
                 self.embedding_dimension,
                 self.embedding_dimension / self.number_of_heads,
                 self.size_of_context_window,
-            )
-        } else {
-            quadratic_self_attention_module(
-                vs,
-                self.number_of_heads,
-                self.embedding_dimension,
-                self.embedding_dimension / self.number_of_heads,
-                self.size_of_context_window,
-            )
+            ),
+            AttentionKind::Metric => todo!(),
+            AttentionKind::ScaledDotProduct => todo!()
         }
     }
 
@@ -123,3 +120,25 @@ impl MetaFormer {
     }
 }
 
+
+
+
+
+#[test]
+pub fn test_model_creation(){
+
+    let metaformer: MetaFormer = MetaFormer::new(
+        32,
+        3,
+        2,
+        10,
+        5,
+        5,
+    );
+
+    let vs = nn::VarStore::new(Device::Cpu);
+    let vs_path = &vs.root();
+    let _quadratic_network = metaformer.create(vs_path, AttentionKind::Quadratic);
+    let _transformer_network = metaformer.create(vs_path, AttentionKind::ScaledDotProduct);
+    let _metric_network = metaformer.create(vs_path, AttentionKind::Metric);
+}

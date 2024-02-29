@@ -78,8 +78,8 @@ mod tests {
         let b = 10;
         let c = 5;
         let d = 4;
-        let n = 2;
-        let q = 2;
+        // let n = 2;
+        // let q = 2;
 
         let input_bc = Tensor::randint( 50, &[b, c],  (Kind::Int, Device::Cpu));
         let layer = create_embedder_module(vs_path, d, 50, c);

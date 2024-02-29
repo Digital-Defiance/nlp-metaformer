@@ -1,0 +1,25 @@
+# all processes will read configuration from here (maybe, haven't decided yet)
+
+train:
+  learning_rate: 0.1
+  data:
+    path: "./pipelines"
+    batch_size: 32
+model:  
+  attention_kind: "quadratic"
+  dimension: 32
+  depth: 1
+  heads: 2
+  context_window: 300
+  input_vocabolary: 60_000
+  output_tokens: 5
+
+
+
+
+
+
+
+
+
+
