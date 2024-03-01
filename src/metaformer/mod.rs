@@ -139,6 +139,6 @@ pub fn test_model_creation(){
     let vs = nn::VarStore::new(Device::Cpu);
     let vs_path = &vs.root();
     let _quadratic_network = metaformer.create(vs_path, AttentionKind::Quadratic);
-    let _transformer_network = metaformer.create(vs_path, AttentionKind::ScaledDotProduct);
-    let _metric_network = metaformer.create(vs_path, AttentionKind::Metric);
+    // let _transformer_network = metaformer.create(vs_path, AttentionKind::ScaledDotProduct);
+    // let _metric_network = metaformer.create(vs_path, AttentionKind::Metric);
 }

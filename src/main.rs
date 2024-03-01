@@ -16,84 +16,27 @@ use tch::kind;
 use tch::nn::Module;
 use tch::Device;
 use tch::nn::OptimizerConfig;
-use core::panic;
 use std::thread;
 use std::time::Duration;
 use metaformer::MetaFormer;
-use metaformer::AttentionKind;
 pub mod metaformer;
 pub mod attention;
-use clap::Parser;
+pub mod config;
+
 use tch::nn;
 use std::collections::HashMap;
 use std::path::Path;
 use std::fs;
-use serde::Deserialize;
 
-/// Train a MetaFormer model.
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-struct Cli {
-    // Path to config file
-    #[arg(short, long)]
-    path: String,
-}
+use config::read_config;
 
-
-
-#[derive(Deserialize)]
-struct Data {
-    batch_size: i64,
-    path: String
-}
-
-
-#[derive(Deserialize)]
-struct Train {
-    learning_rate: f64,
-    data: Data,
-}
-
-
-#[derive(Deserialize)]
-struct Model {
-    /// The kind of attention to use.
-    attention_kind: AttentionKind,
-    /// Dimension of the vector space that the network uses internally to represent tokens 
-    dimension: i64,
-    /// Number of transformer blocks
-    depth: i64,
-    /// Number of attention modules per transformer block
-    heads: i64,
-    /// Maximum number of tokens in the input sequence
-    context_window: i64,
-    /// Total number of tokens that the network recognizes in its input
-    input_vocabolary: i64,
-    /// Total number of tokens that the network recognizes in its outpput
-    output_vocabolary: i64,
-}
-
-
-#[derive(Deserialize)]
-struct Config {
-    use_gpu: bool,
-    train: Train, 
-    model: Model,
-}
-
-
+const WAITING_TIMEOUT_SECONDS: u64 = 120; 
+const WAIT_SECONDS: u64 = 5;
 
 /// Implementation of gradient descent
-/// https://paperswithcode.com/method/adam
 fn main() {
 
-    let config: Config = {
-        let args: Cli = Cli::parse();
-        let path = Path::new(&args.path);
-        let content = std::fs::read_to_string(path).unwrap();
-        let yaml = content.as_str();
-        serde_yaml::from_str(yaml).unwrap()
-    };
+    let config = read_config();
 
     let training_device = {
         let cuda = Device::cuda_if_available();
@@ -118,30 +61,31 @@ fn main() {
 
     let vs: nn::VarStore = nn::VarStore::new(training_device);
     let vs_path: &nn::Path<'_> = &vs.root();
+
     let model = metaformer.create(vs_path, config.model.attention_kind);
+
+    // https://paperswithcode.com/method/adam
     let mut opt: nn::Optimizer = tch::nn::Adam::default().build(&vs, config.train.learning_rate).unwrap();
+    let path_to_slice: &Path = Path::new(config.train.data.path_to_slice.as_str());
 
-
-    fn get_action() -> &'static str {
-        let filename = "asdasddas";
-        let path: &Path = Path::new(filename);
-        while !path.exists() {
-            thread::sleep(Duration::from_secs(5));
-        }
-        filename
-    }
-
-    const SLICE_PATH: &str = "slice.safetensors";
-    
     loop {
 
-        if get_action() == "stop" {
-            break;
+        {
+            println!("Waiting for file...");
+            let mut wait = 0;
+            while !path_to_slice.exists() {
+                thread::sleep(Duration::from_secs(WAIT_SECONDS));
+                wait += WAIT_SECONDS;
+                if wait == WAITING_TIMEOUT_SECONDS {
+                    eprintln!("Timed out while waiting for data.");
+                    std::process::exit(1);
+                }
+            }
         }
 
         let dataslice: HashMap<String, tch::Tensor> = {
-            let dataslice = tch::Tensor::read_safetensors(SLICE_PATH).unwrap();
-            match fs::remove_file(SLICE_PATH) {
+            let dataslice = tch::Tensor::read_safetensors(path_to_slice).unwrap();
+            match fs::remove_file(&config.train.data.path_to_slice) {
                 Ok(_) => dataslice.into_iter().collect(),
                 Err(e) => panic!("Error deleting file: {:?}", e),
             }
@@ -163,9 +107,10 @@ fn main() {
             let logits_bct = model.forward(&x_bc);
             let logits_bt = logits_bct.mean_dim(1, false,  kind::Kind::Float);
             let loss = logits_bt.cross_entropy_for_logits(&y_b);
-            opt.backward_step(&loss);
+            opt.backward_step(&loss);            
         }
     }
+
 }
 
 
