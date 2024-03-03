@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: pip install torch==2.2.0 pydantic duckdb prefect numpy
       - name: Login to prefect
-        run: prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace "https://api.prefect.cloud/api/accounts/${{ secrets.PREFECT_ACCOUNTID }}/workspaces/${{ secrets.PREFECT_WORKSPACEID }}"
+        run: prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
       - name: Deploy sentiment analysis flow
         run: python pipelines/deploy.py
 
