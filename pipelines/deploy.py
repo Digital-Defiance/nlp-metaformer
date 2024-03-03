@@ -16,6 +16,7 @@ from prefect import flow, serve, get_run_logger, task, variables
 from safetensors import torch as stt
 import tiktoken
 from prefect.runner.storage import GitRepository
+from pathlib import Path
 
 PathStr = str
 
@@ -201,22 +202,37 @@ async def write_data(settings: Settings):
                 save_data(data)
 
 
-
 @flow
 async def sentiment_analysis(settings: Settings):
     logger = get_run_logger()
     logger.info(settings)
     parallel_subflows = [training_loop(settings), write_data(settings)]
     await asyncio.gather(*parallel_subflows)
+    
+    
+
+def get_active_branch_name():
+
+    head_dir = Path(".") / ".git" / "HEAD"
+    with head_dir.open("r") as f: content = f.read().splitlines()
+
+    for line in content:
+        if line[0:4] == "ref:":
+            return line.partition("refs/heads/")[2]
 
 if __name__ == "__main__":
-    sentiment_analysis_deployment = sentiment_analysis.from_source(
-        source=GitRepository(
-            url="https://github.com/Digital-Defiance/llm-voice-chat.git",
-            branch = "62-prefrect-pipelines-integrated-as-deployable-self-hosted-gh-actions-workers-on-ec2-spot-instances"
-        ), 
-        entrypoint="pipelines/deploy.py:sentiment_analysis"
-    ).deploy(
+
+    git_repo = GitRepository(
+        url="https://github.com/Digital-Defiance/llm-voice-chat.git",
+        branch = get_active_branch_name(),
+    )
+
+    sentiment_analysis_flow = sentiment_analysis.from_source(
+        entrypoint="pipelines/deploy.py:sentiment_analysis",
+        source=git_repo,
+    )
+
+    sentiment_analysis_flow.deploy(
         name="sentiment-analysis",
         work_pool_name = "test",
     )
