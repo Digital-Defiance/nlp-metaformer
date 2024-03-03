@@ -22,7 +22,7 @@ jobs:
           echo "PREFECT_API_URL=${{ secrets.PREFECT_API_URL }}">>$GITHUB_ENV
           echo "PREFECT_API_KEY=${{ secrets.PREFECT_API_KEY }}">>$GITHUB_ENV
       - name: Login to prefect
-        run: prefect cloud login --key ${{ secrets.PREFECT_API_KEY }}
+        run: prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace ${{ secrets.PREFECT_API_URL }}
       - name: Deploy sentiment analysis flow
         run: python pipelines/deploy.py
 
