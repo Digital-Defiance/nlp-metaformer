@@ -1,21 +1,24 @@
 # all processes will read configuration from here (maybe, haven't decided yet)
 
-use_gpu: false
+machine:
+  use_gpu: false
 train:
-  learning_rate: 0.001
-  # epochs: 5
+  epochs: 5
+  optimizer:
+    learning_rate: 0.001
   data:
-    # dataset: "imbd"
-    path_to_slice: "./pipelines/slice.safetensors"
-    # slices: 5
-    batch_size: 32
+    source: "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/dataset.parquet"
+    preprocessing:
+      slices: 5
+      batch_size: 32
+    output: "./pipelines/slice.safetensors"
 model:
-  attention_kind: "Quadratic"
-  dimension: 32
-  depth: 1
-  heads: 2
   context_window: 300
   input_vocabolary: 60000
+  dimension: 32
+  attention: "Quadratic"
+  depth: 1
+  heads: 2
   output_vocabolary: 5
 
 
