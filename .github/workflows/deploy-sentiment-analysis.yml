@@ -1,0 +1,21 @@
+
+# .github/workflows/build.yml
+name: Build
+
+on:
+  push:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install pytorch
+        run: pip install torch
+      - name: Deploy
+        run: python pipelines/deploy.py
+
