@@ -4,6 +4,7 @@ name: Deploy sentiment analysis flow
 
 on:
   workflow_dispatch:
+  push:
 
 jobs:
   build:
