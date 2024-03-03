@@ -1,6 +1,6 @@
 
 # .github/workflows/build.yml
-name: Build
+name: Deploy sentiment analysis flow
 
 on:
   workflow_dispatch:
@@ -16,6 +16,12 @@ jobs:
           python-version: '3.10'
       - name: Install dependencies
         run: pip install -r pipelines/requirements.txt
+      - name: Set env variables
+        run: |
+          echo "PREFECT_API_URL={{ secrets.PREFECT_API_URL }}">>$GITHUB_ENV
+          echo "PREFECT_API_KEY={{ secrets.PREFECT_API_KEY }}">>$GITHUB_ENV
+      - name: Login to prefect
+        run: prefect cloud login 
       - name: Deploy sentiment analysis flow
         run: python pipelines/deploy.py
 
