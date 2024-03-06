@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     git_repo = GitRepository(
         url="https://github.com/Digital-Defiance/llm-voice-chat.git",
-        branch = get_active_branch_name(),
+        branch = "main",
     )
 
     sentiment_analysis_flow = sentiment_analysis.from_source(
