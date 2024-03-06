@@ -14,5 +14,5 @@ jobs:
       - uses: actions/checkout@master
       - name: Login to prefect
         run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
-      - run: ls
+      - run: pip install boto3
       - run: python pipelines/capacity.py
