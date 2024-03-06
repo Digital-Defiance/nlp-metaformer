@@ -5,6 +5,8 @@ name: Deploy sentiment analysis flow
 on:
   workflow_dispatch:
   push:
+    paths:
+      - 'pipelines/sentiment_analysis/Dockerfile'
 
 env:
   REGISTRY: ghcr.io
