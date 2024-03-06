@@ -1,6 +1,5 @@
 
-# .github/workflows/build.yml
-name: Build sentiment analysis env
+name: "Sentiment Analysis: Deploy Pipeline"
 
 on:
   workflow_dispatch:
