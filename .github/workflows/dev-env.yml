@@ -12,7 +12,7 @@ jobs:
   
     steps:
       - name: Install curl
-        run: apt update && apt install curl
+        run: apt update && apt install curl -y
     
       - name: Checkout repository
         uses: actions/checkout@v4
