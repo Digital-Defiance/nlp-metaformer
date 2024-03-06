@@ -8,12 +8,9 @@ jobs:
   deploy-dev-env:
     runs-on: self-hosted
     container:
-      image: ubuntu:22.04
+      image: gitpod/workspace-rust
   
     steps:
-      - name: Install curl
-        run: apt update && apt install curl -y
-    
       - name: Checkout repository
         uses: actions/checkout@v4
 
