@@ -32,7 +32,7 @@ pub fn quadratic_self_attention_module(
 
  
 
-    nn::func(move |x_bcd| {
+    nn::func(move |x_bcd: &tch::Tensor| {
     
         let b = x_bcd.size()[0];
         assert_eq!(x_bcd.size(), vec![b, c, d]);

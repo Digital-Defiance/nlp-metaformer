@@ -49,6 +49,44 @@ pub fn create_embedder_module(
     let positional_encoding_cd = nn::embedding(vs, c, d, config);
 
     nn::func(move |x_bc: &tch::Tensor| {
-        vocabolary_vd.forward(&x_bc) + positional_encoding_cd.forward(&x_bc)
+
+        let indexes = tch::Tensor::arange(x_bc.size()[1], (tch::Kind::Int, tch::Device::Cpu));
+        vocabolary_vd.forward(&x_bc) + positional_encoding_cd.forward(&indexes)
     })
+}
+
+
+
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*; 
+    use tch::{nn, Device, Kind, Tensor};
+    use tch::nn::Module;
+
+
+    #[test]
+    pub fn test_layer(){
+
+
+        let vs = nn::VarStore::new(Device::Cpu);
+        let vs_path = &vs.root();
+    
+        let b = 10;
+        let c = 5;
+        let d = 4;
+        // let n = 2;
+        // let q = 2;
+
+        let input_bc = Tensor::randint( 50, &[b, c],  (Kind::Int, Device::Cpu));
+        let layer = create_embedder_module(vs_path, d, 50, c);
+        let output_bcd = layer.forward(&input_bc);
+
+        debug_assert!(output_bcd.size() == vec![b, c, d]);
+
+    }
+
 }
