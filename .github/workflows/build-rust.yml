@@ -1,5 +1,5 @@
 # .github/workflows/build.yml
-name: Build Rust Binary
+name: "Training Loop: Build Rust Binary"
 
 on:
   workflow_dispatch:
