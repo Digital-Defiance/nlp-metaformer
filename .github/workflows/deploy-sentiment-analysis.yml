@@ -4,22 +4,46 @@ name: Deploy sentiment analysis flow
 
 on:
   workflow_dispatch:
-
   push:
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: digital-defiance/sentiment-analysis-pipeline
+
 jobs:
-  deploy-sentiment-analysis-flow:
-    name: Deploy flow
+  build-and-push-image:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-      - uses: actions/checkout@master
-      - uses: actions/setup-python@v5
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
-          python-version: '3.10'
-      - name: Install dependencies
-        run: pip install torch==2.2.0 pydantic duckdb prefect numpy pydantic-settings safetensors tiktoken
-      - name: Login to prefect
-        run: prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ./pipelines/sentiment_analysis
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+  
       - name: Deploy sentiment analysis flow
-        run: python pipelines/deploy.py
+        run: | 
+          docker run ${{ steps.meta.outputs.tags }} /bin/bash -c "prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default' && python pipelines/sentiment_analysis/deploy.py"
+
 
