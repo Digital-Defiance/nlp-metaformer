@@ -1,11 +1,11 @@
-name: "Deploy Dev Env"
+name: "Development Environment: Deploy Remote VScode"
 
 on:
   workflow_dispatch:
 
 
 jobs:
-  build-and-push-image:
+  deploy-dev-env:
     runs-on: self-hosted
     container:
       image: ubuntu:22.04
@@ -23,4 +23,4 @@ jobs:
           tar -xf vscode_cli.tar.gz
 
       - name: Start VSCode CLient
-        run: code tunnel
+        run: ./code tunnel
