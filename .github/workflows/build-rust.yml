@@ -2,8 +2,8 @@
 name: "Training Loop: Build Rust Binary"
 
 on:
-  workflow_dispatch:
-
+  release:
+    types: [created]
 
 jobs:
   
@@ -27,8 +27,12 @@ jobs:
       - run: echo $RUST_BACKTRACE
       - name: Compile
         run: cargo build --release --target-dir build
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload artifact to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: llm-voice-chat
-          path: build/release/llm-voice-chat
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./build/release/llm-voice-chat
+          asset_name: llm-voice-chat
+          asset_content_type: application/octet-stream
