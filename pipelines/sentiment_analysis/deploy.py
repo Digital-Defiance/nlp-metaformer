@@ -2,27 +2,30 @@ import os
 import asyncio
 import subprocess
 from pathlib import Path
+
 import asyncio
 from contextlib import contextmanager
 from typing import Literal
+
+
 import duckdb
-from duckdb import DuckDBPyConnection
 from duckdb.typing import *
+
 from torch import Tensor, tensor, save
 from torch.nn.utils.rnn import pad_sequence
+
 from pydantic_settings.sources import YamlConfigSettingsSource
 from pydantic_settings import BaseSettings
+
 from prefect import flow, serve, get_run_logger, task, variables
-from safetensors import torch as stt
-import tiktoken
 from prefect.runner.storage import GitRepository
-from pathlib import Path
+
+from safetensors import torch as stt
+
+import tiktoken
+
 
 PathStr = str
-
-
-
-
 
 class Optimizer(BaseSettings):
     learning_rate: float = 1e-4
@@ -78,24 +81,24 @@ SENTIMENT_TO_INTEGER = {
     'neg': 0
 }
 
-def set_seed(conn: DuckDBPyConnection, seed: float) -> None:
+def set_seed(conn: duckdb.DuckDBPyConnection, seed: float) -> None:
     conn.execute(f"SELECT setseed(?) as ign;", [seed])
 
-def create_table(conn: DuckDBPyConnection, dataset_link: str):
+def create_table(conn: duckdb.DuckDBPyConnection, dataset_link: str):
     conn.execute(f"""
         CREATE TABLE dataset AS
         SELECT id
         FROM '{dataset_link}';
     """)
 
-def add_epoch_column(conn: DuckDBPyConnection, epoch_idx: int, number_of_partions: int):
+def add_epoch_column(conn: duckdb.DuckDBPyConnection, epoch_idx: int, number_of_partions: int):
     conn.execute(f"""
         ALTER TABLE dataset
         ADD COLUMN epoch_{epoch_idx}
         INTEGER DEFAULT trunc( {number_of_partions}*random() );
     """)
 
-def select_partition(conn: DuckDBPyConnection, dataset_link: str, epoch_idx: int, slice_idx: int):
+def select_partition(conn: duckdb.DuckDBPyConnection, dataset_link: str, epoch_idx: int, slice_idx: int):
     return conn.execute(f"""
         SELECT sentiment, review
         FROM '{dataset_link}' as remote
@@ -106,7 +109,7 @@ def select_partition(conn: DuckDBPyConnection, dataset_link: str, epoch_idx: int
 @contextmanager
 def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str, seed = 0.5):
     with duckdb.connect() as conn:
-        conn: DuckDBPyConnection
+        conn: duckdb.DuckDBPyConnection
         set_seed(conn, seed)
         create_table(conn, dataset_link)
 
