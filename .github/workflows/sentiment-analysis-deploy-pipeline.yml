@@ -11,7 +11,7 @@ env:
 jobs:
   deploy-sentiment-analysis-flow:
     name: Deploy flow
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     container:
       image: ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
     steps:
