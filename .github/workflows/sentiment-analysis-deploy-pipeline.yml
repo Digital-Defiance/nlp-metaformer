@@ -3,24 +3,20 @@ name: "Sentiment Analysis: Deploy Pipeline"
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'pipelines/sentiment_analysis/deploy.py'
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: digital-defiance/sentiment-analysis-pipeline
 
 jobs:
-  deploy:
+  deploy-sentiment-analysis-flow:
+    name: Deploy flow
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
-    permissions:
-      contents: read
-      packages: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@master
+      - name: Login to prefect
+        run: prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
+      - name: Deploy sentiment analysis flow
+        run: python pipelines/sentiment_analysis/deploy.py
