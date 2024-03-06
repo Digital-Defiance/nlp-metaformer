@@ -10,8 +10,14 @@ from prefect import flow, serve, get_run_logger, task, variables
 from prefect.runner.storage import GitRepository
 import boto3
 from prefect_aws import AwsCredentials
+import os
 
 aws_credentials_block = AwsCredentials.load("spot")
+
+os.environ["REGION_NAME"] = aws_credentials_block.region_name
+os.environ["AWS_ACCESS_KEY_ID"] = aws_credentials_block.aws_access_key_id
+os.environ["AWS_SECRET_ACCESS_KEY"] = aws_credentials_block.aws_secret_access_key
+
 
 @task
 def get_client():
