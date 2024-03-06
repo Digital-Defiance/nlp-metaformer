@@ -226,7 +226,7 @@ if __name__ == "__main__":
     )
 
     sentiment_analysis_flow = sentiment_analysis.from_source(
-        entrypoint="pipelines/deploy.py:sentiment_analysis",
+        entrypoint="pipelines/sentiment_analysis/deploy.py:sentiment_analysis",
         source=git_repo,
     )
 
