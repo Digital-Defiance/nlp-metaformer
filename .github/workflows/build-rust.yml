@@ -29,10 +29,9 @@ jobs:
           echo "RUST_BACKTRACE=full" >> $GITHUB_ENV
       - run: echo $RUST_BACKTRACE
       - name: Compile
-        id: compile
         run: cargo build --release --target-dir build
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: Binary
+          name: llm-voice-chat
           path: build/release/llm-voice-chat
