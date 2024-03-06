@@ -18,5 +18,6 @@ jobs:
       - uses: actions/checkout@master
       - name: Login to prefect
         run: prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
+      - run: ls
       - name: Deploy sentiment analysis flow
         run: python pipelines/sentiment_analysis/deploy.py
