@@ -16,7 +16,7 @@ aws_credentials_block = AwsCredentials.load("spot")
 
 os.environ["REGION_NAME"] = aws_credentials_block.region_name
 os.environ["AWS_ACCESS_KEY_ID"] = aws_credentials_block.aws_access_key_id
-os.environ["AWS_SECRET_ACCESS_KEY"] = aws_credentials_block.aws_secret_access_key
+os.environ["AWS_SECRET_ACCESS_KEY"] = aws_credentials_block.aws_secret_access_key.get_secret_value()
 
 
 @task
