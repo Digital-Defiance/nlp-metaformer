@@ -1,5 +1,5 @@
 
-name: Build sentiment analysis env
+name: "Sentiment Analysis: Build Env"
 
 on:
   workflow_dispatch:
