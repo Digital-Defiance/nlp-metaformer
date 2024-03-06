@@ -41,12 +41,12 @@ if __name__ == "__main__":
         branch = "main",
     )
 
-    sentiment_analysis_flow = sentiment_analysis.from_source(
+    main_flow = main.from_source(
         entrypoint="pipelines/capacity.py:main",
         source=git_repo,
     )
 
-    sentiment_analysis_flow.deploy(
+    main_flow.deploy(
         name="change-scaling-capacity",
         work_pool_name = "workpool-prefect",
     )
