@@ -8,9 +8,12 @@ jobs:
   build-and-push-image:
     runs-on: self-hosted
     container:
-      image: ubuntu
+      image: ubuntu:22.04
   
     steps:
+      - name: Install curl
+        run: apt install curl
+    
       - name: Checkout repository
         uses: actions/checkout@v4
 
