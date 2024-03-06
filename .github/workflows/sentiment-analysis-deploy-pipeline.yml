@@ -1,0 +1,27 @@
+
+# .github/workflows/build.yml
+name: Build sentiment analysis env
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'pipelines/sentiment_analysis/deploy.py'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: digital-defiance/sentiment-analysis-pipeline
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
