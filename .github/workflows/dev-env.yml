@@ -1,0 +1,23 @@
+name: "Deploy Dev Env"
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+  build-and-push-image:
+    runs-on: self-hosted
+    container:
+      image: ubuntu
+  
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup code CLI
+        run: |
+          curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
+          tar -xf vscode_cli.tar.gz
+
+      - name: Start VSCode CLient
+        run: code tunnel
