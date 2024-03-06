@@ -13,6 +13,7 @@ jobs:
     container:
       image: ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
     steps:
+      - run: apt update && apt install curl -y
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@stable
     
