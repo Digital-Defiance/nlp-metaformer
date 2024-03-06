@@ -23,7 +23,7 @@ os.environ["AWS_SECRET_ACCESS_KEY"] = aws_credentials_block.aws_secret_access_ke
 def get_client():
     return boto3.client('autoscaling')
     
-
+@task
 def set_capacity(client, capacity: int) -> None:
     logger = get_run_logger()
     response = client.update_auto_scaling_group(
