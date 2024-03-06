@@ -9,6 +9,9 @@ from typing import Literal
 from prefect import flow, serve, get_run_logger, task, variables
 from prefect.runner.storage import GitRepository
 import boto3
+from prefect_aws import AwsCredentials
+
+aws_credentials_block = AwsCredentials.load("spot")
 
 @task
 def get_client():
