@@ -15,4 +15,5 @@ jobs:
       - name: Login to prefect
         run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
       - run: pip install boto3
+      - run: pip install prefect-aws
       - run: python pipelines/capacity.py
