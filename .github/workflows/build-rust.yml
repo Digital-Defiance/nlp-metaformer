@@ -6,19 +6,16 @@ on:
 
 
 jobs:
-
-
+  
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    container:
+      image: ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@stable
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Install pytorch
-        run: pip install torch==2.2.0
+    
       - name: Find and set torch lib path
         run: |
           SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
