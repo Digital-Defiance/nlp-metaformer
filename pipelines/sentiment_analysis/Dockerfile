@@ -1,4 +1,5 @@
-FROM pytorch/pytorch:2.2.0-cuda11.8-cudnn8-runtime
+FROM prefecthq/prefect:2-python3.10
 
+RUN pip install torch==2.2.0 --index-url https://download.pytorch.org/whl/cu118
+RUN pip install pydantic duckdb numpy pydantic-settings safetensors tiktoken
 
-RUN pip install pydantic duckdb prefect numpy pydantic-settings safetensors tiktoken
