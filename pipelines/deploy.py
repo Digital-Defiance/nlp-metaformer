@@ -24,10 +24,6 @@ PathStr = str
 
 
 
-
-
-
-
 class Optimizer(BaseSettings):
     learning_rate: float = 1e-4
 
@@ -205,7 +201,6 @@ async def write_data(settings: Settings):
 @flow
 async def sentiment_analysis(settings: Settings):
     logger = get_run_logger()
-    logger.info(settings)
     parallel_subflows = [training_loop(settings), write_data(settings)]
     await asyncio.gather(*parallel_subflows)
     
