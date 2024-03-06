@@ -1,6 +1,5 @@
 
-# .github/workflows/build.yml
-name: Deploy sentiment analysis flow
+name: Build sentiment analysis env
 
 on:
   workflow_dispatch:
@@ -43,9 +42,4 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-  
-      - name: Deploy sentiment analysis flow
-        run: | 
-          docker run ${{ steps.meta.outputs.tags }} /bin/bash -c "prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default' && python pipelines/sentiment_analysis/deploy.py"
-
 
