@@ -6,10 +6,10 @@ on:
       machine:
         description: 'Which AWS machine to use'
         required: true
-        default: 't4g.xlarge'
+        default: 'm6g.xlarge'
         type: choice
         options:
-          - t4g.xlarge
+          - m6g.xlarge
       image:
         description: 'Development environment'
         required: true
