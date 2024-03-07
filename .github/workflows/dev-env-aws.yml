@@ -31,6 +31,7 @@ on:
         options:
           - '--user root'
           - '--user root --gpu all'
+
 env:
   AWS_REGION: eu-south-1
 
