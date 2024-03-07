@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - m6a.xlarge
+          - m6a.2xlarge
           - local
       image:
         description: 'Development environment'
