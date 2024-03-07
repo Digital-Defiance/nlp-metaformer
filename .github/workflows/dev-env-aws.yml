@@ -59,6 +59,7 @@ jobs:
           subnet-id: subnet-0fc7dea0969cca860
           security-group-id: sg-0c4cc0c0be64f1b08
       - shell: bash
+        name: "Get runner tag"
         id: set-output
         run: |
           if [[ ${{ inputs.machine }} == "local" ]]; then
@@ -96,7 +97,7 @@ jobs:
         run: |
           curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
           tar -xf vscode_cli.tar.gz
-      - name: Serve VScode
+      - name: Serve VSCode
         continue-on-error: true
         run: ./code tunnel
       
