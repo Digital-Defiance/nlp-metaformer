@@ -2,32 +2,24 @@ import os
 import asyncio
 import subprocess
 from pathlib import Path
-
-import asyncio
 from contextlib import contextmanager
 from typing import Literal
-
 
 import duckdb
 from duckdb.typing import *
 
 from torch import Tensor, tensor, save
 from torch.nn.utils.rnn import pad_sequence
-
 from pydantic_settings.sources import YamlConfigSettingsSource
 from pydantic_settings import BaseSettings
-
 from prefect import flow, serve, get_run_logger, task, variables
 from prefect.runner.storage import GitRepository
-
 from safetensors import torch as stt
-
 import tiktoken
 
-SAVE_PATH = "output.safetensors"
+SAVE_PATH: str = "output.safetensors"
 
 PathStr = str
-
 
 
 class Data(BaseSettings):
@@ -184,14 +176,10 @@ def save_data(data):
 async def write_data(settings: Settings):
     logger = get_run_logger()
     logger.info("Partitioning dataset.")
-    with dataset_partitioning(
-        number_of_epochs=settings.train.epochs,
-        number_of_partions=settings.train.data.preprocessing.slices,
-        dataset_link = settings.train.data.source,
-    ) as fetch_data:
+    with dataset_partitioning(number_of_epochs=settings.epochs, number_of_partions=settings.data.slices, dataset_link = settings.data.source) as fetch_data:
         clean_safetensor_files()
         for epoch in range(settings.train.epochs):
-            for slice in range(settings.train.data.preprocessing.slices):
+            for slice in range(settings.data.slices):
                 logger.info(f"Constructing slice {slice} for epoch {epoch}")
                 data = fetch_and_preprocess_data(fetch_data, epoch, slice, settings.model.context_window)
                 await wait_data_consumption()
@@ -214,12 +202,13 @@ def get_active_branch_name():
             return line.partition("refs/heads/")[2]
 
 
-import os
-os.environ["LLMVC_ENVIRONMENT"] = "dev"
+class EnvironmentSettings(BaseSettings):
+    LLMVC_ENVIRONMENT: str = "prod"
 
 if __name__ == "__main__":
+    settings = EnvironmentSettings()
 
-    if os.environ["LLMVC_ENVIRONMENT"] == "dev":
+    if settings.LLMVC_ENVIRONMENT == "dev":
         sentiment_analysis.serve(name="sentiment-analysis-test")
 
     else:
