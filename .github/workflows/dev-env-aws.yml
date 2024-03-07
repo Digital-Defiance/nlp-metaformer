@@ -75,7 +75,7 @@ jobs:
     runs-on: ${{ needs.start-runner.outputs.label }}
     container:
       image: ${{ inputs.image }}
-      options: --user root
+      options: --user root --gpus all
       env:
         RUST_BACKTRACE: "full"
         LIBTORCH_USE_PYTORCH: "1"
