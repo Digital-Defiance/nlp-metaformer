@@ -78,9 +78,10 @@ jobs:
   
     steps:
       - run: apt update && apt install curl -y
+      - run: apt-get update && apt-get install -y procps
+      - uses: actions/checkout@v4
       - run: git config --global user.email "mail@ruicampos.org"
       - run: git config --global user.name "Rui Campos"
-      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - name: Find and set torch lib path
         run: |
