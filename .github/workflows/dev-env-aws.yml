@@ -3,6 +3,8 @@ name: "Development Environment: Deploy"
 on:
   workflow_dispatch:
     inputs:
+
+
       machine:
         description: 'Which machine to use'
         required: true
@@ -22,7 +24,13 @@ on:
         options:
           - ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
           - gitpod/workspace-rust
-
+      docker_options:
+        required: true
+        default: '--user root'
+        type: choice
+        options:
+          - '--user root'
+          - '--user root --gpu all'
 env:
   AWS_REGION: eu-south-1
 
@@ -75,7 +83,7 @@ jobs:
     runs-on: ${{ needs.start-runner.outputs.label }}
     container:
       image: ${{ inputs.image }}
-      options: --user root --gpus all
+      options: ${{ inputs.docker_options }}
       env:
         RUST_BACKTRACE: "full"
         LIBTORCH_USE_PYTORCH: "1"
