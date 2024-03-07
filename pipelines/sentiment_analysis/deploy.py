@@ -24,27 +24,28 @@ from safetensors import torch as stt
 
 import tiktoken
 
+SAVE_PATH = "output.safetensors"
 
 PathStr = str
 
-class Optimizer(BaseSettings):
-    learning_rate: float = 1e-4
 
-class Preprocessing(BaseSettings):
-    slices: int = 5
-    batch_size: int = 32
 
 class Data(BaseSettings):
     source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/dataset.parquet"
-    output: str = "data.safetensors"
-    preprocessing: Preprocessing
+    slices: int = 5
+    batch_size: int = 32
+
+class TrainingProcess(BaseSettings):
+    use_gpu: bool = False
+    executable_source: str = "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.1/llm-voice-chat"
 
 class Train(BaseSettings):
     epochs: int = 1
-    optimizer: Optimizer
-    data: Data
+    learning_rate: float = 1e-4
+
 
 class Model(BaseSettings):
+    encoding: Literal["tiktoken-gpt2"] = "tiktoken-gpt2"
     attention_kind: Literal["Quadratic", "Metric", "ScaledDotProduct"] = "Quadratic"
     dimension: int = 32
     depth: int = 1
@@ -53,23 +54,16 @@ class Model(BaseSettings):
     input_vocabolary: int = 60_000
     output_vocabolary: int = 5
 
-class Run(BaseSettings):
-    use_gpu: bool = False
-    rust_binary: str = "/workspace/llm-voice-chat/pipelines/llm-voice-chat"
-    config_file: str = "/workspace/llm-voice-chat/config.yml"
+    def to_cmd_args(self):
+        args = [f"--{key} {value}" for key, value in self.model_dump().items()]
+        return " ".join(args)
+
 
 class Settings(BaseSettings):
-    run: Run
-    use_gpu: bool = False
-    train: Train
-    model: Model
-
-    @classmethod
-    def load(cls, path = "config.yml"):    
-        data = YamlConfigSettingsSource(BaseSettings, "config.yml")()
-        return cls(**data)
-
-
+    process: TrainingProcess
+    model: Model 
+    train: Train 
+    data: Data
 
 ENCODER = tiktoken.get_encoding("gpt2")
 
@@ -125,13 +119,23 @@ def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str
             return sentiments, reviews
         yield fetch_data
 
-@flow
-async def training_loop(settings: Settings):
-    logger = get_run_logger()
-    logger.info("Training loop flow started.")
 
+
+@task
+def download_rust_binary(url: str) -> str:
+    import requests
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    save_path = "train"
+    with open(save_path, "wb") as file:
+        for chunk in response.iter_content(chunk_size=8192):
+            file.write(chunk)
+    return save_path
+
+@task
+async def run_rust_binary(path_to_rust_binary: str, arguments: str):
     with subprocess.Popen(
-        f'{settings.run.rust_binary} --path {settings.run.config_file}',
+        f'{path_to_rust_binary} {arguments}',
         shell=True,
         stdout=subprocess.PIPE,
         bufsize=1,
@@ -139,19 +143,21 @@ async def training_loop(settings: Settings):
     ) as process:
         while (code := process.poll()) is None:
             await asyncio.sleep(10)
+        print(code)
+
+
+@flow
+async def training_loop(settings: Settings):
+    path_to_rust_binary = download_rust_binary(settings.train.process.executable_source)
+    await run_rust_binary(path_to_rust_binary, settings.model.to_cmd_args())
 
 @task
-def clean_safetensor_files(path_to_data: PathStr):
-    logger = get_run_logger()
-
-    if Path(path_to_data).exists():
-        logger.info("Removing: " + path_to_data)
-        os.remove(file)
+def clean_safetensor_files():
+    if Path(SAVE_PATH).exists():
+        os.remove(SAVE_PATH)
 
 @task
 async def wait_data_consumption():
-    logger = get_run_logger()
-    logger.info("Waiting for slice.safetensors to be consumed")
     while Path(SAVE_PATH).exists():
         await asyncio.sleep(1)
 
@@ -172,15 +178,11 @@ def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int, cont
 
 @task
 def save_data(data):
-    logger = get_run_logger()
     stt.save_file(data, SAVE_PATH)
-    logger.info("Saved new slice.safetensors")
-
 
 @flow
 async def write_data(settings: Settings):
     logger = get_run_logger()
-    logger.info("Started flow.")
     logger.info("Partitioning dataset.")
     with dataset_partitioning(
         number_of_epochs=settings.train.epochs,
@@ -188,25 +190,18 @@ async def write_data(settings: Settings):
         dataset_link = settings.train.data.source,
     ) as fetch_data:
         clean_safetensor_files()
-        for epoch in range(number_of_epochs):
-            for slice in range(number_of_partions):
+        for epoch in range(settings.train.epochs):
+            for slice in range(settings.train.data.preprocessing.slices):
                 logger.info(f"Constructing slice {slice} for epoch {epoch}")
-                data = fetch_and_preprocess_data(
-                    fetch_data,
-                    epoch,
-                    slice,
-                    settings.model.context_window
-                )
+                data = fetch_and_preprocess_data(fetch_data, epoch, slice, settings.model.context_window)
                 await wait_data_consumption()
                 save_data(data)
 
 
 @flow
 async def sentiment_analysis(settings: Settings):
-    logger = get_run_logger()
     parallel_subflows = [training_loop(settings), write_data(settings)]
     await asyncio.gather(*parallel_subflows)
-    
     
 
 def get_active_branch_name():
@@ -218,19 +213,27 @@ def get_active_branch_name():
         if line[0:4] == "ref:":
             return line.partition("refs/heads/")[2]
 
+
+import os
+os.environ["LLMVC_ENVIRONMENT"] = "dev"
+
 if __name__ == "__main__":
 
-    git_repo = GitRepository(
-        url="https://github.com/Digital-Defiance/llm-voice-chat.git",
-        branch = get_active_branch_name(),
-    )
+    if os.environ["LLMVC_ENVIRONMENT"] == "dev":
+        sentiment_analysis.serve(name="sentiment-analysis-test")
 
-    sentiment_analysis_flow = sentiment_analysis.from_source(
-        entrypoint="pipelines/sentiment_analysis/deploy.py:sentiment_analysis",
-        source=git_repo,
-    )
+    else:
+        git_repo = GitRepository(
+            url="https://github.com/Digital-Defiance/llm-voice-chat.git",
+            branch = get_active_branch_name(),
+        )
 
-    sentiment_analysis_flow.deploy(
-        name="sentiment-analysis",
-        work_pool_name = "test",
-    )
+        sentiment_analysis_flow = sentiment_analysis.from_source(
+            entrypoint="pipelines/sentiment_analysis/deploy.py:sentiment_analysis",
+            source=git_repo,
+        )
+
+        sentiment_analysis_flow.deploy(
+            name="sentiment-analysis",
+            work_pool_name = "test",
+        )
