@@ -1,0 +1,95 @@
+name: "Development Environment: Deploy Remote VScode on AWS"
+
+on:
+  workflow_dispatch:
+    inputs:
+      machine:
+        description: 'Which AWS machine to use'
+        required: true
+        default: 't4g.xlarge'
+        type: choice
+        options:
+          - t4g.xlarge
+      image:
+        description: 'Development environment'
+        required: true
+        default: 'digital-defiance/sentiment-analysis-pipeline'
+        type: choice
+        options:
+          - digital-defiance/sentiment-analysis-pipeline
+          - gitpod/workspace-rust
+
+env:
+  AWS_REGION: eu-south-1
+
+jobs:
+  start-runner:
+    runs-on: ubuntu-latest
+    name: "Get Machine"
+    outputs:
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:  ${{ env.AWS_REGION }}
+      - name: Start EC2 runner
+        id: start-ec2-runner
+        uses: digital-defiance/ec2-github-runner@feature/add-storage-option
+        with:
+          mode: start
+          root-volume-size: 50
+          iam-role-name: ec2-logs
+          pre-runner-script: |  # sudo yum update -y && sudo yum install docker git libicu -y
+              sudo systemctl enable docker
+              sudo systemctl start docker
+          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          market-type: spot
+          ec2-image-id: ami-0d1e2ba0458f0cd7a  
+          ec2-instance-type: ${{ inputs.machine }}
+          subnet-id: subnet-0fc7dea0969cca860
+          security-group-id: sg-0c4cc0c0be64f1b08
+
+  deploy-vscode:
+    name: Deploy env
+    needs:
+      - start-runner
+    runs-on: ${{ needs.start-runner.outputs.label }}
+    container:
+      image: ${{ inputs.image }}
+      options: --user root
+  
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup code CLI
+        run: |
+          curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
+          tar -xf vscode_cli.tar.gz
+      - name: Start VSCode CLient
+        run: ./code tunnel
+      
+  stop-runner:
+    runs-on: ubuntu-latest
+    name: Stop EC2 Spot instance
+    needs:
+      - start-runner
+      - deploy-vscode
+    if: ${{ always()  }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Stop EC2 runner
+        uses: digital-defiance/ec2-github-runner@v2
+        with:
+          mode: stop
+          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          label: ${{ needs.start-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
