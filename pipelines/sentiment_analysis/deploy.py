@@ -216,7 +216,7 @@ async def main(settings: Settings):
 class EnvironmentSettings(BaseSettings): 
     LLMVC_ENVIRONMENT: str = "prod"
     github_url: str = "https://github.com/Digital-Defiance/llm-voice-chat.git"
-    entrypoint: str  = "pipelines/sentiment_analysis/deploy.py:sentiment_analysis"
+    entrypoint: str  = "pipelines/sentiment_analysis/deploy.py:main"
     name: str = "sentiment-analysis"
     workpool: str = "test"
 
