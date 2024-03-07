@@ -11,6 +11,8 @@ on:
         options:
           - m6a.xlarge
           - m6a.2xlarge
+          - g4dn.2xlarge
+          - g4dn.xlarge
           - local
       image:
         description: 'Development environment'
