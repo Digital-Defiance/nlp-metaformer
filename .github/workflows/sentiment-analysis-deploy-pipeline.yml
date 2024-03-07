@@ -1,5 +1,5 @@
 
-name: "Sentiment Analysis: Deploy Pipeline"
+name: "Sentiment Analysis: Deploy"
 
 on:
   workflow_dispatch:
