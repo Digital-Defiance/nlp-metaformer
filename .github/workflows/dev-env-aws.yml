@@ -64,26 +64,32 @@ jobs:
             echo "label=${{ steps.start-ec2-runner.outputs.label }}" >> $GITHUB_OUTPUT
           fi
 
-          
-
-        
   deploy-vscode:
-    name: Deploy env
+    name: Deploy development environment
     needs:
       - start-runner
     runs-on: ${{ needs.start-runner.outputs.label }}
     container:
       image: ${{ inputs.image }}
       options: --user root
+      env:
+        RUST_BACKTRACE: "full"
+        LIBTORCH_USE_PYTORCH: "1"
   
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - run: apt update && apt install curl -y
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Find and set torch lib path
+        run: |
+          SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+          TORCH_LIB_PATH="${SITE_PACKAGES}/torch/lib"
+          echo "LD_LIBRARY_PATH=$TORCH_LIB_PATH" >> $GITHUB_ENV
       - name: Setup code CLI
         run: |
           curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
           tar -xf vscode_cli.tar.gz
-      - name: Start VSCode CLient
+      - name: Serve VScode
         run: ./code tunnel
       
   stop-runner:
