@@ -13,10 +13,10 @@ on:
       image:
         description: 'Development environment'
         required: true
-        default: 'digital-defiance/sentiment-analysis-pipeline'
+        default: 'ghcr.io/digital-defiance/sentiment-analysis-pipeline'
         type: choice
         options:
-          - digital-defiance/sentiment-analysis-pipeline
+          - ghcr.io/digital-defiance/sentiment-analysis-pipeline
           - gitpod/workspace-rust
 
 env:
