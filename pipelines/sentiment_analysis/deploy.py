@@ -218,7 +218,7 @@ class EnvironmentSettings(BaseSettings):
     github_url: str = "https://github.com/Digital-Defiance/llm-voice-chat.git"
     entrypoint: str  = "pipelines/sentiment_analysis/deploy.py:main"
     name: str = "sentiment-analysis"
-    workpool: str = "test"
+    workpool: str = "spot-hybrid"
 
     @staticmethod
     def get_active_branch_name():
