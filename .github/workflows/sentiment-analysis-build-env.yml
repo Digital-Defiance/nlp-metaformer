@@ -1,5 +1,5 @@
 
-name: "Sentiment Analysis: Build Env"
+name: "Sentiment Analysis: Build"
 
 on:
   workflow_dispatch:

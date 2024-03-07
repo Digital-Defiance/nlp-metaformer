@@ -11,6 +11,8 @@ on:
         options:
           - m6a.xlarge
           - m6a.2xlarge
+          - g4dn.2xlarge
+          - g4dn.xlarge
           - local
       image:
         description: 'Development environment'
@@ -52,11 +54,12 @@ jobs:
               sudo systemctl start docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
-          ec2-image-id: ami-0d1e2ba0458f0cd7a  
+          ec2-image-id: ami-0450c19b7a7f6250d  # ami-0d1e2ba0458f0cd7a  
           ec2-instance-type: ${{ inputs.machine }}
           subnet-id: subnet-0fc7dea0969cca860
           security-group-id: sg-0c4cc0c0be64f1b08
       - shell: bash
+        name: "Get runner tag"
         id: set-output
         run: |
           if [[ ${{ inputs.machine }} == "local" ]]; then
@@ -72,10 +75,11 @@ jobs:
     runs-on: ${{ needs.start-runner.outputs.label }}
     container:
       image: ${{ inputs.image }}
-      options: --user root
+      options: --user root --gpus all
       env:
         RUST_BACKTRACE: "full"
         LIBTORCH_USE_PYTORCH: "1"
+        LLMVC_ENVIRONMENT: "dev"
   
     steps:
       - run: apt update && apt install curl -y
@@ -93,7 +97,7 @@ jobs:
         run: |
           curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
           tar -xf vscode_cli.tar.gz
-      - name: Serve VScode
+      - name: Serve VSCode
         continue-on-error: true
         run: ./code tunnel
       
