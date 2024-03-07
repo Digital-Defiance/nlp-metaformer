@@ -26,9 +26,9 @@ env:
 jobs:
   start-runner:
     runs-on: ubuntu-latest
-    name: "Get Machine"
+    name: "Provision infrastructure"
     outputs:
-      label: ${{ steps.start-ec2-runner.outputs.label }}
+      label: ${{ steps.set-output.outputs.label }}
       ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
     steps:
       - name: Configure AWS credentials
@@ -55,9 +55,17 @@ jobs:
           ec2-instance-type: ${{ inputs.machine }}
           subnet-id: subnet-0fc7dea0969cca860
           security-group-id: sg-0c4cc0c0be64f1b08
-      - if: ${{ inputs.machine == 'local' }}
-        run: echo "label=self-hosted" >> $GITHUB_OUTPUT
-        shell: bash
+      - shell: bash
+        id: set-output
+        run: |
+          if [[ ${{ inputs.machine }} == "local" ]]; then
+            echo "label=self-hosted" >> $GITHUB_OUTPUT
+          else
+            echo "label=${{ steps.start-ec2-runner.outputs.label }}" >> $GITHUB_OUTPUT
+          fi
+
+          
+
         
   deploy-vscode:
     name: Deploy env
