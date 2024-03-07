@@ -32,7 +32,7 @@ jobs:
       ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
     steps:
       - name: Configure AWS credentials
-        if: ${{ inputs.machine != "local" }}
+        if: ${{ inputs.machine != 'local' }}
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -40,7 +40,7 @@ jobs:
           aws-region:  ${{ env.AWS_REGION }}
       - name: Start EC2 runner
         id: start-ec2-runner
-        if: ${{ inputs.machine != "local" }}
+        if: ${{ inputs.machine != 'local' }}
         uses: digital-defiance/ec2-github-runner@feature/add-storage-option
         with:
           mode: start
@@ -55,7 +55,7 @@ jobs:
           ec2-instance-type: ${{ inputs.machine }}
           subnet-id: subnet-0fc7dea0969cca860
           security-group-id: sg-0c4cc0c0be64f1b08
-      - if: ${{ inputs.machine == "local" }}
+      - if: ${{ inputs.machine == 'local' }}
         run: echo "label=self-hosted" >> $GITHUB_OUTPUT
         shell: bash
         
@@ -84,7 +84,7 @@ jobs:
     needs:
       - start-runner
       - deploy-vscode
-    if: ${{ always() && inputs.machine != "local" }}
+    if: ${{ always() && inputs.machine != 'local' }}
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
