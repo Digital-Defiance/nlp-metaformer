@@ -1,10 +1,10 @@
-name: "Development Environment: Deploy Remote VScode on AWS"
+name: "Development Environment: Deploy"
 
 on:
   workflow_dispatch:
     inputs:
       machine:
-        description: 'Which AWS machine to use'
+        description: 'Which machine to use'
         required: true
         default: 'm6a.xlarge'
         type: choice
@@ -92,6 +92,7 @@ jobs:
           curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
           tar -xf vscode_cli.tar.gz
       - name: Serve VScode
+        continue-on-error: true
         run: ./code tunnel
       
   stop-runner:
