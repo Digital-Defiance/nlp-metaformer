@@ -2,49 +2,53 @@ import os
 import asyncio
 import subprocess
 from pathlib import Path
-
-import asyncio
 from contextlib import contextmanager
 from typing import Literal
 
-
 import duckdb
 from duckdb.typing import *
-
-from torch import Tensor, tensor, save
+from torch import tensor
 from torch.nn.utils.rnn import pad_sequence
-
-from pydantic_settings.sources import YamlConfigSettingsSource
 from pydantic_settings import BaseSettings
-
-from prefect import flow, serve, get_run_logger, task, variables
+from prefect import flow, get_run_logger, task
 from prefect.runner.storage import GitRepository
-
 from safetensors import torch as stt
-
 import tiktoken
 
+SAVE_PATH: str = "output.safetensors"
 
 PathStr = str
 
-class Optimizer(BaseSettings):
-    learning_rate: float = 1e-4
-
-class Preprocessing(BaseSettings):
+class Data(BaseSettings):
+    source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/dataset.parquet"
     slices: int = 5
     batch_size: int = 32
 
-class Data(BaseSettings):
-    source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/dataset.parquet"
-    output: str = "data.safetensors"
-    preprocessing: Preprocessing
+    def to_cmd_args(self) -> str:
+        return f"--batch-size {self.batch_size}"
+
+class TrainingProcess(BaseSettings):
+    use_gpu: bool = False
+    executable_source: str = "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.1/llm-voice-chat"
+
+    def to_cmd_args(self) -> str:
+        if self.use_gpu:
+            return "--use-gpu"
+        else:
+            return ""
+
+
+
 
 class Train(BaseSettings):
     epochs: int = 1
-    optimizer: Optimizer
-    data: Data
+    learning_rate: float = 1e-4
+
+    def to_cmd_args(self):
+        return f"--learning-rate {self.learning_rate}"
 
 class Model(BaseSettings):
+    encoding: Literal["tiktoken-gpt2"] = "tiktoken-gpt2"
     attention_kind: Literal["Quadratic", "Metric", "ScaledDotProduct"] = "Quadratic"
     dimension: int = 32
     depth: int = 1
@@ -53,33 +57,28 @@ class Model(BaseSettings):
     input_vocabolary: int = 60_000
     output_vocabolary: int = 5
 
-class Run(BaseSettings):
-    use_gpu: bool = False
-    rust_binary: str = "/workspace/llm-voice-chat/pipelines/llm-voice-chat"
-    config_file: str = "/workspace/llm-voice-chat/config.yml"
+    def to_cmd_args(self):
+        args = [f"--{key.replace('_', '-')} {value}" for key, value in self.model_dump().items()]
+        return " ".join(args)
+
 
 class Settings(BaseSettings):
-    run: Run
-    use_gpu: bool = False
-    train: Train
-    model: Model
+    process: TrainingProcess
+    model: Model 
+    train: Train 
+    data: Data
 
-    @classmethod
-    def load(cls, path = "config.yml"):    
-        data = YamlConfigSettingsSource(BaseSettings, "config.yml")()
-        return cls(**data)
-
-
+    def to_cmd_args(self) -> str:
+        args = self.model.to_cmd_args()
+        args += " " + self.train.to_cmd_args()
+        args += " " + self.data.to_cmd_args()
+        args += " " + self.process.to_cmd_args()
+        return args
 
 ENCODER = tiktoken.get_encoding("gpt2")
 
 def encode_text(text: str) -> list[int]:
     return ENCODER.encode(text.lower())
-
-SENTIMENT_TO_INTEGER = {
-    'pos': 1,
-    'neg': 0
-}
 
 def set_seed(conn: duckdb.DuckDBPyConnection, seed: float) -> None:
     conn.execute(f"SELECT setseed(?) as ign;", [seed])
@@ -120,38 +119,54 @@ def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str
         def fetch_data(epoch_idx: int, slice_idx: int) -> tuple[list[int], list[str]]:
             sentiments, reviews = [], []
             for sentiment, text in select_partition(conn, dataset_link, epoch_idx, slice_idx).fetchall():
-                sentiments.append(SENTIMENT_TO_INTEGER[sentiment])
+                sentiment = 1 if sentiment == "Pos" else 0
+                sentiments.append(sentiment)
                 reviews.append(text)
             return sentiments, reviews
         yield fetch_data
 
-@flow
-async def training_loop(settings: Settings):
-    logger = get_run_logger()
-    logger.info("Training loop flow started.")
 
-    with subprocess.Popen(
-        f'{settings.run.rust_binary} --path {settings.run.config_file}',
-        shell=True,
-        stdout=subprocess.PIPE,
-        bufsize=1,
-        universal_newlines=True
-    ) as process:
-        while (code := process.poll()) is None:
-            await asyncio.sleep(10)
 
 @task
-def clean_safetensor_files(path_to_data: PathStr):
-    logger = get_run_logger()
+def download_rust_binary(url: str) -> str:
+    import requests
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    save_path = "train"
+    with open(save_path, "wb") as file:
+        for chunk in response.iter_content(chunk_size=8192):
+            file.write(chunk)
+    return save_path
 
-    if Path(path_to_data).exists():
-        logger.info("Removing: " + path_to_data)
-        os.remove(file)
+@task
+async def run_rust_binary(path_to_rust_binary: str, arguments: str):
+    logger = get_run_logger()
+    cmd = f'./{path_to_rust_binary} {arguments} --path-to-slice {SAVE_PATH}'
+    logger.info(f"Running command: {cmd}")
+    with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True) as process:
+        while (code := process.poll()) is None:
+            if (output := process.stdout.readline()):
+                logger.info(output.strip())
+            await asyncio.sleep(10)
+
+        if code != 0:
+            if process.stderr:
+                stderr = process.stderr.read()
+                logger.error(stderr)
+            raise RuntimeError("Rust program exited with non-zero")
+
+@flow
+async def training_loop(settings: Settings):
+    path_to_rust_binary = download_rust_binary(settings.process.executable_source)
+    await run_rust_binary(path_to_rust_binary, settings.to_cmd_args())
+
+@task
+def clean_safetensor_files():
+    if Path(SAVE_PATH).exists():
+        os.remove(SAVE_PATH)
 
 @task
 async def wait_data_consumption():
-    logger = get_run_logger()
-    logger.info("Waiting for slice.safetensors to be consumed")
     while Path(SAVE_PATH).exists():
         await asyncio.sleep(1)
 
@@ -172,65 +187,53 @@ def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int, cont
 
 @task
 def save_data(data):
-    logger = get_run_logger()
     stt.save_file(data, SAVE_PATH)
-    logger.info("Saved new slice.safetensors")
-
 
 @flow
-async def write_data(settings: Settings):
+async def data_worker(settings: Settings):
     logger = get_run_logger()
-    logger.info("Started flow.")
     logger.info("Partitioning dataset.")
     with dataset_partitioning(
-        number_of_epochs=settings.train.epochs,
-        number_of_partions=settings.train.data.preprocessing.slices,
-        dataset_link = settings.train.data.source,
+        number_of_epochs = settings.train.epochs,
+        number_of_partions = settings.data.slices,
+        dataset_link = settings.data.source
     ) as fetch_data:
         clean_safetensor_files()
-        for epoch in range(number_of_epochs):
-            for slice in range(number_of_partions):
+        for epoch in range(settings.train.epochs):
+            for slice in range(settings.data.slices):
                 logger.info(f"Constructing slice {slice} for epoch {epoch}")
-                data = fetch_and_preprocess_data(
-                    fetch_data,
-                    epoch,
-                    slice,
-                    settings.model.context_window
-                )
+                data = fetch_and_preprocess_data(fetch_data, epoch, slice, settings.model.context_window)
                 await wait_data_consumption()
                 save_data(data)
 
 
 @flow
-async def sentiment_analysis(settings: Settings):
-    logger = get_run_logger()
-    parallel_subflows = [training_loop(settings), write_data(settings)]
+async def main(settings: Settings):
+    parallel_subflows = [training_loop(settings), data_worker(settings)]
     await asyncio.gather(*parallel_subflows)
-    
-    
 
-def get_active_branch_name():
 
-    head_dir = Path(".") / ".git" / "HEAD"
-    with head_dir.open("r") as f: content = f.read().splitlines()
+class EnvironmentSettings(BaseSettings): 
+    LLMVC_ENVIRONMENT: str = "prod"
+    github_url: str = "https://github.com/Digital-Defiance/llm-voice-chat.git"
+    entrypoint: str  = "pipelines/sentiment_analysis/deploy.py:sentiment_analysis"
+    name: str = "sentiment-analysis"
+    workpool: str = "test"
 
-    for line in content:
-        if line[0:4] == "ref:":
-            return line.partition("refs/heads/")[2]
+    @staticmethod
+    def get_active_branch_name():
+        head_dir = Path(".") / ".git" / "HEAD"
+        with head_dir.open("r") as f: content = f.read().splitlines()
+        for line in content:
+            if line[0:4] == "ref:":
+                return line.partition("refs/heads/")[2]
 
 if __name__ == "__main__":
+    settings = EnvironmentSettings()
 
-    git_repo = GitRepository(
-        url="https://github.com/Digital-Defiance/llm-voice-chat.git",
-        branch = get_active_branch_name(),
-    )
-
-    sentiment_analysis_flow = sentiment_analysis.from_source(
-        entrypoint="pipelines/sentiment_analysis/deploy.py:sentiment_analysis",
-        source=git_repo,
-    )
-
-    sentiment_analysis_flow.deploy(
-        name="sentiment-analysis",
-        work_pool_name = "test",
-    )
+    if settings.LLMVC_ENVIRONMENT == "dev":
+        main.serve(name = settings.name + "-test")
+    else:
+        git_repo = GitRepository(url = settings.github_url, branch = settings.get_active_branch_name())
+        main_flow = main.from_source(entrypoint = settings.entrypoint, source = git_repo,)
+        main_flow.deploy(name = settings.name, work_pool_name = settings.workpool)

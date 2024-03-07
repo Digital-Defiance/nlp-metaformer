@@ -3,10 +3,12 @@ name: "Development Environment: Deploy"
 on:
   workflow_dispatch:
     inputs:
+
+
       machine:
         description: 'Which machine to use'
         required: true
-        default: 'm6a.xlarge'
+        default: 'local'
         type: choice
         options:
           - m6a.xlarge
@@ -82,7 +84,7 @@ jobs:
     runs-on: ${{ needs.start-runner.outputs.label }}
     container:
       image: ${{ inputs.image }}
-      options: --user root --gpus all
+      options: ${{ inputs.docker_options }}
       env:
         RUST_BACKTRACE: "full"
         LIBTORCH_USE_PYTORCH: "1"
@@ -100,6 +102,8 @@ jobs:
           SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
           TORCH_LIB_PATH="${SITE_PACKAGES}/torch/lib"
           echo "LD_LIBRARY_PATH=$TORCH_LIB_PATH" >> $GITHUB_ENV
+      - name: Login to prefect
+        run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
       - name: Setup code CLI
         run: |
           curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz

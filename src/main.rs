@@ -18,7 +18,7 @@ use tch::Device;
 use tch::nn::OptimizerConfig;
 use std::thread;
 use std::time::Duration;
-use metaformer::MetaFormer;
+use metaformer::{AttentionKind, MetaFormer};
 pub mod metaformer;
 pub mod attention;
 pub mod config;
@@ -28,16 +28,14 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::fs;
 
-use config::read_config;
+use config::{Cli, read_config};
 
 const WAITING_TIMEOUT_SECONDS: u64 = 120; 
 const WAIT_SECONDS: u64 = 5;
 
 /// Implementation of gradient descent
 fn main() {
-
-    let config = read_config();
-
+    let config: Cli = read_config();
     let training_device = {
         let cuda = Device::cuda_if_available();
         if config.use_gpu {
@@ -51,22 +49,30 @@ fn main() {
     };
 
     let metaformer: MetaFormer = MetaFormer::new(
-        config.model.dimension,
-        config.model.depth,
-        config.model.heads,
-        config.model.context_window,
-        config.model.input_vocabolary,
-        config.model.output_vocabolary,
+        config.dimension,
+        config.depth,
+        config.heads,
+        config.context_window,
+        config.input_vocabolary,
+        config.output_vocabolary,
     );
 
     let vs: nn::VarStore = nn::VarStore::new(training_device);
     let vs_path: &nn::Path<'_> = &vs.root();
 
-    let model = metaformer.create(vs_path, config.model.attention_kind);
+    let attention_kind =  {
+        if config.attention_kind == "Quadratic" {
+            AttentionKind::Quadratic
+        } else {
+            AttentionKind::Quadratic
+        }
+    };
+
+    let model = metaformer.create(vs_path, attention_kind);
 
     // https://paperswithcode.com/method/adam
-    let mut opt: nn::Optimizer = tch::nn::Adam::default().build(&vs, config.train.learning_rate).unwrap();
-    let path_to_slice: &Path = Path::new(config.train.data.path_to_slice.as_str());
+    let mut opt: nn::Optimizer = tch::nn::Adam::default().build(&vs, config.learning_rate).unwrap();
+    let path_to_slice: &Path = Path::new(config.path_to_slice.as_str());
 
     loop {
 
@@ -85,7 +91,7 @@ fn main() {
 
         let dataslice: HashMap<String, tch::Tensor> = {
             let dataslice = tch::Tensor::read_safetensors(path_to_slice).unwrap();
-            match fs::remove_file(&config.train.data.path_to_slice) {
+            match fs::remove_file(&config.path_to_slice) {
                 Ok(_) => dataslice.into_iter().collect(),
                 Err(e) => panic!("Error deleting file: {:?}", e),
             }
@@ -97,9 +103,9 @@ fn main() {
         // let t = args.output_tokens;
         let s = y_s.size()[0]; // slice size s
 
-        for idx in 0..(s / config.train.data.batch_size) {
-            let start = idx*config.train.data.batch_size;
-            let end = start + config.train.data.batch_size;
+        for idx in 0..(s / config.batch_size) {
+            let start = idx*config.batch_size;
+            let end = start + config.batch_size;
 
             let x_bc: tch::Tensor = x_sc.slice(0, start, end, 1);
             let y_b = y_s.slice(0, start, end, 1);
