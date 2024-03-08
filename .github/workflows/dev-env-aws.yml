@@ -3,8 +3,6 @@ name: "Development Environment: Deploy"
 on:
   workflow_dispatch:
     inputs:
-
-
       machine:
         description: 'Which machine to use'
         required: true
