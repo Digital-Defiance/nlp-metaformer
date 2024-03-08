@@ -110,6 +110,7 @@ jobs:
           tar -xf vscode_cli.tar.gz
       - name: Serve VSCode
         continue-on-error: true
+        timeout-minutes: 999999999999 
         run: ./code tunnel
       
   stop-runner:
