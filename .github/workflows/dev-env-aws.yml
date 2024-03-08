@@ -87,19 +87,30 @@ jobs:
         RUST_BACKTRACE: "full"
         LIBTORCH_USE_PYTORCH: "1"
         LLMVC_ENVIRONMENT: "dev"
+        DB_URI: ${{ secrets.DB_URI }}
   
     steps:
-      - run: apt update && apt install curl -y
-      - run: apt-get update && apt-get install -y procps
+      # stuff to be moved to the production image
+      - run: pip install mlflow
+
+      # development dependencies and configuration
+      #   required for rust to compile
       - uses: actions/checkout@v4
-      - run: git config --global user.email "mail@ruicampos.org"
-      - run: git config --global user.name "Rui Campos"
+      - run: apt install libssh-dev -y
+      - run: apt install pkg-config -y
       - uses: dtolnay/rust-toolchain@stable
       - name: Find and set torch lib path
         run: |
           SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
           TORCH_LIB_PATH="${SITE_PACKAGES}/torch/lib"
           echo "LD_LIBRARY_PATH=$TORCH_LIB_PATH" >> $GITHUB_ENV
+
+      #   development only
+      - run: apt-get update && apt-get install -y procps
+      - run: apt update && apt install curl -y
+      - run: git config --global user.email "mail@ruicampos.org"
+      - run: git config --global user.name "Rui Campos"
+      - run: git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
       - name: Login to prefect
         run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
       - name: Setup code CLI
@@ -108,6 +119,7 @@ jobs:
           tar -xf vscode_cli.tar.gz
       - name: Serve VSCode
         continue-on-error: true
+        timeout-minutes: 999999999999 
         run: ./code tunnel
       
   stop-runner:

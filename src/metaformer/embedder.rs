@@ -38,6 +38,7 @@ pub fn create_embedder_module(
     embedding_dimension: i64,
     size_of_vocabolary: i64,
     size_of_context_window: i64,
+    training_device: tch::Device
 ) -> impl nn::Module {
  
     let config = create_config();
@@ -49,8 +50,7 @@ pub fn create_embedder_module(
     let positional_encoding_cd = nn::embedding(vs, c, d, config);
 
     nn::func(move |x_bc: &tch::Tensor| {
-
-        let indexes = tch::Tensor::arange(x_bc.size()[1], (tch::Kind::Int, tch::Device::Cpu));
+        let indexes = tch::Tensor::arange(x_bc.size()[1], (tch::Kind::Int, training_device));
         vocabolary_vd.forward(&x_bc) + positional_encoding_cd.forward(&indexes)
     })
 }
@@ -82,7 +82,7 @@ mod tests {
         // let q = 2;
 
         let input_bc = Tensor::randint( 50, &[b, c],  (Kind::Int, Device::Cpu));
-        let layer = create_embedder_module(vs_path, d, 50, c);
+        let layer = create_embedder_module(vs_path, d, 50, c, Device::Cpu);
         let output_bcd = layer.forward(&input_bc);
 
         debug_assert!(output_bcd.size() == vec![b, c, d]);
