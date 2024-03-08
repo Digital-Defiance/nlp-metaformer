@@ -8,6 +8,13 @@ use clap::Parser;
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
+
+    #[arg(long)]
+    pub mlflow_run_id: String,
+
+    #[arg(long)]
+    pub mlflow_db_uri: String,
+
     #[arg(long)]
     pub encoding: String,
  
@@ -53,7 +60,6 @@ pub struct Cli {
     pub use_gpu: bool,
 
 }
-
 
 
 pub fn read_config() -> Cli {

@@ -15,8 +15,9 @@ from prefect.runner.storage import GitRepository
 from safetensors import torch as stt
 import tiktoken
 import mlflow
+from prefect.blocks.system import Secret
 
-
+MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
 
 SAVE_PATH: str = "output.safetensors"
 
@@ -33,7 +34,7 @@ class Data(BaseSettings):
         return f"--batch-size {self.batch_size}"
 
 class TrainingProcess(BaseSettings):
-    use_gpu: bool = True
+    use_gpu: bool = False
     executable_source: Literal[
         "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.2/llm-voice-chat",
         "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.1/llm-voice-chat",
@@ -67,7 +68,12 @@ class Model(BaseSettings):
         return " ".join(args)
 
 
+class MlflowSettings(BaseSettings):
+    experiment_id: int = 1
+    run_name: str | None = None
+
 class Settings(BaseSettings):
+    mlflow: MlflowSettings
     process: TrainingProcess
     model: Model 
     train: Train
@@ -149,7 +155,7 @@ def download_rust_binary(url: str) -> str:
 @task
 async def run_rust_binary(path_to_rust_binary: str, arguments: str, mlflow_run_id: int):
     logger = get_run_logger()
-    cmd = f'{path_to_rust_binary} {arguments} --path-to-slice {SAVE_PATH} --mlflow-run-id {mlflow_run_id}'
+    cmd = f'{path_to_rust_binary} {arguments} --path-to-slice {SAVE_PATH} --mlflow-run-id {mlflow_run_id} --mlflow-db-uri {MLFLOW_TRACKING_URI}'
     logger.info(f"Running command: {cmd}")
     with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True) as process:
         while (code := process.poll()) is None:
@@ -184,6 +190,7 @@ async def make_rust_executable(path_to_rust_binary: str) -> None:
 
 @flow
 async def training_loop(run: mlflow.ActiveRun, settings: Settings):
+    await asyncio.sleep(0)
     path_to_rust_binary = DEV_RUST_BINARY
     if settings.process.executable_source != DEV_RUST_BINARY:
         path_to_rust_binary = download_rust_binary(settings.process.executable_source)
@@ -221,6 +228,7 @@ def save_data(idx: int, data) -> None:
 
 @flow
 async def data_worker(run: mlflow.ActiveRun, settings: Settings):
+    await asyncio.sleep(0)
     logger = get_run_logger()
     logger.info("Partitioning dataset.")
     with dataset_partitioning(
@@ -229,22 +237,87 @@ async def data_worker(run: mlflow.ActiveRun, settings: Settings):
         dataset_link = settings.data.source
     ) as fetch_data:
         clean_safetensor_files()
-        idx = 0
+        step = 0
         for epoch in range(settings.train.epochs):
             for slice in range(settings.data.slices):
                 logger.info(f"Constructing slice {slice} for epoch {epoch}")
                 data = fetch_and_preprocess_data(fetch_data, epoch, slice, settings.model.context_window)
-                save_data(idx, data)
-                idx += 1
+                save_data(step, data)
+                mlflow.log_metrics(
+                    metrics={
+                        "epoch": epoch,
+                        "slice": slice,
+                    },
+                    step = step,
+                )
+                step += 1
                 await asyncio.sleep(0)
 
 
-@flow
-async def main(settings: Settings):
-    import mlflow
-    mlflow.set_tracking_uri("sqlite:///mlruns.db")
 
-    with mlflow.start_run() as run:
+
+
+
+
+
+
+# pip install prefect-shell
+
+
+from prefect import flow
+from prefect_shell import ShellOperation
+from prefect_shell.commands import ShellProcess
+
+@task
+def run_mlflow():
+    db_uri = Secret.load("db-uri")
+    cmd = f"mlflow server --backend-store-uri {db_uri.get()}"
+    
+    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True)
+    import time
+    time.sleep(3)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@flow
+async def main(
+    process: TrainingProcess,
+    mlflow_settings: MlflowSettings,
+    model: Model,
+    train: Train,
+    data: Data,
+):
+    
+    settings = Settings(
+        mlflow = mlflow_settings,
+        process = process,
+        model = model,
+        train = train,
+        data = data,
+    )
+
+    run_mlflow()
+
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+    with mlflow.start_run(experiment_id=settings.mlflow.experiment_id, run_name = settings.mlflow.run_name) as run:
+        mlflow.log_params({
+            **process.model_dump(),
+            **model.model_dump(),
+            **train.model_dump(),
+            **data.model_dump()
+        })
         parallel_subflows = [training_loop(run, settings), data_worker(run, settings)]
         await asyncio.gather(*parallel_subflows)
 

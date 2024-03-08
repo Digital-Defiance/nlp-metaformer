@@ -12,6 +12,8 @@ for static linking torch:
 export LIBTORCH_STATIC=1
 */
 
+use std::str::FromStr;
+use anyhow::Result;
 use tch::kind;
 use tch::nn::Module;
 use tch::Device;
@@ -23,12 +25,70 @@ pub mod metaformer;
 pub mod attention;
 pub mod config;
 
+use tch;
 use tch::nn;
 use std::collections::HashMap;
 use std::path::Path;
 use std::fs;
+use serde::{Deserialize, Serialize};
+
+use reqwest;
+// apt install libssh-dev -y
+
 
 use config::{Cli, read_config};
+
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Metric {
+    key: String,
+    value: f64,
+    timestamp: i64
+}
+
+impl Metric {
+    fn new(key: String, value: f64) -> Self {
+        let timestamp = 11111;
+        Self { key, value, timestamp }
+    }
+}
+
+
+#[derive(Serialize, Deserialize, Debug)]
+struct RequestBody {
+    run_id: String,
+    metrics: Vec<Metric>,
+    step: i64,
+}
+
+
+fn send_request(run_id: String, metrics: Vec<Metric>, step: i64) {
+    /*{
+   "run_id": "2a14ed5c6a87499199e0106c3501eab8",
+   "metrics": [
+     {"key": "mae", "value": 2.5, "timestamp": 1552550804},
+     {"key": "rmse", "value": 2.7, "timestamp": 1552550804},
+   ],
+   "params": [
+     {"key": "model_class", "value": "LogisticRegression"},
+   ]
+}
+ */
+    let body = RequestBody {
+        run_id: run_id,
+        metrics: metrics,
+        step,
+    };
+
+    let client = reqwest::blocking::Client::new();
+     let resp = match client.post("http://127.0.0.1:5000/api/2.0/mlflow/runs/log-batch").json(&body).send() {
+         Ok(resp) => resp.text().unwrap(),
+         Err(err) => panic!("Error: {}", err)
+     };
+    println!("{}", resp)
+
+}
+
 
 const WAITING_TIMEOUT_SECONDS: u64 = 120; 
 const WAIT_SECONDS: u64 = 5;
@@ -114,6 +174,8 @@ fn main() {
         // let t = args.output_tokens;
         let s = y_s.size()[0]; // slice size s
 
+        let mut loss_cumul: f64 = 0.;
+
         for idx in 0..(s / config.batch_size) {
             let start = idx*config.batch_size;
             let end = start + config.batch_size;
@@ -124,13 +186,24 @@ fn main() {
             let logits_bct = model.forward(&x_bc);
             let logits_bt = logits_bct.mean_dim(1, false,  kind::Kind::Float);
             let loss = logits_bt.cross_entropy_for_logits(&y_b);
-            opt.backward_step(&loss);            
-        }
+            
+            opt.backward_step(&loss);
 
+        
+            let val = loss.double_value(&[]);
+            loss_cumul += val;
+
+        };
+        
+        let loss_train = Metric::new(
+            String::from_str("loss/train").unwrap(),
+            loss_cumul / ( (s / config.batch_size) as f64 )
+        );
+
+        let run_id = String::from_str(config.mlflow_run_id.as_str()).unwrap();
+        send_request(run_id, vec![loss_train], global_idx);
         global_idx += 1;
     }
-
 }
-
 
 
