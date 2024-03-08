@@ -17,13 +17,12 @@ on:
           - g4dn.xlarge
           - local
       image:
-        description: 'Development environment'
+        description: 'Base environment to build the development dependencies on top - these environments are production ready and get modified for development.'
         required: true
         default: 'ghcr.io/digital-defiance/sentiment-analysis-pipeline:main'
         type: choice
         options:
           - ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
-          - gitpod/workspace-rust
       docker_options:
         required: true
         default: '--user root'
