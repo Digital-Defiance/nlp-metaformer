@@ -17,7 +17,7 @@ on:
           - g4dn.xlarge
           - local
       image:
-        description: 'Base environment to build the development dependencies on top - these environments are production ready and get modified for development.'
+        description: 'Production Environment'
         required: true
         default: 'ghcr.io/digital-defiance/sentiment-analysis-pipeline:main'
         type: choice
@@ -25,6 +25,7 @@ on:
           - ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
       docker_options:
         required: true
+        description: 'Extra docker options'
         default: '--user root'
         type: choice
         options:
