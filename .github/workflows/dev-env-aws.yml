@@ -87,6 +87,7 @@ jobs:
         RUST_BACKTRACE: "full"
         LIBTORCH_USE_PYTORCH: "1"
         LLMVC_ENVIRONMENT: "dev"
+        DB_URI: ${{ secrets.DB_URI }}
   
     steps:
       - run: apt update && apt install curl -y
