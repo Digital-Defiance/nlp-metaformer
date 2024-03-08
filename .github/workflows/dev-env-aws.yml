@@ -96,6 +96,7 @@ jobs:
       # development dependencies and configuration
       #   required for rust to compile
       - uses: actions/checkout@v4
+      - run: apt update
       - run: apt install libssh-dev -y
       - run: apt install pkg-config -y
       - uses: dtolnay/rust-toolchain@stable
