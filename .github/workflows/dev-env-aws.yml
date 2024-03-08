@@ -30,7 +30,7 @@ on:
         type: choice
         options:
           - '--user root'
-          - '--user root --gpu all'
+          - '--user root --gpus all'
 
 env:
   AWS_REGION: eu-south-1
