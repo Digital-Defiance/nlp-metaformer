@@ -68,19 +68,20 @@ fn main() {
         }
     };
 
-    let model = metaformer.create(vs_path, attention_kind);
+    let model = metaformer.create(vs_path, attention_kind, training_device);
 
     // https://paperswithcode.com/method/adam
     let mut opt: nn::Optimizer = tch::nn::Adam::default().build(&vs, config.learning_rate).unwrap();
     let path_to_slice: &Path = Path::new(config.path_to_slice.as_str());
 
     loop {
-
+        println!("Loading new slice...");
+    
         {
-            println!("Waiting for file...");
             let mut wait = 0;
             while !path_to_slice.exists() {
                 thread::sleep(Duration::from_secs(WAIT_SECONDS));
+                println!("Waiting for file...");
                 wait += WAIT_SECONDS;
                 if wait == WAITING_TIMEOUT_SECONDS {
                     eprintln!("Timed out while waiting for data.");
@@ -88,6 +89,8 @@ fn main() {
                 }
             }
         }
+    
+        println!("Read file");
 
         let dataslice: HashMap<String, tch::Tensor> = {
             let dataslice = tch::Tensor::read_safetensors(path_to_slice).unwrap();
@@ -99,6 +102,7 @@ fn main() {
 
         let x_sc = dataslice.get("X").unwrap().to(training_device);
         let y_s = dataslice.get("Y").unwrap().to(training_device);
+        println!("Loaded slice to GPU.");
 
         // let t = args.output_tokens;
         let s = y_s.size()[0]; // slice size s

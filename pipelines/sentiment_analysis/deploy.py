@@ -19,24 +19,26 @@ SAVE_PATH: str = "output.safetensors"
 
 PathStr = str
 
+DEV_RUST_BINARY: str = "/__w/llm-voice-chat/llm-voice-chat/target/debug/llm-voice-chat"
+
 class Data(BaseSettings):
     source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/dataset.parquet"
-    slices: int = 5
+    slices: int = 1
     batch_size: int = 32
 
     def to_cmd_args(self) -> str:
         return f"--batch-size {self.batch_size}"
 
 class TrainingProcess(BaseSettings):
-    use_gpu: bool = False
-    executable_source: str = "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.1/llm-voice-chat"
+    use_gpu: bool = True
+    executable_source: Literal[
+        "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.2/llm-voice-chat",
+        "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.1/llm-voice-chat",
+        DEV_RUST_BINARY,
+    ] = DEV_RUST_BINARY
 
     def to_cmd_args(self) -> str:
-        if self.use_gpu:
-            return "--use-gpu"
-        else:
-            return ""
-
+        return "--use-gpu" if self.use_gpu else ""
 
 
 
@@ -65,7 +67,7 @@ class Model(BaseSettings):
 class Settings(BaseSettings):
     process: TrainingProcess
     model: Model 
-    train: Train 
+    train: Train
     data: Data
 
     def to_cmd_args(self) -> str:
@@ -127,12 +129,15 @@ def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str
 
 
 
+
+
+
 @task
 def download_rust_binary(url: str) -> str:
     import requests
     response = requests.get(url, stream=True)
     response.raise_for_status()
-    save_path = "train"
+    save_path = "./train"
     with open(save_path, "wb") as file:
         for chunk in response.iter_content(chunk_size=8192):
             file.write(chunk)
@@ -141,23 +146,47 @@ def download_rust_binary(url: str) -> str:
 @task
 async def run_rust_binary(path_to_rust_binary: str, arguments: str):
     logger = get_run_logger()
-    cmd = f'./{path_to_rust_binary} {arguments} --path-to-slice {SAVE_PATH}'
+    cmd = f'{path_to_rust_binary} {arguments} --path-to-slice {SAVE_PATH}'
     logger.info(f"Running command: {cmd}")
-    with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, bufsize=1, universal_newlines=True) as process:
+    with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True) as process:
         while (code := process.poll()) is None:
             if (output := process.stdout.readline()):
                 logger.info(output.strip())
             await asyncio.sleep(10)
 
         if code != 0:
+            error_msg = ""
             if process.stderr:
-                stderr = process.stderr.read()
-                logger.error(stderr)
-            raise RuntimeError("Rust program exited with non-zero")
+                error_msg = process.stderr.read()
+                logger.error(error_msg)
+            raise RuntimeError(f"Rust program exited with non-zero code {code}: {error_msg}")
+
+@task
+async def make_rust_executable(path_to_rust_binary: str) -> None:
+    logger = get_run_logger()
+    cmd = f'chmod +x {path_to_rust_binary}'
+    logger.info(f"Running command: {cmd}")
+    with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True) as process:
+        while (code := process.poll()) is None:
+            if (output := process.stdout.readline()):
+                logger.info(output.strip())
+            await asyncio.sleep(1)
+
+        if code != 0:
+            error_msg = ""
+            if process.stderr:
+                error_msg = process.stderr.read()
+                logger.error(error_msg)
+            raise RuntimeError(f"Command exited with non-zero code {code}: {error_msg}")
 
 @flow
 async def training_loop(settings: Settings):
-    path_to_rust_binary = download_rust_binary(settings.process.executable_source)
+
+    path_to_rust_binary = DEV_RUST_BINARY
+    if settings.process.executable_source != DEV_RUST_BINARY:
+        path_to_rust_binary = download_rust_binary(settings.process.executable_source)
+        await make_rust_executable(path_to_rust_binary)
+
     await run_rust_binary(path_to_rust_binary, settings.to_cmd_args())
 
 @task

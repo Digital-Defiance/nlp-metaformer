@@ -47,6 +47,8 @@ pub struct MetaFormer {
     size_of_vocabolary: i64,
 
     output_tokens: i64,
+
+    
 }
 
 
@@ -100,7 +102,7 @@ impl MetaFormer {
         })
     }
 
-    pub fn create(&self, vs_path: & nn::Path, kind: AttentionKind,) -> impl nn::Module {
+    pub fn create(&self, vs_path: & nn::Path, kind: AttentionKind, device: tch::Device) -> impl nn::Module {
 
         let mut model = nn::seq().add(
             create_embedder_module(
@@ -108,6 +110,7 @@ impl MetaFormer {
                 self.embedding_dimension,
                 self.size_of_vocabolary,
                 self.size_of_context_window,
+                device
         ));
 
         for _ in 0..self.model_depth  {
@@ -138,7 +141,7 @@ pub fn test_model_creation(){
 
     let vs = nn::VarStore::new(Device::Cpu);
     let vs_path = &vs.root();
-    let _quadratic_network = metaformer.create(vs_path, AttentionKind::Quadratic);
+    let _quadratic_network = metaformer.create(vs_path, AttentionKind::Quadratic, Device::Cpu);
     // let _transformer_network = metaformer.create(vs_path, AttentionKind::ScaledDotProduct);
     // let _metric_network = metaformer.create(vs_path, AttentionKind::Metric);
 }
