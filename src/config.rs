@@ -2,6 +2,9 @@
 
 
 use clap::Parser;
+use tch::Device;
+
+use crate::metaformer::AttentionKind;
 // use crate::metaformer::AttentionKind;
 
 /// Train a MetaFormer model.
@@ -59,6 +62,33 @@ pub struct Cli {
     #[arg(long)]
     pub use_gpu: bool,
 
+    #[arg(long)]
+    pub path_to_eval_slice: String,
+
+}
+
+impl Cli {
+    pub fn get_device(&self) -> Device {
+        let cuda = Device::cuda_if_available();
+        if self.use_gpu {
+            print!("Current training device: CUDA");
+            match cuda {
+                Device::Cuda(_) => cuda,
+                _ => todo!(),
+            }
+        } else {
+            print!("Current training device: CPU");
+            Device::Cpu
+        }
+    }
+
+    pub fn get_attention_kind(&self) -> AttentionKind {
+        if self.attention_kind == "Quadratic" {
+            AttentionKind::Quadratic
+        } else {
+            AttentionKind::Quadratic
+        }
+    }
 }
 
 

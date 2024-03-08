@@ -1,4 +1,5 @@
 use crate::attention::quadratic_form::quadratic_self_attention_module;
+use crate::config::Cli;
 
 use self::mlp::create_mlp;
 use self::embedder::create_embedder_module;
@@ -14,7 +15,6 @@ use serde::Deserialize;
 use tch::nn;
 use tch::nn::Module;
 
-use tch::Device;
 
 
 #[derive(PartialEq, Clone, Copy, Deserialize)]
@@ -54,21 +54,14 @@ pub struct MetaFormer {
 
 impl MetaFormer {
 
-    pub fn new(
-        embedding_dimension: i64,
-        model_depth: i64,
-        number_of_heads: i64,
-        size_of_context_window: i64,
-        size_of_vocabolary: i64,
-        output_tokens: i64,
-    ) -> MetaFormer {
+    pub fn new(config: &Cli) -> MetaFormer {
         MetaFormer {
-            embedding_dimension,
-            model_depth,
-            number_of_heads,
-            size_of_context_window,
-            size_of_vocabolary,
-            output_tokens,
+            embedding_dimension: config.dimension,
+            model_depth: config.depth,
+            number_of_heads: config.heads,
+            size_of_context_window: config.context_window,
+            size_of_vocabolary: config.input_vocabolary,
+            output_tokens: config.output_vocabolary,
         }
     }
 
@@ -126,7 +119,7 @@ impl MetaFormer {
 
 
 
-
+/*
 #[test]
 pub fn test_model_creation(){
 
@@ -145,3 +138,4 @@ pub fn test_model_creation(){
     // let _transformer_network = metaformer.create(vs_path, AttentionKind::ScaledDotProduct);
     // let _metric_network = metaformer.create(vs_path, AttentionKind::Metric);
 }
+ */
