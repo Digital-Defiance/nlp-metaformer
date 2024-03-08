@@ -43,13 +43,14 @@ use config::{Cli, read_config};
 struct Metric {
     key: String,
     value: f64,
-    timestamp: i64
+    timestamp: i64,
+    step: i64
 }
 
 impl Metric {
-    fn new(key: String, value: f64) -> Self {
+    fn new(key: String, value: f64, step: i64) -> Self {
         let timestamp = 11111;
-        Self { key, value, timestamp }
+        Self { key, value, timestamp, step }
     }
 }
 
@@ -197,7 +198,8 @@ fn main() {
         
         let loss_train = Metric::new(
             String::from_str("loss/train").unwrap(),
-            loss_cumul / ( (s / config.batch_size) as f64 )
+            loss_cumul / ( (s / config.batch_size) as f64 ),
+            global_idx
         );
 
         let run_id = String::from_str(config.mlflow_run_id.as_str()).unwrap();
