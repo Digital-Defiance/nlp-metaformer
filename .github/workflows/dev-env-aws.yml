@@ -92,6 +92,8 @@ jobs:
     steps:
       - run: apt update && apt install curl -y
       - run: apt-get update && apt-get install -y procps
+      - run: apt install libssh-dev -y
+      - run: apt install pkg-config -y
       - uses: actions/checkout@v4
       - run: git config --global user.email "mail@ruicampos.org"
       - run: git config --global user.name "Rui Campos"
