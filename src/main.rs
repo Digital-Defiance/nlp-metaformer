@@ -72,12 +72,19 @@ fn main() {
 
     // https://paperswithcode.com/method/adam
     let mut opt: nn::Optimizer = tch::nn::Adam::default().build(&vs, config.learning_rate).unwrap();
-    let path_to_slice: &Path = Path::new(config.path_to_slice.as_str());
+    
+
+    let mut global_idx: i64 = 0;
 
     loop {
         println!("Loading new slice...");
-    
+
+        let path = format!("{}_{}", global_idx, config.path_to_slice);
+        println!("{}", path);
+        let path_to_slice: &Path = Path::new(path.as_str());
+        
         {
+
             let mut wait = 0;
             while !path_to_slice.exists() {
                 thread::sleep(Duration::from_secs(WAIT_SECONDS));
@@ -94,7 +101,7 @@ fn main() {
 
         let dataslice: HashMap<String, tch::Tensor> = {
             let dataslice = tch::Tensor::read_safetensors(path_to_slice).unwrap();
-            match fs::remove_file(&config.path_to_slice) {
+            match fs::remove_file(path_to_slice) {
                 Ok(_) => dataslice.into_iter().collect(),
                 Err(e) => panic!("Error deleting file: {:?}", e),
             }
@@ -119,6 +126,8 @@ fn main() {
             let loss = logits_bt.cross_entropy_for_logits(&y_b);
             opt.backward_step(&loss);            
         }
+
+        global_idx += 1;
     }
 
 }
