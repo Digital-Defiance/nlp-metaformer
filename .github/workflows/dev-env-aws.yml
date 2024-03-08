@@ -94,20 +94,23 @@ jobs:
       - run: pip install mlflow
 
       # development dependencies and configuration
-      - run: apt-get update && apt-get install -y procps
+      #   required for rust to compile
+      - uses: actions/checkout@v4
       - run: apt install libssh-dev -y
       - run: apt install pkg-config -y
-      - run: apt update && apt install curl -y
-      - uses: actions/checkout@v4
-      - run: git config --global user.email "mail@ruicampos.org"
-      - run: git config --global user.name "Rui Campos"
-      - run: git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
       - uses: dtolnay/rust-toolchain@stable
       - name: Find and set torch lib path
         run: |
           SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
           TORCH_LIB_PATH="${SITE_PACKAGES}/torch/lib"
           echo "LD_LIBRARY_PATH=$TORCH_LIB_PATH" >> $GITHUB_ENV
+
+      #   development only
+      - run: apt-get update && apt-get install -y procps
+      - run: apt update && apt install curl -y
+      - run: git config --global user.email "mail@ruicampos.org"
+      - run: git config --global user.name "Rui Campos"
+      - run: git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
       - name: Login to prefect
         run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
       - name: Setup code CLI
