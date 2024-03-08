@@ -16,7 +16,8 @@ jobs:
       - run: apt update && apt install curl -y
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@stable
-    
+      - run: apt install libssh-dev -y
+      - run: apt install pkg-config -y
       - name: Find and set torch lib path
         run: |
           SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
@@ -24,7 +25,6 @@ jobs:
           echo "LD_LIBRARY_PATH=$TORCH_LIB_PATH" >> $GITHUB_ENV
           echo "LIBTORCH_USE_PYTORCH=1" >> $GITHUB_ENV
           echo "RUST_BACKTRACE=full" >> $GITHUB_ENV
-      - run: echo $RUST_BACKTRACE
       - name: Compile
         run: cargo build --release --target-dir build
       - name: Upload artifact to release
