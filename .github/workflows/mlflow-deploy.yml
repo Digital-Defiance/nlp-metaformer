@@ -9,13 +9,12 @@ jobs:
     runs-on: mlflow
     env:
       AWS_REGION: eu-south-1
-      MLFLOW_AUTH_CONFIG_PATH: "auth.ini"
   
     steps:
       - name: Setup auth config
         shell: python
         run: |
-          with open("auth.ini", "w") as file:
+          with open("${{ github.workspace }}/auth.ini", "w") as file:
             file.write("""
             [mlflow]
             database_uri = ${{ secrets.DB_URI }}
@@ -25,5 +24,5 @@ jobs:
             """)
       - name: Run server
         timeout-minutes: 9999999999999999
-        run: mlflow server --host 0.0.0.0 --port 8000 --workers 2 --backend-store-uri ${{ secrets.DB_URI }}
+        run: MLFLOW_AUTH_CONFIG_PATH="${{ github.workspace }}/auth.ini" mlflow server --host 0.0.0.0 --port 8000 --workers 2 --backend-store-uri ${{ secrets.DB_URI }}
     
