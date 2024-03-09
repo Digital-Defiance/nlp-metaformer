@@ -5,22 +5,18 @@ on:
 
 jobs:
   deploy-mlflow:
-    name: Deploy development environment
+    name: Deploy MLFlow
     runs-on: mlflow
-    env:
-      AWS_REGION: eu-south-1
-  
     steps:
       - name: Setup auth config
         shell: python
         run: |
           with open("${{ github.workspace }}/auth.ini", "w") as file:
             file.write("""
-            [mlflow]
-            database_uri = ${{ secrets.DB_URI }}
-            username = ${{ secrets.MLFLOW_USERNAME }}
-            password = ${{ secrets.MLFLOW_PASSWORD }}
-            
+          [mlflow]
+          database_uri = ${{ secrets.DB_URI }}
+          username = ${{ secrets.MLFLOW_USERNAME }}
+          password = ${{ secrets.MLFLOW_PASSWORD }}
             """)
       - name: Run server
         timeout-minutes: 9999999999999999
