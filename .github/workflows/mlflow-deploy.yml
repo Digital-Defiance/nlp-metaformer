@@ -14,5 +14,5 @@ jobs:
       - name: Serve MLFlow
         timeout-minutes: 999999999999 
         run: |
-          python -m mlflow server --host 0.0.0.0 --port 80 --backend-store-uri ${{ secrets.DB_URI }} --username ${{ secrets.MLFLOW_USERNAME }} --password ${{ secrets.MLFLOW_PASSWORD }}
+          python -m mlflow server --workers 2 --host 0.0.0.0 --port 80 --backend-store-uri ${{ secrets.DB_URI }} --username ${{ secrets.MLFLOW_USERNAME }} --password ${{ secrets.MLFLOW_PASSWORD }}
     
