@@ -3,7 +3,6 @@
 """
 
 import os
-import asyncio
 import subprocess
 from pathlib import Path
 from contextlib import contextmanager
@@ -15,13 +14,10 @@ from torch import tensor
 from torch.nn.utils.rnn import pad_sequence
 from pydantic_settings import BaseSettings
 from prefect import flow, get_run_logger, task
-from prefect.runner.storage import GitRepository
 from safetensors import torch as stt
 import tiktoken
 import mlflow
-from prefect.blocks.system import Secret
-
-MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
+import time
 
 SAVE_PATH: str = "output.safetensors"
 
@@ -41,8 +37,6 @@ class Data(BaseSettings):
     slices: int = 1
     batch_size: int = 32
 
-    def to_cmd_args(self) -> str:
-        return f"--batch-size {self.batch_size}"
 
 class TrainingProcess(BaseSettings):
     use_gpu: bool = False
@@ -52,8 +46,7 @@ class TrainingProcess(BaseSettings):
         "/__w/llm-voice-chat/llm-voice-chat/target/debug/llm-voice-chat",
     ] = DEV_RUST_BINARY
 
-    def to_cmd_args(self) -> str:
-        return "--use-gpu" if self.use_gpu else ""
+  
 
 class Train(BaseSettings):
     epochs: int = 100
@@ -72,10 +65,6 @@ class Model(BaseSettings):
     input_vocabolary: int = 60_000
     output_vocabolary: int = 5
 
-    def to_cmd_args(self):
-        args = [f"--{key.replace('_', '-')} {value}" for key, value in self.model_dump().items()]
-        return " ".join(args)
-
 
 class MlflowSettings(BaseSettings):
     experiment_id: int = 1
@@ -88,12 +77,6 @@ class Settings(BaseSettings):
     train: Train
     data: Data
 
-    def to_cmd_args(self) -> str:
-        args = self.model.to_cmd_args()
-        args += " " + self.train.to_cmd_args()
-        args += " " + self.data.to_cmd_args()
-        args += " " + self.process.to_cmd_args()
-        return args
 
 ENCODER = tiktoken.get_encoding("gpt2")
 
@@ -146,79 +129,15 @@ def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str
         yield fetch_data
 
 
-
-
-
-
-@task
-def download_rust_binary(url: str) -> str:
-    import requests
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
-    save_path = "./train"
-    with open(save_path, "wb") as file:
-        for chunk in response.iter_content(chunk_size=8192):
-            file.write(chunk)
-    return save_path
-
-@task
-async def run_rust_binary(path_to_rust_binary: str, arguments: str, mlflow_run_id: int):
-    logger = get_run_logger()
-    cmd = f'{path_to_rust_binary} {arguments} --path-to-slice {SAVE_PATH} --mlflow-run-id {mlflow_run_id} --mlflow-db-uri {MLFLOW_TRACKING_URI}'
-    logger.info(f"Running command: {cmd}")
-    with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True) as process:
-        while (code := process.poll()) is None:
-            if (output := process.stdout.readline()):
-                logger.info(output.strip())
-            await asyncio.sleep(0)
-
-        if code != 0:
-            error_msg = ""
-            if process.stderr:
-                error_msg = process.stderr.read()
-                logger.error(error_msg)
-            raise RuntimeError(f"Rust program exited with non-zero code {code}: {error_msg}")
-
-@task
-async def make_rust_executable(path_to_rust_binary: str) -> None:
-    logger = get_run_logger()
-    cmd = f'chmod +x {path_to_rust_binary}'
-    logger.info(f"Running command: {cmd}")
-    with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True) as process:
-        while (code := process.poll()) is None:
-            if (output := process.stdout.readline()):
-                logger.info(output.strip())
-            await asyncio.sleep(0)
-
-        if code != 0:
-            error_msg = ""
-            if process.stderr:
-                error_msg = process.stderr.read()
-                logger.error(error_msg)
-            raise RustExitedWithError(code, error_msg)
-
-
-    
-
-
-@flow
-async def training_loop(run: mlflow.ActiveRun, settings: Settings):
-    await asyncio.sleep(0)
-    path_to_rust_binary = DEV_RUST_BINARY
-    if settings.process.executable_source != DEV_RUST_BINARY:
-        path_to_rust_binary = download_rust_binary(settings.process.executable_source)
-        await make_rust_executable(path_to_rust_binary)
-    await run_rust_binary(path_to_rust_binary, settings.to_cmd_args(), run.info.run_id)
-
 @task
 def clean_safetensor_files():
     if Path(SAVE_PATH).exists():
         os.remove(SAVE_PATH)
 
 @task
-async def wait_data_consumption():
+def wait_data_consumption():
     while Path(SAVE_PATH).exists():
-        await asyncio.sleep(1)
+        time.sleep(1)
 
 @task
 def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int, context_window: int):
@@ -239,70 +158,161 @@ def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int, cont
 def save_data(idx: int, data) -> None:
     stt.save_file(data, f"{idx}_" + SAVE_PATH)
 
-@flow
-async def data_worker(settings: Settings):
-    await asyncio.sleep(0)
-    logger = get_run_logger()
-    logger.info("Partitioning dataset.")
-    clean_safetensor_files()
-    with dataset_partitioning(
-        number_of_epochs = settings.train.epochs,
-        number_of_partions = settings.data.slices,
-        dataset_link = settings.data.test_source
-    ) as fetch_data:
-        data = fetch_and_preprocess_data(fetch_data, 0, 0, settings.model.context_window)
-        save_data(-1, data)
-        await asyncio.sleep(0)
 
 
-    with dataset_partitioning(
-        number_of_epochs = settings.train.epochs,
-        number_of_partions = settings.data.slices,
-        dataset_link = settings.data.train_source
-    ) as fetch_data:
-        clean_safetensor_files()
-        step = 0
-        for epoch in range(settings.train.epochs):
-            for slice in range(settings.data.slices):
-                logger.info(f"Constructing slice {slice} for epoch {epoch}")
-                data = fetch_and_preprocess_data(fetch_data, epoch, slice, settings.model.context_window)
-                save_data(step, data)
-                mlflow.log_metrics(
-                    metrics={
-                        "epoch": epoch,
-                        "slice": slice,
-                    },
-                    step = step,
-                )
-                step += 1
-                await asyncio.sleep(0)
+
+
+
+class MLFLowClient(BaseSettings):
+    mlflow_tracking_url: str
+    mlflow_username: str
+    mlflow_password: str
+    runtime_settings: MlflowSettings
+    run_id: str | None
+
+    @contextmanager
+    def start_run(self):
+        mlflow.set_tracking_uri(self.mlflow_tracking_url)
+        with mlflow.start_run(
+            experiment_id = self.runtime_settings.experiment_id,
+            run_name = self.runtime_settings.run_name
+        ) as run:
+            self.run_id = run.info.run_id
+            yield
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 @task
-def run_mlflow():
-    db_uri = Secret.load("db-uri")
-    cmd = f"mlflow server --backend-store-uri {db_uri.get()}"
-    subprocess.Popen(
-        cmd, shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        bufsize=1,
-        universal_newlines=True,
-    )
-    import time
-    time.sleep(3)
+def download_rust_binary(url: str) -> str:
+    import requests
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    save_path = "./train"
+    with open(save_path, "wb") as file:
+        for chunk in response.iter_content(chunk_size=8192):
+            file.write(chunk)
+    return save_path
+
+@task
+def make_rust_executable(path_to_rust_binary: str) -> None:
+    logger = get_run_logger()
+    cmd = f'chmod +x {path_to_rust_binary}'
+    logger.info(f"Running command: {cmd}")
+    with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True) as process:
+        while (code := process.poll()) is None:
+            if (output := process.stdout.readline()):
+                logger.info(output.strip())
+
+        if code != 0:
+            error_msg = ""
+            if process.stderr:
+                error_msg = process.stderr.read()
+                logger.error(error_msg)
+            raise RustExitedWithError(code, error_msg)
+
+@task
+def run_rust_binary(
+    path_to_rust_binary: str,
+    use_gpu: bool,
+    **args
+):
+    logger = get_run_logger()
+
+    args = [f"--{key.replace('_', '-')} {value}" for key, value in args.items()]
+    args = " ".join(args)
+
+    cmd = f"{path_to_rust_binary} {args}"
+    if use_gpu:
+        cmd += " --use-gpu"
+
+    logger.info(f"Running command: {cmd}")
+
+
+    with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True) as process:
+        while (code := process.poll()) is None:
+            if (output := process.stdout.readline()):
+                logger.info(output.strip())
+
+        if code != 0:
+            error_msg = ""
+            if process.stderr:
+                error_msg = process.stderr.read()
+                logger.error(error_msg)
+            raise RuntimeError(f"Rust program exited with non-zero code {code}: {error_msg}")
+
+
+
+
+
+
+@task
+def write_training_slices(fetch_data: callable, settings: Settings):
+    logger = get_run_logger()
+    step = 0
+    for epoch in range(settings.train.epochs):
+        for slice in range(settings.data.slices):
+            logger.info(f"Constructing slice {slice} for epoch {epoch}")
+            data = fetch_and_preprocess_data.fn(fetch_data, epoch, slice, settings.model.context_window)
+            save_data.fn(step, data)
+            mlflow.log_metrics(
+                metrics={
+                    "epoch": epoch,
+                    "slice": slice,
+                },
+                step = step,
+            )
+            step += 1
+
+
 
 
 
 @flow
-async def main(
+def main(
     process: TrainingProcess,
     mlflow_settings: MlflowSettings,
     model: Model,
     train: Train,
     data: Data,
 ):
-    
+    logger = get_run_logger()
+
     settings = Settings(
         mlflow = mlflow_settings,
         process = process,
@@ -311,18 +321,73 @@ async def main(
         data = data,
     )
 
-    run_mlflow()
+    mlflow_client = MLFLowClient(runtime_settings = mlflow_settings)
 
-    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-    with mlflow.start_run(experiment_id=settings.mlflow.experiment_id, run_name = settings.mlflow.run_name) as run:
+    clean_safetensor_files()
+
+    with mlflow_client.start_run():
+    
         mlflow.log_params({
             **process.model_dump(),
             **model.model_dump(),
             **train.model_dump(),
             **data.model_dump(),
         })
-        parallel_subflows = [training_loop(run, settings), data_worker(run, settings)]
-        await asyncio.gather(*parallel_subflows)
+    
+
+        logger.info("Preparing validation slice...")
+    
+        with dataset_partitioning(
+            number_of_epochs = settings.train.epochs,
+            number_of_partions = settings.data.slices,
+            dataset_link = settings.data.test_source
+        ) as fetch_data:
+            data = fetch_and_preprocess_data(fetch_data, 0, 0, settings.model.context_window)
+            save_data(-1, data)
+
+
+
+        with dataset_partitioning(
+            number_of_epochs = settings.train.epochs,
+            number_of_partions = settings.data.slices,
+            dataset_link = settings.data.train_source
+        ) as fetch_data:
+            
+            logger.info("Initializing training datagen task...")
+
+            data_writer = write_training_slices.submit(fetch_data, settings)
+
+            
+
+            path_to_rust_binary = DEV_RUST_BINARY
+            if settings.process.executable_source != DEV_RUST_BINARY:
+                path_to_rust_binary = download_rust_binary(settings.process.executable_source)
+                make_rust_executable(path_to_rust_binary)
+
+            logger.info("Initializing training loop process...")
+
+            training_loop = run_rust_binary.submit(
+                path_to_rust_binary,
+                mlflow_run_id = mlflow_client.run_id,
+                mlflow_db_uri = mlflow_client.mlflow_tracking_url,
+                mlflow_username = mlflow_client.mlflow_username,
+                mlflow_password = mlflow_client.mlflow_password,
+                learning_rate = settings.train.learning_rate,
+                path_to_slice = SAVE_PATH,
+                batch_size = settings.data.batch_size,
+                **settings.model.model_dump()
+            )
+
+            training_loop.wait()
+            data_writer.wait()
+
+
+
+
+
+
+
+
 
 
 class EnvironmentSettings(BaseSettings): 
@@ -342,10 +407,8 @@ class EnvironmentSettings(BaseSettings):
 
 if __name__ == "__main__":
     settings = EnvironmentSettings()
-
+    name = settings.name
     if settings.LLMVC_ENVIRONMENT == "dev":
-        main.serve(name = settings.name + "-test")
-    else:
-        git_repo = GitRepository(url = settings.github_url, branch = settings.get_active_branch_name())
-        main_flow = main.from_source(entrypoint = settings.entrypoint, source = git_repo,)
-        main_flow.deploy(name = settings.name, work_pool_name = settings.workpool)
+        name += "-test"
+    main.serve(name = name)
+
