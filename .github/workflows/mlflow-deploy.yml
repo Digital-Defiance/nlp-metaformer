@@ -8,6 +8,7 @@ jobs:
     name: Deploy MLFlow
     runs-on: mlflow
     steps:
+      - run: pip install boto3
       - name: Setup auth config
         shell: python
         run: |
