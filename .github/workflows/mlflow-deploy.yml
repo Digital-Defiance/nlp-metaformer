@@ -9,10 +9,6 @@ jobs:
     runs-on: mlflow
     env:
       AWS_REGION: eu-south-1
-      MLFLOW_BACKEND_STORE_URI: ${{ secrets.DB_URI }}
-      MLFLOW_HOST: 0.0.0.0
-      MLFLOW_PORT: 80
-      MLFLOW_WORKERS: 2
       MLFLOW_AUTH_CONFIG_PATH: "auth.ini"
   
     steps:
@@ -29,5 +25,5 @@ jobs:
             """)
       - name: Run server
         timeout-minutes: 9999999999999999
-        run: mlflow server
+        run: mlflow server --host 0.0.0.0 --port 80 --workers 2 --backend-store-uri ${{ secrets.DB_URI }}
     
