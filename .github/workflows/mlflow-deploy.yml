@@ -14,8 +14,8 @@ jobs:
           with open("${{ github.workspace }}/auth.ini", "w") as file:
             file.write("""
           [mlflow]
-          username = ${{ secrets.MLFLOW_USERNAME }}
-          password = ${{ secrets.MLFLOW_PASSWORD }}
+          admin_username = ${{ secrets.MLFLOW_USERNAME }}
+          admin_password = ${{ secrets.MLFLOW_PASSWORD }}
           default_permission = READ
           database_uri = sqlite://sqlite.db
             """)
