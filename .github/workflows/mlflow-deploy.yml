@@ -19,5 +19,5 @@ jobs:
             """)
       - name: Run server
         timeout-minutes: 9999999999999999
-        run: MLFLOW_AUTH_CONFIG_PATH="${{ github.workspace }}/auth.ini" mlflow server --host 0.0.0.0 --port 8000 --workers 2 --backend-store-uri ${{ secrets.DB_URI }}
+        run: MLFLOW_AUTH_CONFIG_PATH="${{ github.workspace }}/auth.ini" python -m mlflow server --host 0.0.0.0 --port 8000 --workers 2 --backend-store-uri ${{ secrets.DB_URI }}
     
