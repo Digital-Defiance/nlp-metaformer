@@ -17,7 +17,7 @@ jobs:
           admin_username = ${{ secrets.MLFLOW_USERNAME }}
           admin_password = ${{ secrets.MLFLOW_PASSWORD }}
           default_permission = READ
-          database_uri = sqlite://sqlite.db
+          database_uri = sqlite:///sqlite.db
             """)
       - name: Run server
         timeout-minutes: 9999999999999999
