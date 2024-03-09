@@ -16,6 +16,7 @@ jobs:
           [mlflow]
           username = ${{ secrets.MLFLOW_USERNAME }}
           password = ${{ secrets.MLFLOW_PASSWORD }}
+          default_permission = READ
             """)
       - name: Run server
         timeout-minutes: 9999999999999999
