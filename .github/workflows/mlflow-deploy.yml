@@ -20,7 +20,10 @@ jobs:
         run: |
           with open("auth.ini") as file:
             file.write("""
-            
+            [mlflow]
+            database_uri = ${{ secrets.DB_URI }}
+            username = ${{ secrets.MLFLOW_USERNAME }}
+            password = ${{ secrets.MLFLOW_PASSWORD }}
             
             """)
       - name: Run server
