@@ -5,6 +5,10 @@ on:
 
 env:
   AWS_REGION: eu-south-1
+  MLFLOW_BACKEND_STORE_URI: ${{ secrets.DB_URI }}
+  MLFLOW_HOST: 0.0.0.0
+  MLFLOW_PORT: 80
+  MLFLOW_WORKERS: 2
 
 jobs:
   deploy-mlflow:
@@ -14,7 +18,7 @@ jobs:
       - name: Setup Credentials
         shell: python
         run: |
-          with open(".mlflow/credentials", "w") as file:
+          with open("credentials", "w") as file:
             file.write(f"""
           [mlflow]
           username = ${{ secrets.MLFLOW_USERNAME }}
@@ -24,5 +28,5 @@ jobs:
       - name: Serve MLFlow
         timeout-minutes: 999999999999 
         run: |
-          python -m mlflow server --workers 2 --host 0.0.0.0 --port 80 --backend-store-uri ${{ secrets.DB_URI }}
+          python -m mlflow server --workers 2 --host 0.0.0.0 --port 80
     
