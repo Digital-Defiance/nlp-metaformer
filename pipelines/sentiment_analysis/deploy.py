@@ -1,3 +1,7 @@
+"""
+
+"""
+
 import os
 import asyncio
 import subprocess
@@ -25,8 +29,15 @@ PathStr = str
 
 DEV_RUST_BINARY: str = "/__w/llm-voice-chat/llm-voice-chat/target/debug/llm-voice-chat"
 
+
+
+class RustExitedWithError(RuntimeError):
+    def __init__(self, code, error_msg):
+        super().__init__(f"Command exited with non-zero code {code}: {error_msg}")
+
 class Data(BaseSettings):
-    source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/dataset.parquet"
+    train_source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/train.parquet"
+    test_source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/test.parquet"
     slices: int = 1
     batch_size: int = 32
 
@@ -38,13 +49,11 @@ class TrainingProcess(BaseSettings):
     executable_source: Literal[
         "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.2/llm-voice-chat",
         "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.1/llm-voice-chat",
-        DEV_RUST_BINARY,
+        "/__w/llm-voice-chat/llm-voice-chat/target/debug/llm-voice-chat",
     ] = DEV_RUST_BINARY
 
     def to_cmd_args(self) -> str:
         return "--use-gpu" if self.use_gpu else ""
-
-
 
 class Train(BaseSettings):
     epochs: int = 100
@@ -186,7 +195,11 @@ async def make_rust_executable(path_to_rust_binary: str) -> None:
             if process.stderr:
                 error_msg = process.stderr.read()
                 logger.error(error_msg)
-            raise RuntimeError(f"Command exited with non-zero code {code}: {error_msg}")
+            raise RustExitedWithError(code, error_msg)
+
+
+    
+
 
 @flow
 async def training_loop(run: mlflow.ActiveRun, settings: Settings):
@@ -227,14 +240,25 @@ def save_data(idx: int, data) -> None:
     stt.save_file(data, f"{idx}_" + SAVE_PATH)
 
 @flow
-async def data_worker(run: mlflow.ActiveRun, settings: Settings):
+async def data_worker(settings: Settings):
     await asyncio.sleep(0)
     logger = get_run_logger()
     logger.info("Partitioning dataset.")
+    clean_safetensor_files()
     with dataset_partitioning(
         number_of_epochs = settings.train.epochs,
         number_of_partions = settings.data.slices,
-        dataset_link = settings.data.source
+        dataset_link = settings.data.test_source
+    ) as fetch_data:
+        data = fetch_and_preprocess_data(fetch_data, 0, 0, settings.model.context_window)
+        save_data(-1, data)
+        await asyncio.sleep(0)
+
+
+    with dataset_partitioning(
+        number_of_epochs = settings.train.epochs,
+        number_of_partions = settings.data.slices,
+        dataset_link = settings.data.train_source
     ) as fetch_data:
         clean_safetensor_files()
         step = 0
@@ -254,40 +278,19 @@ async def data_worker(run: mlflow.ActiveRun, settings: Settings):
                 await asyncio.sleep(0)
 
 
-
-
-
-
-
-
-
-# pip install prefect-shell
-
-
-from prefect import flow
-from prefect_shell import ShellOperation
-from prefect_shell.commands import ShellProcess
-
 @task
 def run_mlflow():
     db_uri = Secret.load("db-uri")
     cmd = f"mlflow server --backend-store-uri {db_uri.get()}"
-    
-    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True)
+    subprocess.Popen(
+        cmd, shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        bufsize=1,
+        universal_newlines=True,
+    )
     import time
     time.sleep(3)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -316,7 +319,7 @@ async def main(
             **process.model_dump(),
             **model.model_dump(),
             **train.model_dump(),
-            **data.model_dump()
+            **data.model_dump(),
         })
         parallel_subflows = [training_loop(run, settings), data_worker(run, settings)]
         await asyncio.gather(*parallel_subflows)
