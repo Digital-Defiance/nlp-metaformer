@@ -165,22 +165,37 @@ def save_data(idx: int, data) -> None:
 
 class MLFLowClient(BaseSettings):
     mlflow_tracking_url: str
-    mlflow_username: str
-    mlflow_password: str
+    mlflow_tracking_username: str
+    mlflow_tracking_password: str
     runtime_settings: MlflowSettings
-    run_id: str | None
+    run_id: str | None = None
+
+
+    # im funneling anything mlflow related to this interface so that I can sort out this mess ......
 
     @contextmanager
     def start_run(self):
         mlflow.set_tracking_uri(self.mlflow_tracking_url)
+
         with mlflow.start_run(
             experiment_id = self.runtime_settings.experiment_id,
             run_name = self.runtime_settings.run_name
         ) as run:
+            import os
+            os.environ["MLFLOW_RUN_ID"] = run.info.run_id
             self.run_id = run.info.run_id
-            yield
+            yield self
 
 
+    def log_params(self, *args, **kwargs):
+        mlflow.log_params(*args, **kwargs)
+
+    def log_metrics(self, *args, **kwargs):
+        mlflow.log_metrics(*args, **kwargs)
+
+        
+
+    
 
 
 
@@ -277,30 +292,23 @@ def run_rust_binary(
             raise RuntimeError(f"Rust program exited with non-zero code {code}: {error_msg}")
 
 
-
-
-
-
 @task
-def write_training_slices(fetch_data: callable, settings: Settings):
-    logger = get_run_logger()
-    step = 0
-    for epoch in range(settings.train.epochs):
-        for slice in range(settings.data.slices):
-            logger.info(f"Constructing slice {slice} for epoch {epoch}")
-            data = fetch_and_preprocess_data.fn(fetch_data, epoch, slice, settings.model.context_window)
-            save_data.fn(step, data)
-            mlflow.log_metrics(
-                metrics={
-                    "epoch": epoch,
-                    "slice": slice,
-                },
-                step = step,
-            )
-            step += 1
-
-
-
+def write_training_slices(settings: Settings):
+    with dataset_partitioning(
+        number_of_epochs = settings.train.epochs,
+        number_of_partions = settings.data.slices,
+        dataset_link = settings.data.train_source
+    ) as fetch_data:
+        logger = get_run_logger()
+        step = 0
+        for epoch in range(settings.train.epochs):
+            for slice in range(settings.data.slices):
+                logger.info(f"Constructing slice {slice} for epoch {epoch}")
+                data = fetch_and_preprocess_data.fn(fetch_data, epoch, slice, settings.model.context_window)
+                save_data.fn(step, data)
+                metrics={ "epoch": epoch, "slice": slice }
+                mlflow.log_metrics(metrics=metrics, step=step,)
+                step += 1
 
 
 @flow
@@ -321,19 +329,18 @@ def main(
         data = data,
     )
 
-    mlflow_client = MLFLowClient(runtime_settings = mlflow_settings)
 
     clean_safetensor_files()
-
-    with mlflow_client.start_run():
     
-        mlflow.log_params({
+    
+
+    with MLFLowClient(runtime_settings = mlflow_settings).start_run() as client:
+        client.log_params({
             **process.model_dump(),
             **model.model_dump(),
             **train.model_dump(),
             **data.model_dump(),
         })
-    
 
         logger.info("Preparing validation slice...")
     
@@ -346,40 +353,31 @@ def main(
             save_data(-1, data)
 
 
+        logger.info("Initializing training datagen task...")
+        data_writer = write_training_slices.submit(settings)
 
-        with dataset_partitioning(
-            number_of_epochs = settings.train.epochs,
-            number_of_partions = settings.data.slices,
-            dataset_link = settings.data.train_source
-        ) as fetch_data:
-            
-            logger.info("Initializing training datagen task...")
+        path_to_rust_binary = DEV_RUST_BINARY
+        if settings.process.executable_source != DEV_RUST_BINARY:
+            path_to_rust_binary = download_rust_binary(settings.process.executable_source)
+            make_rust_executable(path_to_rust_binary)
 
-            data_writer = write_training_slices.submit(fetch_data, settings)
+        logger.info("Initializing training loop process...")
 
-            
+        training_loop = run_rust_binary.submit(
+            path_to_rust_binary,
+            settings.process.use_gpu,
+            mlflow_run_id = client.run_id,
+            mlflow_db_uri = client.mlflow_tracking_url,
+            mlflow_username = client.mlflow_tracking_username,
+            mlflow_password = client.mlflow_tracking_password,
+            learning_rate = settings.train.learning_rate,
+            path_to_slice = SAVE_PATH,
+            batch_size = settings.data.batch_size,
+            **settings.model.model_dump()
+        )
 
-            path_to_rust_binary = DEV_RUST_BINARY
-            if settings.process.executable_source != DEV_RUST_BINARY:
-                path_to_rust_binary = download_rust_binary(settings.process.executable_source)
-                make_rust_executable(path_to_rust_binary)
-
-            logger.info("Initializing training loop process...")
-
-            training_loop = run_rust_binary.submit(
-                path_to_rust_binary,
-                mlflow_run_id = mlflow_client.run_id,
-                mlflow_db_uri = mlflow_client.mlflow_tracking_url,
-                mlflow_username = mlflow_client.mlflow_username,
-                mlflow_password = mlflow_client.mlflow_password,
-                learning_rate = settings.train.learning_rate,
-                path_to_slice = SAVE_PATH,
-                batch_size = settings.data.batch_size,
-                **settings.model.model_dump()
-            )
-
-            training_loop.wait()
-            data_writer.wait()
+        training_loop.wait()
+        data_writer.wait()
 
 
 
