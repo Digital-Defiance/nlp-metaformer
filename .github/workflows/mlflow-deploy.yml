@@ -19,7 +19,7 @@ jobs:
       - name: Setup auth config
         shell: python
         run: |
-          with open("auth.ini") as file:
+          with open("auth.ini", "w") as file:
             file.write("""
             [mlflow]
             database_uri = ${{ secrets.DB_URI }}
