@@ -1,0 +1,33 @@
+name: "MLFlow: Deploy"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-mlflow:
+    name: Deploy development environment
+    runs-on: mlflow
+    env:
+      AWS_REGION: eu-south-1
+      MLFLOW_BACKEND_STORE_URI: ${{ secrets.DB_URI }}
+      MLFLOW_HOST: 0.0.0.0
+      MLFLOW_PORT: 80
+      MLFLOW_WORKERS: 2
+      MLFLOW_AUTH_CONFIG_PATH: "auth.ini"
+  
+    steps:
+      - name: Setup auth config
+        shell: python
+        run: |
+          with open("auth.ini") as file:
+            file.write("""
+            [mlflow]
+            database_uri = ${{ secrets.DB_URI }}
+            username = ${{ secrets.MLFLOW_USERNAME }}
+            password = ${{ secrets.MLFLOW_PASSWORD }}
+            
+            """)
+      - name: Run server
+        timeout-minutes: 9999999999999999
+        run: mlflow server
+    

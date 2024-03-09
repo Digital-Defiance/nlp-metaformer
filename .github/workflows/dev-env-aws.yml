@@ -70,7 +70,7 @@ jobs:
         id: set-output
         run: |
           if [[ ${{ inputs.machine }} == "local" ]]; then
-            echo "label=self-hosted" >> $GITHUB_OUTPUT
+            echo "label=local" >> $GITHUB_OUTPUT
           else
             echo "label=${{ steps.start-ec2-runner.outputs.label }}" >> $GITHUB_OUTPUT
           fi
@@ -91,13 +91,16 @@ jobs:
   
     steps:
       # stuff to be moved to the production image
+      - run: pip install psycopg2-binary # required for mlflow to talk to postgres
       - run: pip install mlflow
 
       # development dependencies and configuration
       #   required for rust to compile
       - uses: actions/checkout@v4
+      - run: apt update
       - run: apt install libssh-dev -y
       - run: apt install pkg-config -y
+      - run: apt install curl -y
       - uses: dtolnay/rust-toolchain@stable
       - name: Find and set torch lib path
         run: |
@@ -107,7 +110,6 @@ jobs:
 
       #   development only
       - run: apt-get update && apt-get install -y procps
-      - run: apt update && apt install curl -y
       - run: git config --global user.email "mail@ruicampos.org"
       - run: git config --global user.name "Rui Campos"
       - run: git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
