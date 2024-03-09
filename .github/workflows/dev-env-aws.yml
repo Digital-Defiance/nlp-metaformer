@@ -70,7 +70,7 @@ jobs:
         id: set-output
         run: |
           if [[ ${{ inputs.machine }} == "local" ]]; then
-            echo "label=self-hosted" >> $GITHUB_OUTPUT
+            echo "label=local" >> $GITHUB_OUTPUT
           else
             echo "label=${{ steps.start-ec2-runner.outputs.label }}" >> $GITHUB_OUTPUT
           fi
