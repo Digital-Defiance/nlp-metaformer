@@ -14,7 +14,6 @@ jobs:
           with open("${{ github.workspace }}/auth.ini", "w") as file:
             file.write("""
           [mlflow]
-          database_uri = ${{ secrets.DB_URI }}
           username = ${{ secrets.MLFLOW_USERNAME }}
           password = ${{ secrets.MLFLOW_PASSWORD }}
             """)
