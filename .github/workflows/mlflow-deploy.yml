@@ -11,8 +11,18 @@ jobs:
     name: Deploy development environment
     runs-on: mlflow
     steps:
+      - name: Setup Credentials
+        shell: python
+        run: |
+          with open(".mlflow/credentials", "w") as file:
+            file.write(f"""
+          [mlflow]
+          username = ${{ secrets.MLFLOW_USERNAME }}
+          password = ${{ secrets.MLFLOW_PASSWORD }}
+            """)
+          
       - name: Serve MLFlow
         timeout-minutes: 999999999999 
         run: |
-          python -m mlflow server --workers 2 --host 0.0.0.0 --port 80 --backend-store-uri ${{ secrets.DB_URI }} --username ${{ secrets.MLFLOW_USERNAME }} --password ${{ secrets.MLFLOW_PASSWORD }}
+          python -m mlflow server --workers 2 --host 0.0.0.0 --port 80 --backend-store-uri ${{ secrets.DB_URI }}
     
