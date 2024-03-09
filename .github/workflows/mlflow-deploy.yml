@@ -25,5 +25,5 @@ jobs:
             """)
       - name: Run server
         timeout-minutes: 9999999999999999
-        run: mlflow server --host 0.0.0.0 --port 80 --workers 2 --backend-store-uri ${{ secrets.DB_URI }}
+        run: mlflow server --host 0.0.0.0 --port 8000 --workers 2 --backend-store-uri ${{ secrets.DB_URI }}
     
