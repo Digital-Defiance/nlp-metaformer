@@ -2,11 +2,20 @@ name: "MLFlow: Deploy"
 
 on:
   workflow_dispatch:
+    inputs:
+      machine:
+        description: 'Which machine to use'
+        required: true
+        default: 'mlflow'
+        type: choice
+        options:
+          - mlflow
+          - local
 
 jobs:
   deploy-mlflow:
     name: Deploy MLFlow
-    runs-on: mlflow
+    runs-on: ${{ inputs.machine }}
     steps:
       - run: pip install boto3
       - name: Setup auth config
