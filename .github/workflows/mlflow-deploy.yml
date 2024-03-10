@@ -17,6 +17,7 @@ jobs:
     name: Deploy MLFlow
     runs-on: ${{ inputs.machine }}
     steps:
+      - run: pip install psycopg2-binary # required for mlflow to talk to postgres
       - run: pip install boto3
       - run: pip install psycopg2
       - name: Setup auth config
