@@ -2,13 +2,25 @@ name: "MLFlow: Deploy"
 
 on:
   workflow_dispatch:
+    inputs:
+      machine:
+        description: 'Which machine to use'
+        required: true
+        default: 'mlflow'
+        type: choice
+        options:
+          - mlflow
+          - local
 
 jobs:
   deploy-mlflow:
     name: Deploy MLFlow
-    runs-on: mlflow
+    runs-on: ${{ inputs.machine }}
     steps:
+      - run: pip install psycopg2-binary # required for mlflow to talk to postgres
       - run: pip install boto3
+      - run: pip install mlflow==2.11.1
+      # - run: pip install psycopg2
       - name: Setup auth config
         shell: python
         run: |
