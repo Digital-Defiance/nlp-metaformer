@@ -349,31 +349,12 @@ def main(
 
 
 
-
-
-
-
-
-
-class EnvironmentSettings(BaseSettings): 
-    LLMVC_ENVIRONMENT: str = "prod"
-    github_url: str = "https://github.com/Digital-Defiance/llm-voice-chat.git"
-    entrypoint: str  = "pipelines/sentiment_analysis/deploy.py:main"
-    name: str = "sentiment-analysis"
-    workpool: str = "spot-hybrid"
-
-    @staticmethod
-    def get_active_branch_name():
-        head_dir = Path(".") / ".git" / "HEAD"
-        with head_dir.open("r") as f: content = f.read().splitlines()
-        for line in content:
-            if line[0:4] == "ref:":
-                return line.partition("refs/heads/")[2]
-
 if __name__ == "__main__":
-    settings = EnvironmentSettings()
-    name = settings.name
-    if settings.LLMVC_ENVIRONMENT == "dev":
-        name += "-test"
-    main.serve(name = name)
+
+    class EnvironmentSettings(BaseSettings): 
+        llmvc_environment: Literal["prod", "dev"] = "prod"
+
+    main.serve(
+        name = f"sentiment-analysis-{EnvironmentSettings().llmvc_environment}"
+    )
 
