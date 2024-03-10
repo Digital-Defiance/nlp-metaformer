@@ -21,6 +21,6 @@ jobs:
           database_uri = sqlite:///sqlite.db
             """)
       - name: Run server
-        timeout-minutes: 5256000
+        timeout-minutes: 720
         run: MLFLOW_AUTH_CONFIG_PATH="${{ github.workspace }}/auth.ini" python -m mlflow server --app-name basic-auth --host 0.0.0.0 --port 8000 --workers 2 --backend-store-uri ${{ secrets.DB_URI }}
     
