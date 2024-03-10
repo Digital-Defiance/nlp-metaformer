@@ -12,73 +12,77 @@ use crate::metaformer::AttentionKind;
 #[command(version, about, long_about = None)]
 pub struct Cli {
 
-    #[arg(long)]
+    #[clap(long, env)]
     pub mlflow_run_id: String,
 
-    #[arg(long)]
-    pub mlflow_db_uri: String,
+    #[clap(long, env)]
+    pub mlflow_tracking_uri: String,
 
-    #[arg(long)]
+    #[clap(long, env)]
     pub encoding: String,
  
     /// The kind of attention to use.
-    #[arg(long)]
+    #[clap(long, env)]
     pub attention_kind: String,
 
     /// Dimension of the vector space that the network uses internally to represent tokens 
-    #[arg(long)]
+    #[clap(long, env)]
     pub dimension: i64,
 
     /// Number of transformer blocks
-    #[arg(long)]
+    #[clap(long, env)]
     pub depth: i64,
 
     /// Number of attention modules per transformer block
-    #[arg(long)]
+    #[clap(long, env)]
     pub heads: i64,
 
     /// Maximum number of tokens in the input sequence
-    #[arg(long)]
+    #[clap(long, env)]
     pub context_window: i64,
 
     /// Total number of tokens that the network recognizes in its input
-    #[arg(long)]
+    #[clap(long, env)]
     pub input_vocabolary: i64,
 
     /// Total number of tokens that the network recognizes in its outpput
-    #[arg(long)]
+    #[clap(long, env)]
     pub output_vocabolary: i64,
 
     /// Number of samples in a batch
-    #[arg(long)]
+    #[clap(long, env)]
     pub batch_size: i64,
 
-    #[arg(long)]
-    pub path_to_slice: String,
 
-    #[arg(long)]
+    #[clap(long, env)]
     pub learning_rate: f64,
 
-    #[arg(long)]
-    pub use_gpu: bool,
+    #[clap(long, env)]
+    pub slices: i64,
 
-    #[arg(long)]
-    pub path_to_eval_slice: String,
+    #[clap(long, env)]
+    pub epochs: i64,
+
+    #[clap(long, env)]
+    pub use_gpu: String,
+
 
 }
 
 impl Cli {
     pub fn get_device(&self) -> Device {
         let cuda = Device::cuda_if_available();
-        if self.use_gpu {
+        if self.use_gpu == "True" {
             print!("Current training device: CUDA");
             match cuda {
                 Device::Cuda(_) => cuda,
                 _ => todo!(),
             }
-        } else {
+        } else if self.use_gpu == "False" {
             print!("Current training device: CPU");
             Device::Cpu
+        } else {
+            panic!("Invalid device configuration. Check USE_GPU env var.");
         }
     }
 

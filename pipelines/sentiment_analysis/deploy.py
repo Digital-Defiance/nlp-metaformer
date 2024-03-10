@@ -10,21 +10,14 @@ from typing import Literal
 
 import duckdb
 from duckdb.typing import *
-from torch import tensor
-from torch.nn.utils.rnn import pad_sequence
+import mlflow
 from pydantic_settings import BaseSettings
 from prefect import flow, get_run_logger, task
-from safetensors import torch as stt
 import tiktoken
-import mlflow
-import time
+from prefect_shell import ShellOperation
 
 SAVE_PATH: str = "output.safetensors"
-
-PathStr = str
-
 DEV_RUST_BINARY: str = "/__w/llm-voice-chat/llm-voice-chat/target/debug/llm-voice-chat"
-
 
 
 class RustExitedWithError(RuntimeError):
@@ -38,13 +31,15 @@ class Data(BaseSettings):
     batch_size: int = 32
 
 
+SourceExecutable = Literal[
+    "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.2/llm-voice-chat",
+    "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.1/llm-voice-chat",
+    "/__w/llm-voice-chat/llm-voice-chat/target/debug/llm-voice-chat",
+]
+
 class TrainingProcess(BaseSettings):
     use_gpu: bool = False
-    executable_source: Literal[
-        "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.2/llm-voice-chat",
-        "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.1/llm-voice-chat",
-        "/__w/llm-voice-chat/llm-voice-chat/target/debug/llm-voice-chat",
-    ] = DEV_RUST_BINARY
+    executable_source: SourceExecutable = DEV_RUST_BINARY
 
   
 
@@ -66,16 +61,54 @@ class Model(BaseSettings):
     output_vocabolary: int = 5
 
 
-class MlflowSettings(BaseSettings):
+
+class MLFLowSettings(BaseSettings):
+    mlflow_tracking_url: str
+    mlflow_tracking_username: str
+    mlflow_tracking_password: str
+    mlflow_run_id: str
     experiment_id: int = 1
     run_name: str | None = None
 
+
+
 class Settings(BaseSettings):
-    mlflow: MlflowSettings
     process: TrainingProcess
     model: Model 
     train: Train
     data: Data
+    mlflow: MLFLowSettings
+
+    @classmethod
+    def from_env(cls):
+        return cls(
+            process = TrainingProcess(),
+            model = Model(),
+            train = Train(),
+            data = Data(),
+            mlflow = MLFLowSettings(),
+        )
+
+    def yield_flattened_items(self, node: dict | None = None):
+        node: dict[str, any] = node or self.model_dump()
+
+        for key, value in node.items():
+
+            if not isinstance(value, dict):
+                yield (key.upper(), str(value))
+                continue
+
+            yield from self.yield_flattened_items(node = value)
+
+
+    def to_env(self) -> None:
+        """ Loads every key value pair to the environment. """
+
+        for key, value in self.yield_flattened_items():
+            os.environ[key] = value
+
+
+
 
 
 ENCODER = tiktoken.get_encoding("gpt2")
@@ -130,17 +163,11 @@ def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str
 
 
 @task
-def clean_safetensor_files():
-    if Path(SAVE_PATH).exists():
-        os.remove(SAVE_PATH)
-
-@task
-def wait_data_consumption():
-    while Path(SAVE_PATH).exists():
-        time.sleep(1)
-
-@task
 def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int, context_window: int):
+    from torch.nn.utils.rnn import pad_sequence
+    from torch import tensor
+
+
     raw_sentiments, raw_reviews = fetch_data(epoch, slice)
     sentiments = tensor(raw_sentiments)
     reviews = []
@@ -156,46 +183,9 @@ def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int, cont
 
 @task
 def save_data(idx: int, data) -> None:
+    from safetensors import torch as stt
     stt.save_file(data, f"{idx}_" + SAVE_PATH)
 
-
-
-
-
-
-class MLFLowClient(BaseSettings):
-    mlflow_tracking_url: str
-    mlflow_tracking_username: str
-    mlflow_tracking_password: str
-    runtime_settings: MlflowSettings
-    run_id: str | None = None
-
-
-    # im funneling anything mlflow related to this interface so that I can sort out this mess ......
-
-    @contextmanager
-    def start_run(self):
-        mlflow.set_tracking_uri(self.mlflow_tracking_url)
-
-        with mlflow.start_run(
-            experiment_id = self.runtime_settings.experiment_id,
-            run_name = self.runtime_settings.run_name
-        ) as run:
-            import os
-            os.environ["MLFLOW_RUN_ID"] = run.info.run_id
-            self.run_id = run.info.run_id
-            yield self
-
-
-    def log_params(self, *args, **kwargs):
-        mlflow.log_params(*args, **kwargs)
-
-    def log_metrics(self, *args, **kwargs):
-        mlflow.log_metrics(*args, **kwargs)
-
-        
-
-    
 
 
 
@@ -261,127 +251,100 @@ def make_rust_executable(path_to_rust_binary: str) -> None:
                 logger.error(error_msg)
             raise RustExitedWithError(code, error_msg)
 
+
 @task
-def run_rust_binary(
-    path_to_rust_binary: str,
-    use_gpu: bool,
-    **args
-):
-    logger = get_run_logger()
+def run_rust_binary(path_to_rust_binary: str):
+    ShellOperation(
+        commands=[path_to_rust_binary],
+        env={ key: value for key, value in Settings.from_env().yield_flattened_items() }
+    ).run()
 
-    args = [f"--{key.replace('_', '-')} {value}" for key, value in args.items()]
-    args = " ".join(args)
-
-    cmd = f"{path_to_rust_binary} {args}"
-    if use_gpu:
-        cmd += " --use-gpu"
-
-    logger.info(f"Running command: {cmd}")
-
-
-    with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True) as process:
-        while (code := process.poll()) is None:
-            if (output := process.stdout.readline()):
-                logger.info(output.strip())
-
-        if code != 0:
-            error_msg = ""
-            if process.stderr:
-                error_msg = process.stderr.read()
-                logger.error(error_msg)
-            raise RuntimeError(f"Rust program exited with non-zero code {code}: {error_msg}")
 
 
 @task
-def write_training_slices(settings: Settings):
+def write_training_slices():
+
+    data = Data()
+    train = Train()
+
     with dataset_partitioning(
-        number_of_epochs = settings.train.epochs,
-        number_of_partions = settings.data.slices,
-        dataset_link = settings.data.train_source
+        number_of_epochs = train.epochs,
+        number_of_partions = data.slices,
+        dataset_link = data.train_source
     ) as fetch_data:
         logger = get_run_logger()
         step = 0
-        for epoch in range(settings.train.epochs):
-            for slice in range(settings.data.slices):
+        for epoch in range(train.epochs):
+            for slice in range(data.slices):
                 logger.info(f"Constructing slice {slice} for epoch {epoch}")
-                data = fetch_and_preprocess_data.fn(fetch_data, epoch, slice, settings.model.context_window)
-                save_data.fn(step, data)
-                metrics={ "epoch": epoch, "slice": slice }
-                mlflow.log_metrics(metrics=metrics, step=step,)
+                processed_data = fetch_and_preprocess_data.fn(fetch_data, epoch, slice, Model().context_window)
+                save_data.fn(step, processed_data)
                 step += 1
 
-print("?")
+
+
+@task
+def log_params():
+    mlflow.log_params({
+        **TrainingProcess().model_dump(),
+        **Model().model_dump(),
+        **Train().model_dump(),
+        **Data().model_dump(),
+    })
+
+@task
+def prepare_validation_slice():
+    train = Train()
+    model = Model()
+    data = Data()
+    with dataset_partitioning(
+        number_of_epochs = train.epochs,
+        number_of_partions = data.slices,
+        dataset_link = data.test_source
+    ) as fetch_data:
+        epoch = 0
+        slice = 0
+        data = fetch_and_preprocess_data.fn(fetch_data, epoch, slice, model.context_window)
+        slice_idx = -1 # negative numbers for eval split
+        save_data.fn(slice_idx, data)
 
 
 @flow
 def main(
     process: TrainingProcess,
-    mlflow_settings: MlflowSettings,
     model: Model,
     train: Train,
     data: Data,
+    experiment_id: int = 1,
+    run_name: str | None = None,
 ):
-    logger = get_run_logger()
-
-    logger.info("for example this")
-
-    settings = Settings(
-        mlflow = mlflow_settings,
-        process = process,
-        model = model,
-        train = train,
-        data = data,
-    )
 
 
-    clean_safetensor_files()
+    with mlflow.start_run(run_name=run_name, experiment_id=experiment_id) as run:
     
+        Settings(
+            process = process, 
+            model = model,
+            train = train,
+            data = data,
+            mlflow = MLFLowSettings(
+                experiment_id=experiment_id,
+                run_name=run_name,
+                mlflow_run_id=run.info.run_id
+            )
+        ).to_env()
     
-
-    with MLFLowClient(runtime_settings = mlflow_settings).start_run() as client:
-        client.log_params({
-            **process.model_dump(),
-            **model.model_dump(),
-            **train.model_dump(),
-            **data.model_dump(),
-        })
-
-        logger.info("Preparing validation slice...")
-    
-        with dataset_partitioning(
-            number_of_epochs = settings.train.epochs,
-            number_of_partions = settings.data.slices,
-            dataset_link = settings.data.test_source
-        ) as fetch_data:
-            data = fetch_and_preprocess_data(fetch_data, 0, 0, settings.model.context_window)
-            save_data(-1, data)
-
-
-        logger.info("Initializing training datagen task...")
-        data_writer = write_training_slices.submit(settings)
+        log_params.submit()
+        prepare_validation_slice.submit()
+        write_training_slices.submit()
 
         path_to_rust_binary = DEV_RUST_BINARY
-        if settings.process.executable_source != DEV_RUST_BINARY:
-            path_to_rust_binary = download_rust_binary(settings.process.executable_source)
+        if process.executable_source != DEV_RUST_BINARY:
+            path_to_rust_binary = download_rust_binary(process.executable_source)
             make_rust_executable(path_to_rust_binary)
 
-        logger.info("Initializing training loop process...")
-
-        training_loop = run_rust_binary.submit(
-            path_to_rust_binary,
-            settings.process.use_gpu,
-            mlflow_run_id = client.run_id,
-            mlflow_db_uri = client.mlflow_tracking_url,
-            mlflow_username = client.mlflow_tracking_username,
-            mlflow_password = client.mlflow_tracking_password,
-            learning_rate = settings.train.learning_rate,
-            path_to_slice = SAVE_PATH,
-            batch_size = settings.data.batch_size,
-            **settings.model.model_dump()
-        )
-
+        training_loop = run_rust_binary.submit(path_to_rust_binary)
         training_loop.wait()
-        data_writer.wait()
 
 
 

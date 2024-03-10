@@ -19,8 +19,9 @@ fn wait(path: &Path) {
 }
 
 
-pub fn read_dataslice(path: &String) -> std::collections::HashMap<String, tch::Tensor> {
+pub fn read_dataslice(global_idx: i64) -> std::collections::HashMap<String, tch::Tensor> {
     println!("Reading file...");
+    let path = format!("{}_output.safetensors", global_idx);
     let path_to_slice = std::path::Path::new(&path);
     wait(path_to_slice);
     let dataslice = tch::Tensor::read_safetensors(path_to_slice).unwrap();

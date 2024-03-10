@@ -29,6 +29,8 @@ use config::{Cli, read_config};
 /// Implementation of gradient descent
 fn main() {
 
+ 
+
     let config: Cli = read_config();
     let training_device = config.get_device();
     let metaformer: MetaFormer = MetaFormer::new(&config);
@@ -37,12 +39,12 @@ fn main() {
     let attention_kind = config.get_attention_kind();
     let model = metaformer.create(vs_path, attention_kind, training_device);
     let mut opt: nn::Optimizer = tch::nn::Adam::default().build(&vs, config.learning_rate).unwrap(); // https://paperswithcode.com/method/adam
-    let mut global_idx: i64 = 0;
-
-    loop {
+    
+    let total_slices: i64 = config.slices*config.epochs;
+    for global_idx in 0..total_slices {
         let avg_train_loss = {
             let mut loss_accumulator = MetricAccumulator::new("loss/train");
-            let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(&config.path_to_slice);
+            let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(global_idx);
             let x_sc = dataslice.get("X").unwrap().to(training_device);
             let y_s = dataslice.get("Y").unwrap().to(training_device);
             println!("Loaded slice to device.");
@@ -68,7 +70,7 @@ fn main() {
 
         let avg_eval_loss = {
             let mut loss_accumulator = MetricAccumulator::new("loss/eval");
-            let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(&config.path_to_eval_slice);
+            let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(-1);
 
             let x_sc = dataslice.get("X").unwrap().to(training_device);
             let y_s = dataslice.get("Y").unwrap().to(training_device);
@@ -96,10 +98,9 @@ fn main() {
         };
 
         let run_id = String::from_str(config.mlflow_run_id.as_str()).unwrap();
-        let url = format!("{}/api/2.0/mlflow/runs/log-batch", config.mlflow_db_uri);
+        let url = format!("{}/api/2.0/mlflow/runs/log-batch", config.mlflow_tracking_uri);
         let mlflow_client = MLFlowClient { url, run_id };
         mlflow_client.log_metrics(vec![avg_eval_loss, avg_train_loss]);
-        global_idx += 1;
     }
 }
 
