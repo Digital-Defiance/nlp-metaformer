@@ -13,6 +13,7 @@ from duckdb.typing import *
 import mlflow
 from pydantic_settings import BaseSettings
 from prefect import flow, get_run_logger, task
+import numpy as np
 import tiktoken
 from prefect_shell import ShellOperation
 
@@ -25,6 +26,7 @@ class RustExitedWithError(RuntimeError):
         super().__init__(f"Command exited with non-zero code {code}: {error_msg}")
 
 class Data(BaseSettings):
+    
     train_source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/train.parquet"
     test_source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/test.parquet"
     slices: int = 1
@@ -116,45 +118,70 @@ ENCODER = tiktoken.get_encoding("gpt2")
 def encode_text(text: str) -> list[int]:
     return ENCODER.encode(text.lower())
 
-def set_seed(conn: duckdb.DuckDBPyConnection, seed: float) -> None:
-    conn.execute(f"SELECT setseed(?) as ign;", [seed])
 
-def create_table(conn: duckdb.DuckDBPyConnection, dataset_link: str):
-    conn.execute(f"""
-        CREATE TABLE dataset AS
-        SELECT id
-        FROM '{dataset_link}';
-    """)
 
-def add_epoch_column(conn: duckdb.DuckDBPyConnection, epoch_idx: int, number_of_partions: int):
-    conn.execute(f"""
-        ALTER TABLE dataset
-        ADD COLUMN epoch_{epoch_idx}
-        INTEGER DEFAULT trunc( {number_of_partions}*random() );
-    """)
+class DatasetConnection:
 
-def select_partition(conn: duckdb.DuckDBPyConnection, dataset_link: str, epoch_idx: int, slice_idx: int):
-    return conn.execute(f"""
-        SELECT sentiment, review
-        FROM '{dataset_link}' as remote
-        JOIN dataset ON (dataset.id = remote.id)
-        WHERE dataset.epoch_{epoch_idx}={slice_idx};
-    """)
+    def __init__(self, conn: duckdb.DuckDBPyConnection, dataset_link: str):
+        self.dataset_link = dataset_link
+        self.conn = conn
+
+        self.conn.execute(f"""
+            CREATE TABLE dataset AS
+            SELECT id
+            FROM '{self.dataset_link}';
+        """)
+
+        self.count = self.conn.execute("""SELECT COUNT(*) FROM dataset""").fetchall()[0][0]
+
+
+    def generate_randomization(self, total_epochs: int, seed: int = 42):
+
+        np.random.seed(seed)
+
+        for epoch_idx in range(total_epochs):
+
+            self.conn.execute(f"""
+                ALTER TABLE dataset
+                ADD COLUMN epoch_{epoch_idx}
+                INTEGER;
+            """)
+
+            permutation = np.random.permutation(self.count) + 1
+            values = ", ".join((f"({val},)" for val in permutation))
+            self.conn.execute(f"""
+                INSERT INTO dataset (epoch_{epoch_idx})
+                VALUES {values};
+            """)
+
+    def select_partition(self, epoch_idx: int, start: int, limit: int):
+        return self.conn.execute(f"""
+            SELECT sentiment, review
+            FROM '{self.dataset_link}' as remote
+            JOIN dataset ON (dataset.epoch_{epoch_idx} = remote.id)
+            OFFSET {start}
+            LIMIT {limit};
+        """)
+
+
 
 @contextmanager
-def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str, seed = 0.5):
+def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str, seed: int = 42):
     with duckdb.connect() as conn:
         conn: duckdb.DuckDBPyConnection
-        set_seed(conn, seed)
-        create_table(conn, dataset_link)
-
-        # note: sampling is pre-computed here, data is fetched on demand with "fetch_data"
-        for epoch_idx in range(number_of_epochs):
-            add_epoch_column(conn, epoch_idx, number_of_partions)
+        table = DatasetConnection(conn, dataset_link)
+        table.generate_randomization(number_of_epochs, seed=seed)
+        # res = table.select_partition(0, 1, 100).fetchall()
         
         def fetch_data(epoch_idx: int, slice_idx: int) -> tuple[list[int], list[str]]:
             sentiments, reviews = [], []
-            for sentiment, text in select_partition(conn, dataset_link, epoch_idx, slice_idx).fetchall():
+            limit = table.count // number_of_partions
+            offset = limit*slice_idx
+            logger = get_run_logger()
+            logger.info(offset)
+            logger.info(limit)
+            for sentiment, text in table.select_partition(epoch_idx, offset, limit).fetchall():
+                logger.info(sentiment)
                 sentiment = 1 if sentiment == "Pos" else 0
                 sentiments.append(sentiment)
                 reviews.append(text)
@@ -334,7 +361,7 @@ def main(
         ).to_env()
     
         log_params.submit()
-        prepare_validation_slice.submit()
+        prepare_validation_slice()
         write_training_slices.submit()
 
         path_to_rust_binary = DEV_RUST_BINARY
