@@ -310,6 +310,8 @@ def write_training_slices(settings: Settings):
                 mlflow.log_metrics(metrics=metrics, step=step,)
                 step += 1
 
+print("?")
+
 
 @flow
 def main(
@@ -320,6 +322,8 @@ def main(
     data: Data,
 ):
     logger = get_run_logger()
+
+    logger.info("for example this")
 
     settings = Settings(
         mlflow = mlflow_settings,
