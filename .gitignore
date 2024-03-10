@@ -3,6 +3,10 @@ __pycache__/
 var.sh
 *.log
 *.parquet
+*.safetensors
+mlruns/
+code
+vscode_cli.tar.gz
 
 
 # Added by cargo

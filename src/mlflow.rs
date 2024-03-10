@@ -3,12 +3,21 @@
 use reqwest;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+fn get_epoch_ms() -> u128 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+}
 
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Metric {
     key: String,
     value: f64,
+    timestamp: u128,
     step: i64
 }
 
@@ -32,6 +41,7 @@ impl MetricAccumulator {
         Metric {
             key: self.key,
             value: self.value / (self.counter as f64),
+            timestamp: get_epoch_ms(),
             step,
         }
     }   
@@ -49,6 +59,8 @@ struct RequestBody {
 pub struct MLFlowClient {
     pub run_id: String,
     pub url: String,
+    pub user: String,
+    pub password: String,
 }
 
 impl MLFlowClient {
@@ -58,10 +70,24 @@ impl MLFlowClient {
             metrics: metrics,
         };
         let client = reqwest::blocking::Client::new();
-        match client.post(self.url).json(&body).send() {
-             Ok(resp) => resp.text().unwrap(),
+        match client.post(self.url)
+                    .json(&body)
+                    .basic_auth(self.user, Some(self.password))
+                    .send() 
+        {
+
+             Ok(resp) => {
+                // let err = resp.error_for_status();
+                let status = resp.status();
+
+                if status.is_client_error() {
+                    let response_txt = resp.text().unwrap();
+                    panic!("{}: {}", status.to_string(), response_txt);
+                }
+                
+            }
              Err(err) => panic!("Error: {}", err)
          };
-        println!("Successfully logged metrics.");
+        
     }
 }
