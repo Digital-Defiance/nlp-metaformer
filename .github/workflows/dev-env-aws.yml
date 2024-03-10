@@ -111,6 +111,7 @@ jobs:
           echo "LD_LIBRARY_PATH=$TORCH_LIB_PATH" >> $GITHUB_ENV
 
       #   development only
+      - run: pip install jurigged
       - run: apt-get update && apt-get install -y procps
       - run: git config --global user.email "mail@ruicampos.org"
       - run: git config --global user.name "Rui Campos"
