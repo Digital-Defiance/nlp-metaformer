@@ -112,7 +112,6 @@ class Settings(BaseSettings):
 
 
 
-
 ENCODER = tiktoken.get_encoding("gpt2")
 
 def encode_text(text: str) -> list[int]:
