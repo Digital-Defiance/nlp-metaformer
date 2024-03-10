@@ -177,11 +177,7 @@ def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str
             sentiments, reviews = [], []
             limit = table.count // number_of_partions
             offset = limit*slice_idx
-            logger = get_run_logger()
-            logger.info(offset)
-            logger.info(limit)
             for sentiment, text in table.select_partition(epoch_idx, offset, limit).fetchall():
-                logger.info(sentiment)
                 sentiment = 1 if sentiment == "Pos" else 0
                 sentiments.append(sentiment)
                 reviews.append(text)
@@ -361,7 +357,7 @@ def main(
         ).to_env()
     
         log_params.submit()
-        prepare_validation_slice()
+        prepare_validation_slice.submit()
         write_training_slices.submit()
 
         path_to_rust_binary = DEV_RUST_BINARY
