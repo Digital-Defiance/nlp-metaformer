@@ -13,6 +13,12 @@ use crate::metaformer::AttentionKind;
 pub struct Cli {
 
     #[clap(long, env)]
+    pub mlflow_tracking_username: String,
+
+    #[clap(long, env)]
+    pub mlflow_tracking_password: String,
+
+    #[clap(long, env)]
     pub mlflow_run_id: String,
 
     #[clap(long, env)]

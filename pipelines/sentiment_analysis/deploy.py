@@ -63,7 +63,7 @@ class Model(BaseSettings):
 
 
 class MLFLowSettings(BaseSettings):
-    mlflow_tracking_url: str
+    mlflow_tracking_uri: str
     mlflow_tracking_username: str
     mlflow_tracking_password: str
     mlflow_run_id: str
@@ -256,9 +256,8 @@ def make_rust_executable(path_to_rust_binary: str) -> None:
 def run_rust_binary(path_to_rust_binary: str):
     ShellOperation(
         commands=[path_to_rust_binary],
-        env={ key: value for key, value in Settings.from_env().yield_flattened_items() }
+        env = { key: value for key, value in Settings.from_env().yield_flattened_items() }
     ).run()
-
 
 
 @task

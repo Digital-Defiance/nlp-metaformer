@@ -97,9 +97,12 @@ fn main() {
             loss_accumulator.to_metric(global_idx)
         };
 
-        let run_id = String::from_str(config.mlflow_run_id.as_str()).unwrap();
+        let run_id: String = String::from_str(config.mlflow_run_id.as_str()).unwrap();
+        let user: String = String::from_str(config.mlflow_tracking_username.as_str()).unwrap();
+        let password: String = String::from_str(config.mlflow_tracking_password.as_str()).unwrap();
+
         let url = format!("{}/api/2.0/mlflow/runs/log-batch", config.mlflow_tracking_uri);
-        let mlflow_client = MLFlowClient { url, run_id };
+        let mlflow_client = MLFlowClient { url, run_id, user, password };
         mlflow_client.log_metrics(vec![avg_eval_loss, avg_train_loss]);
     }
 }
