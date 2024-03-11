@@ -29,7 +29,8 @@ jobs:
       - name: Setup auth config
         shell: python
         run: |
-          with open("${{ github.workspace }}/auth.ini", "w") as file:
+          import os
+          with open(os.environ["MLFLOW_AUTH_CONFIG_PATH"], "w") as file:
             file.write("""
           [mlflow]
           admin_username = ${{ secrets.MLFLOW_USERNAME }}
