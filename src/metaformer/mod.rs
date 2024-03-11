@@ -72,7 +72,6 @@ impl MetaFormer {
         self.add(vs_path, layer)
     }
 
-
     pub fn add_avg_pooling(self, vs_path: &nn::Path, kernel_size: i64) -> Self {
         let layer = AvgPooling::new(kernel_size);
         self.add(vs_path, layer)
