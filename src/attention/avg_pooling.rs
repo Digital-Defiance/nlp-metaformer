@@ -4,7 +4,32 @@ use tch::Tensor;
 
 
 #[derive(Debug)]
-pub struct AvgPooling { }
+pub struct AvgPooling {
+
+    /// Size of the pooling region. Can be a single number or a tuple (kH, kW)
+    kernel_size: i64,
+
+    /// stride of the pooling operation. Can be a single number or a tuple (sH, sW). Default: kernel_size
+    stride: i64,
+
+    /// implicit zero paddings on both sides of the input. Can be a single number or a tuple (padH, padW). Default: 0
+    padding: i64,
+
+    /// when True, will use ceil instead of floor in the formula to compute the output shape. Default: False
+    ceil_mode: bool,
+
+    /// when True, will include the zero-padding in the averaging calculation. Default: True
+    count_include_pad: bool,
+
+    /// if specified, it will be used as divisor, otherwise size of the pooling region will be used. Default: None
+    divisor_override: i64,
+
+    number_of_heads: i64,
+
+    embedding_dimension: i64,
+    
+    sequence_length: i64
+}
 
 
 impl AvgPooling {
@@ -23,7 +48,14 @@ impl AvgPooling {
 
 impl nn::Module for AvgPooling {
     fn forward(&self, x_bcd: &Tensor) -> Tensor {   
-        x_bcd
+        x_bcd.avg_pool2d(
+            self.kernel_size,
+            self.stride,
+            self.padding,
+            self.ceil_mode,
+            self.count_include_pad,
+            self.divisor_override
+        )
     }
 }
 
