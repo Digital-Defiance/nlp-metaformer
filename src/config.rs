@@ -3,9 +3,16 @@
 
 use clap::Parser;
 use tch::Device;
+use serde::Deserialize;
 
-use crate::metaformer::AttentionKind;
-// use crate::metaformer::AttentionKind;
+
+#[derive(PartialEq, Clone, Copy, Deserialize)]
+pub enum AttentionKind {
+    Quadratic,
+    ScaledDotProduct,
+    Metric,
+    Identity
+}
 
 /// Train a MetaFormer model.
 #[derive(Parser)]

@@ -1,8 +1,10 @@
 pub mod quadratic_form;
 pub mod scaled_dot_product;
+pub mod identity;
 
 use crate::attention::quadratic_form::QuadraticAttention;
 use crate::attention::scaled_dot_product::ScaledDotProductAttention;
+use crate::attention::identity::Identity;
 
 use tch::Tensor;
 use tch::nn::Module;
@@ -10,16 +12,18 @@ use tch::nn::Module;
 
 #[derive(Debug)]
 pub(crate) enum AttentionModule {
-    Quadratic(QuadraticAttention),
+    Identity(Identity),
+    QuadraticAttention(QuadraticAttention),
     ScaledDotProduct(ScaledDotProductAttention),
-    // Other variants
 }
 
 impl Module for AttentionModule {
     fn forward(&self, xs: &Tensor) -> Tensor {
         match self {
-            AttentionModule::Quadratic(module) => module.forward(xs),
+            AttentionModule::Identity(module) => module.forward(xs),
+            AttentionModule::QuadraticAttention(module) => module.forward(xs),
             AttentionModule::ScaledDotProduct(module) => module.forward(xs),
+
         }
     }
 }

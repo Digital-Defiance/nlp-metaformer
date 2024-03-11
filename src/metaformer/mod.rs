@@ -1,4 +1,5 @@
-use crate::config::Cli;
+use crate::attention::identity::Identity;
+use crate::config::{AttentionKind, Cli};
 
 use self::mlp::create_mlp;
 use self::embedder::create_embedder_module;
@@ -13,18 +14,10 @@ pub mod mlp;
 
 use layer_norm::create_layer_norm;
 use commons::generate_init;
-use serde::Deserialize;
 use tch::nn;
 use tch::nn::Module;
 
 
-
-#[derive(PartialEq, Clone, Copy, Deserialize)]
-pub enum AttentionKind {
-    Quadratic,
-    ScaledDotProduct,
-    Metric,
-}
 
 /// Defines structure of the metaformer model
 /// GPT2 paper - https://d4mucfpksywv.cloudfront.net/better-language-models/language-models.pdf
@@ -68,9 +61,9 @@ impl MetaFormer {
     }
 
     fn create_attention(&self, vs: &nn::Path, kind: AttentionKind) ->  AttentionModule {
-
         match kind {
-            AttentionKind::Quadratic => AttentionModule::Quadratic(
+            AttentionKind::Identity => AttentionModule::Identity(Identity::new()),
+            AttentionKind::Quadratic => AttentionModule::QuadraticAttention(
                 QuadraticAttention::new(
                     vs,
                     self.number_of_heads,
@@ -89,6 +82,7 @@ impl MetaFormer {
                 )
             ),
             AttentionKind::Metric => todo!(),
+
         }
     }
 
