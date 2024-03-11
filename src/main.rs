@@ -12,11 +12,10 @@ pub mod files;
 
 
 use std::str::FromStr;
-use tch::kind;
-use tch::nn::Module;
+use tch::{kind, nn::Module};
 use tch::nn::OptimizerConfig;
 
-use metaformer::MetaFormer;
+use metaformer::metaformer;
 use mlflow::{MLFlowClient, MetricAccumulator };
 
 
@@ -31,12 +30,39 @@ fn main() {
 
 
     let config: Cli = read_config();
+
+
     let training_device = config.get_device();
-    let metaformer: MetaFormer = MetaFormer::new(&config);
     let vs: nn::VarStore = nn::VarStore::new(training_device);
     let vs_path: &nn::Path<'_> = &vs.root();
+
+    let mut model = metaformer(
+        vs_path,
+        config.dimension,
+        config.input_vocabolary,
+        config.context_window,
+        config.get_device()
+    );
+
     let attention_kind = config.get_attention_kind();
-    let model = metaformer.create(vs_path, attention_kind, training_device);
+
+    for _ in 0..config.depth {
+
+        model = match attention_kind {
+            config::AttentionKind::Quadratic => model.add_quadratic_form(vs_path, config.heads),
+            config::AttentionKind::ScaledDotProduct => model.add_scaled_dot_product(vs_path, config.heads),
+            config::AttentionKind::Metric => todo!(),
+            config::AttentionKind::Identity => model,
+            config::AttentionKind::AveragePooling => model.add_avg_pooling(vs_path, config.kernel_size.unwrap()),
+        };
+
+        model = model.add_mlp(vs_path);
+
+    }
+
+    model = model.finish(vs_path, config.output_vocabolary);
+
+
     let mut opt: nn::Optimizer = tch::nn::Adam::default().build(&vs, config.learning_rate).unwrap(); // https://paperswithcode.com/method/adam
     
     let total_slices: i64 = config.slices*config.epochs;

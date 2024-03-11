@@ -8,7 +8,6 @@ pub mod layer_norm;
 pub mod commons;
 pub mod embedder;
 pub mod mlp;
-pub mod builder;
 
 
 use layer_norm::create_layer_norm;
