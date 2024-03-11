@@ -11,18 +11,172 @@ pub mod layer_norm;
 pub mod commons;
 pub mod embedder;
 pub mod mlp;
+pub mod builder;
+
 
 use layer_norm::create_layer_norm;
 use commons::generate_init;
 use tch::nn;
 use tch::nn::Module;
 use crate::attention::avg_pooling::AvgPooling;
+use tch::nn::func;
+use tch::Tensor;
+use tch;
+
+
+/// A sequential layer combining multiple other layers.
+#[derive(Debug)]
+pub struct MetaFormer {
+    finished: bool,
+    embedding_dimension: i64,
+    size_of_vocabolary: i64,
+    size_of_context_window: i64,
+    device: tch::Device,
+    layers: Vec<Box<dyn Module>>,
+}
+
+impl Module for MetaFormer {
+    fn forward(&self, xs: &Tensor) -> Tensor {
+        let xs = self.layers[0].forward(xs);
+        self.layers.iter().skip(1).fold(xs, |xs, layer| layer.forward(&xs))
+    }
+}
+
+
+/// Creates a new empty metaformer layer.
+pub fn metaformer(
+    vs_path: &nn::Path,
+    embedding_dimension: i64,
+    size_of_vocabolary: i64,
+    size_of_context_window: i64,
+    device: tch::Device,
+) -> MetaFormer {
+
+    let embedder = create_embedder_module(
+        vs_path, 
+        embedding_dimension,
+        size_of_vocabolary,
+        size_of_context_window,
+        device
+    );
+
+    MetaFormer {
+        finished: false,
+        embedding_dimension,
+        size_of_vocabolary,
+        size_of_context_window,
+        device,
+        layers: vec![ Box::new(embedder) ]
+    }
+}
+
+
+
+impl MetaFormer {
+
+    pub fn add_mlp(self, vs_path: &nn::Path) -> Self {
+        let layer = create_mlp(vs_path, self.embedding_dimension);
+        self.add(vs_path, layer)
+    }
+
+
+    pub fn add_avg_pooling(self, vs_path: &nn::Path, kernel_size: i64) -> Self {
+        let layer = AvgPooling::new(kernel_size);
+        self.add(vs_path, layer)
+    }
+
+    pub fn add_scaled_dot_product(self, vs_path: &nn::Path, number_of_heads: i64) -> Self {
+        let layer = ScaledDotProductAttention::new(
+            vs_path,
+            number_of_heads,
+            self.embedding_dimension,
+            self.embedding_dimension / number_of_heads,
+            self.size_of_context_window,
+        );
+        self.add(vs_path, layer)
+    }
+
+    pub fn add_quadratic_form(self, vs_path: &nn::Path, number_of_heads: i64) -> Self {
+        let layer = QuadraticAttention::new(
+            vs_path,
+            number_of_heads,
+            self.embedding_dimension,
+            self.embedding_dimension / number_of_heads,
+            self.size_of_context_window,
+        );
+        self.add(vs_path, layer)
+    }
+
+
+    /// Appends a layer after all the current layers.
+    #[allow(clippy::should_implement_trait)]
+    pub fn add<M: Module + 'static>(mut self, vs_path: &nn::Path, layer: M) -> Self {
+
+        let layer_norm = create_layer_norm(vs_path, self.embedding_dimension);
+
+        self.layers.push(Box::new(func(
+            move |x: &tch::Tensor| layer.forward(&layer_norm.forward(x)) + x
+        )));
+        self
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 /// Defines structure of the metaformer model
 /// GPT2 paper - https://d4mucfpksywv.cloudfront.net/better-language-models/language-models.pdf
 /// MetaFormer paper - TODO
+
+/*
 pub struct MetaFormer {
 
 
@@ -49,6 +203,7 @@ pub struct MetaFormer {
     
 }
 
+*/
 
 impl MetaFormer {
 

@@ -1,5 +1,5 @@
 
-use tch::nn;
+use tch::nn::Module;
 use tch::Tensor;
 
 
@@ -16,6 +16,8 @@ const DEFAULT_COUNT_INCLUDE_PAD: bool = true;
 /// if specified, it will be used as divisor, otherwise size of the pooling region will be used. Default: None
 const DEFAULT_DIVISOR_OVERRIDE: core::option::Option<i64> = None;
 
+
+/// Average pooling layer
 #[derive(Debug)]
 pub struct AvgPooling {
     /// Size of the pooling region. Can be a single number or a tuple (kH, kW)
@@ -25,11 +27,11 @@ pub struct AvgPooling {
 
 impl AvgPooling {
     pub fn new(kernel_size: i64) -> Self {
-        AvgPooling {  kernel_size }
+        AvgPooling {  kernel_size  }
     }
 }
 
-impl nn::Module for AvgPooling {
+impl Module for AvgPooling {
     fn forward(&self, x_bcd: &Tensor) -> Tensor {
         x_bcd.avg_pool2d(
             self.kernel_size,
@@ -42,40 +44,3 @@ impl nn::Module for AvgPooling {
         )
     }
 }
-
-
-
-
-/* 
-
-#[cfg(test)]
-mod tests {
-    use super::*; 
-    use tch::{nn, Device, Kind, Tensor};
-    use tch::nn::Module;
-
-
-    #[test]
-    pub fn test_layer(){
-
-
-        let vs = nn::VarStore::new(Device::Cpu);
-        let vs_path = &vs.root();
-    
-        let b = 10;
-        let c = 5;
-        let d = 4;
-        let n = 2;
-        let q = 2;
-
-        let input_bcd = Tensor::randn( &[b, c, d],  (Kind::Float, Device::Cpu));
-        let layer = quadratic_self_attention_module(vs_path, n, d, q, c);
-        let output_bcd = layer.forward(&input_bcd);
-
-        debug_assert!(output_bcd.size() == input_bcd.size());
-
-    }
-
-}
-
-*/
