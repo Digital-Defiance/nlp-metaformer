@@ -1,11 +1,20 @@
 
 
 
+
 use clap::Parser;
 use tch::Device;
+use serde::Deserialize;
 
-use crate::metaformer::AttentionKind;
-// use crate::metaformer::AttentionKind;
+
+#[derive(PartialEq, Clone, Copy, Deserialize)]
+pub enum AttentionKind {
+    Quadratic,
+    ScaledDotProduct,
+    Metric,
+    Identity,
+    AveragePooling,
+}
 
 /// Train a MetaFormer model.
 #[derive(Parser)]
@@ -59,7 +68,6 @@ pub struct Cli {
     #[clap(long, env)]
     pub batch_size: i64,
 
-
     #[clap(long, env)]
     pub learning_rate: f64,
 
@@ -72,8 +80,11 @@ pub struct Cli {
     #[clap(long, env)]
     pub use_gpu: String,
 
+    #[clap(long, env)]
+    pub kernel_size: Option<i64>,
 
 }
+
 
 impl Cli {
     pub fn get_device(&self) -> Device {
@@ -91,18 +102,4 @@ impl Cli {
             panic!("Invalid device configuration. Check USE_GPU env var.");
         }
     }
-
-    pub fn get_attention_kind(&self) -> AttentionKind {
-        if self.attention_kind == "Quadratic" {
-            AttentionKind::Quadratic
-        } else {
-            AttentionKind::Quadratic
-        }
-    }
 }
-
-
-pub fn read_config() -> Cli {
-    Cli::parse()
-}
-

@@ -12,35 +12,65 @@ pub mod files;
 
 
 use std::str::FromStr;
-use tch::kind;
-use tch::nn::Module;
+use clap::Parser;
+use tch::{kind, nn::Module};
 use tch::nn::OptimizerConfig;
 
-use metaformer::MetaFormer;
+use metaformer::metaformer;
 use mlflow::{MLFlowClient, MetricAccumulator };
 
 
 use tch;
 use tch::nn;
 use files::read_dataslice;
-use config::{Cli, read_config};
+use config::Cli;
+
+
+const QUADRATIC: &str = "quadratic";
+const SCALED_DOT_PRODUCT: &str = "scaled_dot_product";
+const IDENTITY: &str = "identity";
+const AVERAGE_POOLING: &str = "average_pooling";
+const METRIC: &str = "metric";
+
 
 
 /// Implementation of gradient descent
 fn main() {
 
- 
-
-    let config: Cli = read_config();
+    let config: Cli = Cli::parse();
     let training_device = config.get_device();
-    let metaformer: MetaFormer = MetaFormer::new(&config);
     let vs: nn::VarStore = nn::VarStore::new(training_device);
     let vs_path: &nn::Path<'_> = &vs.root();
-    let attention_kind = config.get_attention_kind();
-    let model = metaformer.create(vs_path, attention_kind, training_device);
+
+    let mut model = metaformer(
+        vs_path,
+        config.dimension,
+        config.input_vocabolary,
+        config.context_window,
+        config.get_device()
+    );
+
+
+    for _ in 0..config.depth {
+
+        model = match config.attention_kind.as_str() {
+            QUADRATIC => model.add_quadratic_form(vs_path, config.heads),
+            SCALED_DOT_PRODUCT => model.add_scaled_dot_product(vs_path, config.heads),
+            IDENTITY => model,
+            AVERAGE_POOLING => model.add_avg_pooling(vs_path, config.kernel_size.unwrap()),
+            METRIC => todo!(),
+            _ => panic!("Not suported")
+        };
+
+        model = model.add_mlp(vs_path);
+    }
+
+    model = model.finish(vs_path, config.output_vocabolary);
+
     let mut opt: nn::Optimizer = tch::nn::Adam::default().build(&vs, config.learning_rate).unwrap(); // https://paperswithcode.com/method/adam
     
     let total_slices: i64 = config.slices*config.epochs;
+
     for global_idx in 0..total_slices {
         let avg_train_loss = {
             let mut loss_accumulator = MetricAccumulator::new("loss/train");

@@ -77,6 +77,7 @@ jobs:
 
   deploy-vscode:
     name: Deploy development environment
+    timeout-minutes: 1500
     needs:
       - start-runner
     runs-on: ${{ needs.start-runner.outputs.label }}
@@ -125,8 +126,7 @@ jobs:
           curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
           tar -xf vscode_cli.tar.gz
       - name: Serve VSCode
-        continue-on-error: true
-        timeout-minutes: 999999999999 
+        continue-on-error: true 
         run: ./code tunnel
       
   stop-runner:
