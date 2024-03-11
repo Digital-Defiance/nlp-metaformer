@@ -12,6 +12,7 @@ pub mod files;
 
 
 use std::str::FromStr;
+use clap::Parser;
 use tch::{kind, nn::Module};
 use tch::nn::OptimizerConfig;
 
@@ -22,16 +23,13 @@ use mlflow::{MLFlowClient, MetricAccumulator };
 use tch;
 use tch::nn;
 use files::read_dataslice;
-use config::{Cli, read_config};
+use config::Cli;
 
 
 /// Implementation of gradient descent
 fn main() {
 
-
-    let config: Cli = read_config();
-
-
+    let config: Cli = Cli::parse();
     let training_device = config.get_device();
     let vs: nn::VarStore = nn::VarStore::new(training_device);
     let vs_path: &nn::Path<'_> = &vs.root();
@@ -61,7 +59,6 @@ fn main() {
     }
 
     model = model.finish(vs_path, config.output_vocabolary);
-
 
     let mut opt: nn::Optimizer = tch::nn::Adam::default().build(&vs, config.learning_rate).unwrap(); // https://paperswithcode.com/method/adam
     

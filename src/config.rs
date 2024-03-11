@@ -103,16 +103,10 @@ impl Cli {
     }
 
     pub fn get_attention_kind(&self) -> AttentionKind {
-        if self.attention_kind == "Quadratic" {
+        if self.attention_kind == "quadratic" {
             AttentionKind::Quadratic
         } else {
             AttentionKind::Quadratic
         }
     }
 }
-
-
-pub fn read_config() -> Cli {
-    Cli::parse()
-}
-
