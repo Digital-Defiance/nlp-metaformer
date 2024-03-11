@@ -1,11 +1,8 @@
-use crate::attention::identity::Identity;
-use crate::config::{AttentionKind, Cli};
 
 use self::mlp::create_mlp;
 use self::embedder::create_embedder_module;
 use crate::attention::quadratic_form::QuadraticAttention;
 use crate::attention::scaled_dot_product::ScaledDotProductAttention;
-use crate::attention::AttentionModule;
 
 pub mod layer_norm;
 pub mod commons;
@@ -24,14 +21,16 @@ use tch::Tensor;
 use tch;
 
 
-/// A sequential layer combining multiple other layers.
+
+/// Defines structure of the metaformer model
+/// GPT2 paper - https://d4mucfpksywv.cloudfront.net/better-language-models/language-models.pdf
+/// MetaFormer paper - TODO
 #[derive(Debug)]
 pub struct MetaFormer {
     finished: bool,
     embedding_dimension: i64,
     size_of_vocabolary: i64,
     size_of_context_window: i64,
-    device: tch::Device,
     layers: Vec<Box<dyn Module>>,
 }
 
@@ -65,7 +64,6 @@ pub fn metaformer(
         embedding_dimension,
         size_of_vocabolary,
         size_of_context_window,
-        device,
         layers: vec![ Box::new(embedder) ]
     }
 }
@@ -108,9 +106,27 @@ impl MetaFormer {
     }
 
 
+    pub fn finish(mut self, vs_path: &nn::Path, output_tokens: i64) -> Self {
+        
+        let d = self.embedding_dimension;
+        let t = output_tokens;
+
+        let linear_norm = create_layer_norm(vs_path, self.embedding_dimension);
+        let projection_1dt = vs_path.var("projection_1dt", &[1, d, t], generate_init());
+
+        let final_layer = nn::func(move |x_bcd| {
+            let y_bcd = &linear_norm.forward(x_bcd);
+            y_bcd.matmul(&projection_1dt)
+        });
+
+        self.layers.push(Box::new(final_layer));
+        self
+    }
+
+
     /// Appends a layer after all the current layers.
     #[allow(clippy::should_implement_trait)]
-    pub fn add<M: Module + 'static>(mut self, vs_path: &nn::Path, layer: M) -> Self {
+    fn add<M: Module + 'static>(mut self, vs_path: &nn::Path, layer: M) -> Self {
 
         let layer_norm = create_layer_norm(vs_path, self.embedding_dimension);
 
@@ -172,10 +188,6 @@ impl MetaFormer {
 
 
 
-/// Defines structure of the metaformer model
-/// GPT2 paper - https://d4mucfpksywv.cloudfront.net/better-language-models/language-models.pdf
-/// MetaFormer paper - TODO
-
 /*
 pub struct MetaFormer {
 
@@ -204,88 +216,6 @@ pub struct MetaFormer {
 }
 
 */
-
-impl MetaFormer {
-
-    pub fn new(config: &Cli) -> MetaFormer {
-        MetaFormer {
-            embedding_dimension: config.dimension,
-            model_depth: config.depth,
-            number_of_heads: config.heads,
-            size_of_context_window: config.context_window,
-            size_of_vocabolary: config.input_vocabolary,
-            output_tokens: config.output_vocabolary,
-            kernel_size: config.kernel_size,
-        }
-    }
-
-    fn create_attention(&self, vs: &nn::Path, kind: AttentionKind) ->  AttentionModule {
-        match kind {
-            AttentionKind::AveragePooling => {
-                match self.kernel_size {
-                    Some(kernel_size) => AttentionModule::AvgPooling(AvgPooling::new(kernel_size)),
-                    None => panic!("Kernel size must be defined when avg pooling is requested"),
-                }
-            },
-            AttentionKind::Identity => AttentionModule::Identity(Identity::new()),
-            AttentionKind::Quadratic => AttentionModule::QuadraticAttention(
-                QuadraticAttention::new(
-                    vs,
-                    self.number_of_heads,
-                    self.embedding_dimension,
-                    self.embedding_dimension / self.number_of_heads,
-                    self.size_of_context_window,
-                )
-            ),
-            AttentionKind::ScaledDotProduct => AttentionModule::ScaledDotProduct(
-                ScaledDotProductAttention::new(
-                    vs,
-                    self.number_of_heads,
-                    self.embedding_dimension,
-                    self.embedding_dimension / self.number_of_heads,
-                    self.size_of_context_window,
-                )
-            ),
-            AttentionKind::Metric => todo!(),
-
-        }
-    }
-
-
-    fn create_output_layer(&self, vs: &nn::Path) -> impl nn::Module {
-
-        let d = self.embedding_dimension;
-        let t = self.output_tokens;
-
-        let linear_norm = create_layer_norm(vs, self.embedding_dimension);
-        let projection_1dt = vs.var("projection_1dt", &[1, d, t], generate_init());
-
-        nn::func(move |x_bcd| {
-            let y_bcd = &linear_norm.forward(x_bcd);
-            y_bcd.matmul(&projection_1dt)
-        })
-    }
-
-    pub fn create(&self, vs_path: & nn::Path, kind: AttentionKind, device: tch::Device) -> impl nn::Module {
-
-        let mut model = nn::seq().add(
-            create_embedder_module(
-                vs_path, 
-                self.embedding_dimension,
-                self.size_of_vocabolary,
-                self.size_of_context_window,
-                device
-        ));
-
-        for _ in 0..self.model_depth  {
-            let attention_module = self.create_attention(vs_path, kind);
-            model = model.add(attention_module);
-            model = model.add(create_mlp(vs_path, self.embedding_dimension));
-        }
-
-        model.add(self.create_output_layer(vs_path))
-    }
-}
 
 
 
