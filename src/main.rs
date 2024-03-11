@@ -29,7 +29,6 @@ use config::{Cli, read_config};
 /// Implementation of gradient descent
 fn main() {
 
- 
 
     let config: Cli = read_config();
     let training_device = config.get_device();

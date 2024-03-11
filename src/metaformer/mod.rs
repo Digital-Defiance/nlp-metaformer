@@ -1,8 +1,10 @@
-use crate::attention::quadratic_form::quadratic_self_attention_module;
 use crate::config::Cli;
 
 use self::mlp::create_mlp;
 use self::embedder::create_embedder_module;
+use crate::attention::quadratic_form::QuadraticAttention;
+use crate::attention::scaled_dot_product::ScaledDotProductAttention;
+use crate::attention::AttentionModule;
 
 pub mod layer_norm;
 pub mod commons;
@@ -65,18 +67,28 @@ impl MetaFormer {
         }
     }
 
-    fn create_attention(&self, vs: &nn::Path, kind: AttentionKind) -> impl nn::Module {
+    fn create_attention(&self, vs: &nn::Path, kind: AttentionKind) ->  AttentionModule {
 
         match kind {
-            AttentionKind::Quadratic => quadratic_self_attention_module(
-                vs,
-                self.number_of_heads,
-                self.embedding_dimension,
-                self.embedding_dimension / self.number_of_heads,
-                self.size_of_context_window,
+            AttentionKind::Quadratic => AttentionModule::Quadratic(
+                QuadraticAttention::new(
+                    vs,
+                    self.number_of_heads,
+                    self.embedding_dimension,
+                    self.embedding_dimension / self.number_of_heads,
+                    self.size_of_context_window,
+                )
+            ),
+            AttentionKind::ScaledDotProduct => AttentionModule::ScaledDotProduct(
+                ScaledDotProductAttention::new(
+                    vs,
+                    self.number_of_heads,
+                    self.embedding_dimension,
+                    self.embedding_dimension / self.number_of_heads,
+                    self.size_of_context_window,
+                )
             ),
             AttentionKind::Metric => todo!(),
-            AttentionKind::ScaledDotProduct => todo!()
         }
     }
 
