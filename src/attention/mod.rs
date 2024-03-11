@@ -1,6 +1,7 @@
 pub mod quadratic_form;
 pub mod scaled_dot_product;
 pub mod identity;
+pub mod avg_pooling;
 
 use crate::attention::quadratic_form::QuadraticAttention;
 use crate::attention::scaled_dot_product::ScaledDotProductAttention;
