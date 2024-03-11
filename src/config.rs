@@ -1,7 +1,6 @@
 
 
 
-use std::str::FromStr;
 
 use clap::Parser;
 use tch::Device;
@@ -68,7 +67,6 @@ pub struct Cli {
     /// Number of samples in a batch
     #[clap(long, env)]
     pub batch_size: i64,
-
 
     #[clap(long, env)]
     pub learning_rate: f64,

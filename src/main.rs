@@ -63,7 +63,6 @@ fn main() {
         };
 
         model = model.add_mlp(vs_path);
-
     }
 
     model = model.finish(vs_path, config.output_vocabolary);
@@ -71,6 +70,7 @@ fn main() {
     let mut opt: nn::Optimizer = tch::nn::Adam::default().build(&vs, config.learning_rate).unwrap(); // https://paperswithcode.com/method/adam
     
     let total_slices: i64 = config.slices*config.epochs;
+
     for global_idx in 0..total_slices {
         let avg_train_loss = {
             let mut loss_accumulator = MetricAccumulator::new("loss/train");
