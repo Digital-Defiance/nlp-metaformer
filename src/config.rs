@@ -11,7 +11,8 @@ pub enum AttentionKind {
     Quadratic,
     ScaledDotProduct,
     Metric,
-    Identity
+    Identity,
+    AveragePooling,
 }
 
 /// Train a MetaFormer model.
@@ -79,6 +80,8 @@ pub struct Cli {
     #[clap(long, env)]
     pub use_gpu: String,
 
+    #[clap(long, env)]
+    pub kernel_size: Option<i64>,
 
 }
 

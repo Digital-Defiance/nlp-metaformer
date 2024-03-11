@@ -6,16 +6,17 @@ pub mod avg_pooling;
 use crate::attention::quadratic_form::QuadraticAttention;
 use crate::attention::scaled_dot_product::ScaledDotProductAttention;
 use crate::attention::identity::Identity;
+use crate::attention::avg_pooling::AvgPooling;
 
 use tch::Tensor;
 use tch::nn::Module;
-
 
 #[derive(Debug)]
 pub(crate) enum AttentionModule {
     Identity(Identity),
     QuadraticAttention(QuadraticAttention),
     ScaledDotProduct(ScaledDotProductAttention),
+    AvgPooling(AvgPooling),
 }
 
 impl Module for AttentionModule {
@@ -24,7 +25,7 @@ impl Module for AttentionModule {
             AttentionModule::Identity(module) => module.forward(xs),
             AttentionModule::QuadraticAttention(module) => module.forward(xs),
             AttentionModule::ScaledDotProduct(module) => module.forward(xs),
-
+            AttentionModule::AvgPooling(module) => module.forward(xs),
         }
     }
 }

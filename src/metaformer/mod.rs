@@ -16,6 +16,7 @@ use layer_norm::create_layer_norm;
 use commons::generate_init;
 use tch::nn;
 use tch::nn::Module;
+use crate::attention::avg_pooling::AvgPooling;
 
 
 
@@ -43,6 +44,8 @@ pub struct MetaFormer {
 
     output_tokens: i64,
 
+    kernel_size: Option<i64>,
+
     
 }
 
@@ -57,11 +60,18 @@ impl MetaFormer {
             size_of_context_window: config.context_window,
             size_of_vocabolary: config.input_vocabolary,
             output_tokens: config.output_vocabolary,
+            kernel_size: config.kernel_size,
         }
     }
 
     fn create_attention(&self, vs: &nn::Path, kind: AttentionKind) ->  AttentionModule {
         match kind {
+            AttentionKind::AveragePooling => {
+                match self.kernel_size {
+                    Some(kernel_size) => AttentionModule::AvgPooling(AvgPooling::new(kernel_size)),
+                    None => panic!("Kernel size must be defined when avg pooling is requested"),
+                }
+            },
             AttentionKind::Identity => AttentionModule::Identity(Identity::new()),
             AttentionKind::Quadratic => AttentionModule::QuadraticAttention(
                 QuadraticAttention::new(
