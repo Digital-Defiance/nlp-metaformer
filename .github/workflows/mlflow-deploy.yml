@@ -17,6 +17,10 @@ jobs:
     name: Deploy MLFlow
     timeout-minutes: 1440 # 24h
     runs-on: ${{ inputs.machine }}
+    container:
+      image: ubuntu
+      ports:
+        - 8000:8000
     env:
       MLFLOW_AUTH_CONFIG_PATH: "${{ github.workspace }}/auth.ini"
       MLFLOW_HOST: 0.0.0.0
