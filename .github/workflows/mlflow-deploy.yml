@@ -28,18 +28,17 @@ jobs:
       - run: pip install psycopg2-binary # required for mlflow to talk to postgres
       - run: pip install boto3
       - run: pip install mlflow==2.11.1
-      - name: Setup auth config
-        shell: python
-        run: |
-          import os
-          with open(os.environ["MLFLOW_AUTH_CONFIG_PATH"], "w") as file:
-            file.write("""
-          [mlflow]
-          admin_username = ${{ secrets.MLFLOW_USERNAME }}
-          admin_password = ${{ secrets.MLFLOW_PASSWORD }}
-          default_permission = READ
-          database_uri = sqlite:///sqlite.db
-            """)
+      - uses: "DamianReeves/write-file-action@master"
+        with:
+          path: $MLFLOW_AUTH_CONFIG_PATH
+          write-mode: overwrite
+          contents: |
+            [mlflow]
+            admin_username = ${{ secrets.MLFLOW_USERNAME }}
+            admin_password = ${{ secrets.MLFLOW_PASSWORD }}
+            default_permission = READ
+            database_uri = sqlite:///sqlite.db
+
       - name: Run MLFlow server
         run: python -m mlflow server --app-name basic-auth
     
