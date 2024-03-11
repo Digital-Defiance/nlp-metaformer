@@ -1,6 +1,8 @@
 
 
 
+use std::str::FromStr;
+
 use clap::Parser;
 use tch::Device;
 use serde::Deserialize;
@@ -85,6 +87,7 @@ pub struct Cli {
 
 }
 
+
 impl Cli {
     pub fn get_device(&self) -> Device {
         let cuda = Device::cuda_if_available();
@@ -99,14 +102,6 @@ impl Cli {
             Device::Cpu
         } else {
             panic!("Invalid device configuration. Check USE_GPU env var.");
-        }
-    }
-
-    pub fn get_attention_kind(&self) -> AttentionKind {
-        if self.attention_kind == "quadratic" {
-            AttentionKind::Quadratic
-        } else {
-            AttentionKind::Quadratic
         }
     }
 }

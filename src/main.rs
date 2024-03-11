@@ -26,6 +26,14 @@ use files::read_dataslice;
 use config::Cli;
 
 
+const QUADRATIC: &str = "quadratic";
+const SCALED_DOT_PRODUCT: &str = "scaled_dot_product";
+const IDENTITY: &str = "identity";
+const AVERAGE_POOLING: &str = "average_pooling";
+const METRIC: &str = "metric";
+
+
+
 /// Implementation of gradient descent
 fn main() {
 
@@ -42,16 +50,16 @@ fn main() {
         config.get_device()
     );
 
-    let attention_kind = config.get_attention_kind();
 
     for _ in 0..config.depth {
 
-        model = match attention_kind {
-            config::AttentionKind::Quadratic => model.add_quadratic_form(vs_path, config.heads),
-            config::AttentionKind::ScaledDotProduct => model.add_scaled_dot_product(vs_path, config.heads),
-            config::AttentionKind::Metric => todo!(),
-            config::AttentionKind::Identity => model,
-            config::AttentionKind::AveragePooling => model.add_avg_pooling(vs_path, config.kernel_size.unwrap()),
+        model = match config.attention_kind.as_str() {
+            QUADRATIC => model.add_quadratic_form(vs_path, config.heads),
+            SCALED_DOT_PRODUCT => model.add_scaled_dot_product(vs_path, config.heads),
+            IDENTITY => model,
+            AVERAGE_POOLING => model.add_avg_pooling(vs_path, config.kernel_size.unwrap()),
+            METRIC => todo!(),
+            _ => panic!("Not suported")
         };
 
         model = model.add_mlp(vs_path);
