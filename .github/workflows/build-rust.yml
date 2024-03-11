@@ -2,6 +2,9 @@
 name: "Training Loop: Build Rust Binary"
 
 on:
+  pull_request:
+    branches:
+      - main
   release:
     types: [created]
 
@@ -25,9 +28,12 @@ jobs:
           echo "LD_LIBRARY_PATH=$TORCH_LIB_PATH" >> $GITHUB_ENV
           echo "LIBTORCH_USE_PYTORCH=1" >> $GITHUB_ENV
           echo "RUST_BACKTRACE=full" >> $GITHUB_ENV
-      - name: Compile
+
+      - run: cargo check
+      - if: ${{ github.event_name == 'release' }}
         run: cargo build --release --target-dir build
-      - name: Upload artifact to release
+      - if:  ${{ github.event_name == 'release' }}
+        name: Upload artifact to release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
