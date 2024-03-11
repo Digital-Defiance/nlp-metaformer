@@ -26,9 +26,7 @@ use tch;
 /// MetaFormer paper - TODO
 #[derive(Debug)]
 pub struct MetaFormer {
-    finished: bool,
     embedding_dimension: i64,
-    size_of_vocabolary: i64,
     size_of_context_window: i64,
     layers: Vec<Box<dyn Module>>,
 }
@@ -59,9 +57,7 @@ pub fn metaformer(
     );
 
     MetaFormer {
-        finished: false,
         embedding_dimension,
-        size_of_vocabolary,
         size_of_context_window,
         layers: vec![ Box::new(embedder) ]
     }
