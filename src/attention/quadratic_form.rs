@@ -1,7 +1,6 @@
 
 use tch::nn;
 
-
 pub fn generate_init() -> nn::Init {
     nn::Init::Randn { mean: 0., stdev: 1. }
 }
@@ -11,26 +10,28 @@ pub fn generate_init() -> nn::Init {
 /// https://arxiv.org/abs/2111.11418 - evidence that any of the attention mechanisms might have similar performance 
 pub fn quadratic_self_attention_module(
     vs_path: &nn::Path,
-    n: i64,
-    d: i64,
-    q: i64,
-    c: i64,
+    number_of_heads: i64,
+    embedding_dimension: i64,
+    latent_dimension: i64,
+    sequence_length: i64,
 ) ->  impl nn::Module {
 
-    assert!(d % n == 0, "Embeddings dimension must be divisible by the requested number of heads.");
-    debug_assert_eq!(n*q, d);
+
+    let n = number_of_heads;
+    let d = embedding_dimension;
+    let c = sequence_length;
+    let q = latent_dimension;
+    let p = latent_dimension*number_of_heads;
 
     let projections_1ndq = vs_path.var("projections_1ndq", &[1, n, d, q], generate_init());
     let metric_tensors_1nqq = vs_path.var("metric_tensors_1nqq", &[1, n, q, q], generate_init());
-    let mixer_1dd = vs_path.var("mixer_1dd", &[1, d, d], generate_init());
+    let adapter_1pd = vs_path.var("mixer_1dd", &[1, p, d], generate_init());
 
     debug_assert_eq!(projections_1ndq.size(), vec![1, n, d, q]);
     debug_assert_eq!(metric_tensors_1nqq.size(), vec![1, n, q, q]);
-    debug_assert_eq!(mixer_1dd.size(), vec![1, d, d]);
+    debug_assert_eq!(adapter_1pd.size(), vec![1, p, d]);
 
     let sqrt_q = f64::sqrt(q as f64);
-
- 
 
     nn::func(move |x_bcd: &tch::Tensor| {
     
@@ -56,15 +57,15 @@ pub fn quadratic_self_attention_module(
         let y_bnqc = &x_bncq.transpose(-1, -2).matmul(softmaxed_scaled_dotproducts_bncc);
         debug_assert!(y_bnqc.size() == vec![b, n, q, c]);
 
-        let y_bcd = &y_bnqc.reshape(x_bcd.size());
-        debug_assert!(y_bcd.size() == vec![b, c, d]);
+        let y_bcp = &y_bnqc.reshape(&[b, c, p]);
+        debug_assert!(y_bcp.size() == vec![b, c, p]);
     
-        y_bcd.matmul(&mixer_1dd)
+        y_bcp.matmul(&adapter_1pd)
     })
 }
 
 
-
+/* 
 
 #[cfg(test)]
 mod tests {
@@ -95,3 +96,5 @@ mod tests {
     }
 
 }
+
+*/
