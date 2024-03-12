@@ -9,7 +9,7 @@ import numpy as np
 import tiktoken
 from constants import SAVE_PATH
 from env import Data, Train, Model
-
+import uuid
 
 ENCODER = tiktoken.get_encoding("gpt2")
 
@@ -21,9 +21,10 @@ class DatasetConnection:
     def __init__(self, conn: duckdb.DuckDBPyConnection, dataset_link: str):
         self.dataset_link = dataset_link
         self.conn = conn
+        self.uuid = uuid.uuid4().hex
 
         self.conn.execute(f"""
-            CREATE TABLE dataset AS
+            CREATE TABLE {self.uuid} AS
             SELECT id
             FROM '{self.dataset_link}';
         """)
@@ -38,7 +39,7 @@ class DatasetConnection:
         for epoch_idx in range(total_epochs):
 
             self.conn.execute(f"""
-                ALTER TABLE dataset
+                ALTER TABLE {self.uuid}
                 ADD COLUMN epoch_{epoch_idx}
                 INTEGER;
             """)
@@ -46,7 +47,7 @@ class DatasetConnection:
             permutation = np.random.permutation(self.count) + 1
             values = ", ".join((f"({val},)" for val in permutation))
             self.conn.execute(f"""
-                INSERT INTO dataset (epoch_{epoch_idx})
+                INSERT INTO {self.uuid} (epoch_{epoch_idx})
                 VALUES {values};
             """)
 
@@ -54,7 +55,7 @@ class DatasetConnection:
         return self.conn.execute(f"""
             SELECT sentiment, review
             FROM '{self.dataset_link}' as remote
-            JOIN dataset ON (dataset.epoch_{epoch_idx} = remote.id)
+            JOIN {self.uuid} ON (dataset.epoch_{epoch_idx} = remote.id)
             OFFSET {start}
             LIMIT {limit};
         """)
