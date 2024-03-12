@@ -15,7 +15,7 @@ on:
 jobs:
   deploy-mlflow:
     name: Deploy MLFlow
-    timeout-minutes: 1440 # 24h
+    timeout-minutes: 9999999999999999999 # hopefully, never
     runs-on: ${{ inputs.machine }}
     container:
       image: ghcr.io/mlflow/mlflow:v2.11.1
