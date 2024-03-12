@@ -35,7 +35,6 @@ const AVERAGE_POOLING: &str = "average_pooling";
 const METRIC: &str = "metric";
 
 
-
 fn log_metrics(config: &Cli, metrics: Vec<Metric>) {
     let run_id: String = String::from_str(config.mlflow_run_id.as_str()).unwrap();
     let user: String = String::from_str(config.mlflow_tracking_username.as_str()).unwrap();
@@ -45,7 +44,6 @@ fn log_metrics(config: &Cli, metrics: Vec<Metric>) {
     let mlflow_client = MLFlowClient { url, run_id, user, password };
     mlflow_client.log_metrics(metrics);
 }
-
 
 fn build_model(vs_path: &nn::Path, mut model: MetaFormer, config: &Cli) -> MetaFormer {
     for _ in 0..config.depth {
@@ -62,7 +60,6 @@ fn build_model(vs_path: &nn::Path, mut model: MetaFormer, config: &Cli) -> MetaF
     model.finish(vs_path, config.output_vocabolary)
 }
 
-
 fn build_optimizer(vs:&nn::VarStore , config: &Cli) -> Optimizer {
     // https://paperswithcode.com/method/adam
     let adam: Result<Optimizer, TchError> = tch::nn::Adam::default().build(vs, config.learning_rate);
@@ -73,16 +70,20 @@ fn build_optimizer(vs:&nn::VarStore , config: &Cli) -> Optimizer {
 }
 
 
-fn perform_eval(config: &Cli, training_device: Device, model: &MetaFormer, slice_idx: i64) -> Vec<Metric> {
+
+
+fn perform_eval(config: &Cli, training_device: Device, model: &MetaFormer, slice_idx: i64, step: i64) -> Vec<Metric> {
 
     let mut loss_accumulator = MetricAccumulator::new("loss/eval");
     let mut acc_accumulator = MetricAccumulator::new("acc/eval");
 
-    let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(-1);
+    let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(slice_idx);
 
     let x_sc = dataslice.get("X").unwrap().to(training_device);
     let y_s = dataslice.get("Y").unwrap().to(training_device);
+
     println!("Loaded slice to device.");
+
     // let t = args.output_tokens;
     let s = y_s.size()[0]; // slice size s
 
@@ -105,11 +106,18 @@ fn perform_eval(config: &Cli, training_device: Device, model: &MetaFormer, slice
     };
 
     vec![
-        loss_accumulator.to_metric(slice_idx),
-        acc_accumulator.to_metric(slice_idx)
+        loss_accumulator.to_metric(step),
+        acc_accumulator.to_metric(step)
     ]
 
 }
+
+
+
+
+
+const EVAL_SLICE_IDX: i64 = 0;
+
 
 /// Implementation of gradient descent
 fn main() {
@@ -129,12 +137,12 @@ fn main() {
     let mut opt: Optimizer = build_optimizer(&vs, &config);
 
 
-    for slice_idx in 0..config.slices*config.epochs {
+    for train_step in 1..(config.slices*config.epochs + 1) {
 
         let avg_train_loss = {
             let mut loss_accumulator = MetricAccumulator::new("loss/train");
-        
-            let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(slice_idx);
+            
+            let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(train_step);
     
             let x_sc = dataslice.get("X").unwrap().to(training_device);
             let y_s = dataslice.get("Y").unwrap().to(training_device);
@@ -158,58 +166,18 @@ fn main() {
                 loss_accumulator.accumulate(loss.double_value(&[]));
             };
 
-            loss_accumulator.to_metric(slice_idx)
+            loss_accumulator.to_metric(train_step)
         };
 
-        let mut metrics: Vec<Metric> = perform_eval(&config, training_device, &model, slice_idx);
+        let mut metrics: Vec<Metric> = perform_eval(&config, training_device, &model, EVAL_SLICE_IDX, train_step);
         metrics.push(avg_train_loss);
         log_metrics(&config, metrics);
     }
 
-
-
-
     // TEST
-    for test_idx in 2..config.slices {
-        let mut loss_accumulator = MetricAccumulator::new("loss/test");
-        let mut acc_accumulator = MetricAccumulator::new("acc/test");
-
-        let metrics: Vec<Metric> = {
-            
-            let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(-test_idx);
-            let x_sc = dataslice.get("X").unwrap().to(training_device);
-            let y_s = dataslice.get("Y").unwrap().to(training_device);
-            println!("Loaded slice to device.");
-            let s = y_s.size()[0]; // slice size s
-
-            for idx in 0..(s / config.batch_size) {
-                let start = idx*config.batch_size;
-                let end = start + config.batch_size;
-
-                let x_bc: tch::Tensor = x_sc.slice(0, start, end, 1);
-                let y_b: tch::Tensor = y_s.slice(0, start, end, 1);
-
-                let logits_bct = model.forward(&x_bc);
-                let logits_bt = logits_bct.mean_dim(1, false,  kind::Kind::Float);
-
-
-                let loss = logits_bt.cross_entropy_for_logits(&y_b);
-                let acc = logits_bt.accuracy_for_logits(&y_b);
-                
-                
-                loss_accumulator.accumulate(loss.double_value(&[]));
-                acc_accumulator.accumulate(acc.double_value(&[]));
-
-            };
-
-            vec![
-                loss_accumulator.to_metric(-1),
-                acc_accumulator.to_metric(-1)
-            ]
-        };
-
+    for test_idx in 1..config.slices {
+        let metrics: Vec<Metric> = perform_eval(&config, training_device, &model, -test_idx, -test_idx);
         log_metrics(&config, metrics);
-
     }
 
 
