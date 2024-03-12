@@ -7,7 +7,7 @@ use tch::Device;
 use serde::Deserialize;
 
 
-#[derive(PartialEq, Clone, Copy, Deserialize)]
+#[derive(PartialEq, Clone, Copy, Deserialize, Debug)]
 pub enum AttentionKind {
     Quadratic,
     ScaledDotProduct,
@@ -17,7 +17,7 @@ pub enum AttentionKind {
 }
 
 /// Train a MetaFormer model.
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
 

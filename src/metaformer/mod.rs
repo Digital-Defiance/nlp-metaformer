@@ -40,6 +40,7 @@ const METRIC: &str = "metric";
 pub struct MetaFormer {
     embedding_dimension: i64,
     size_of_context_window: i64,
+    training_device: Device,
     layers: Vec<Box<dyn Module>>,
 }
 
@@ -122,7 +123,7 @@ impl MetaFormer {
 
 impl MetaFormer {
 
-    pub fn perform_eval(&self, config: &Cli, training_device: Device, slice_idx: i64, step: i64) -> Vec<Metric> {
+    pub fn perform_eval(&self, config: &Cli, slice_idx: i64, step: i64) -> Vec<Metric> {
         let _no_grad: tch::NoGradGuard = tch::no_grad_guard();
 
         let mut loss_accumulator = MetricAccumulator::new("loss/test");
@@ -130,8 +131,8 @@ impl MetaFormer {
     
         let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(slice_idx);
     
-        let x_sc = dataslice.get("X").unwrap().to(training_device);
-        let y_s = dataslice.get("Y").unwrap().to(training_device);
+        let x_sc = dataslice.get("X").unwrap().to(self.training_device);
+        let y_s = dataslice.get("Y").unwrap().to(self.training_device);
     
         println!("Loaded slice to device.");
     
@@ -215,7 +216,7 @@ pub fn metaformer(
     embedding_dimension: i64,
     size_of_vocabolary: i64,
     size_of_context_window: i64,
-    device: tch::Device,
+    training_device: tch::Device,
 ) -> MetaFormer {
 
     let embedder = create_embedder_module(
@@ -223,11 +224,12 @@ pub fn metaformer(
         embedding_dimension,
         size_of_vocabolary,
         size_of_context_window,
-        device
+        training_device
     );
 
     MetaFormer {
         embedding_dimension,
+        training_device,
         size_of_context_window,
         layers: vec![ Box::new(embedder) ]
     }
