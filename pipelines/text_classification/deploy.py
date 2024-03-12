@@ -65,9 +65,9 @@ def main(
 if __name__ == "__main__":
 
     class EnvironmentSettings(BaseSettings): 
-        llmvc_environment: Literal["prod", "dev"] = "prod"
+        llmvc_environment: Literal["production", "staging", "dev"] = "production"
 
     main.serve(
-        name = f"sentiment-analysis-{EnvironmentSettings().llmvc_environment}"
+        name = f"text-classification-{EnvironmentSettings().llmvc_environment}"
     )
 
