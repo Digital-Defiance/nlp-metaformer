@@ -12,7 +12,8 @@ def shell_task(func: Callable) -> Callable:
     def new_func(*args, **kwargs) -> None:
         command = func(*args, **kwargs)
         env = { key: value for key, value in Settings.from_env().yield_flattened_items() }
-        return ShellOperation(commands=[command], env = env).run()
+        shell_operation = ShellOperation(commands=[command], env = env)
+        return shell_operation.run()
 
     return new_func
 
