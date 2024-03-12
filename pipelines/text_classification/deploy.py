@@ -24,7 +24,7 @@ def log_params():
 
     
 class EnvironmentSettings(BaseSettings): 
-    llmvc_environment: Literal["production", "staging", "dev"] = "production"
+    llmvc_environment: Literal["production", "staging", "development"] = "production"
 
 
 @shell_task
@@ -45,8 +45,6 @@ def main(
     run_name: str | None = None,
 ):
 
-    clean_tmp()
-    create_tmp()
 
 
     with mlflow.start_run(run_name=run_name, experiment_id=experiment_id) as run:
@@ -62,6 +60,10 @@ def main(
             )
         ).to_env()
     
+
+        clean_tmp()
+        create_tmp()
+
         log_params.submit()
         prepare_validation_slice.submit().wait()
         
