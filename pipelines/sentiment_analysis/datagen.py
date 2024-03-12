@@ -1,24 +1,20 @@
 
-from training_loop import run_rust_binary, make_rust_executable, download_rust_binary
 
 from contextlib import contextmanager
-from typing import Literal
 
 import duckdb
 from duckdb.typing import *
-import mlflow
-from pydantic_settings import BaseSettings
-from prefect import flow, get_run_logger, task
+from prefect import get_run_logger, task
 import numpy as np
 import tiktoken
+from constants import SAVE_PATH
+from env import Data, Train, Model
 
 
-from constants import SAVE_PATH, DEV_RUST_BINARY
-from env import Data, Train, Settings, Model, TrainingProcess, MLFLowSettings
+
 
 
 ENCODER = tiktoken.get_encoding("gpt2")
-
 
 def encode_text(text: str) -> list[int]:
     return ENCODER.encode(text.lower())

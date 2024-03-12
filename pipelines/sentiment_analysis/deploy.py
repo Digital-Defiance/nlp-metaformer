@@ -2,20 +2,13 @@
 
 """
 from training_loop import run_rust_binary, make_rust_executable, download_rust_binary
+from datagen import prepare_validation_slice, write_training_slices
 
-from contextlib import contextmanager
 from typing import Literal
-
-import duckdb
-from duckdb.typing import *
 import mlflow
 from pydantic_settings import BaseSettings
-from prefect import flow, get_run_logger, task
-import numpy as np
-import tiktoken
-
-
-from constants import SAVE_PATH, DEV_RUST_BINARY
+from prefect import flow, task
+from constants import DEV_RUST_BINARY
 from env import Data, Train, Settings, Model, TrainingProcess, MLFLowSettings
 
 @task
@@ -28,8 +21,6 @@ def log_params():
     })
 
 
-
-
 @flow
 def main(
     process: TrainingProcess,
@@ -40,9 +31,9 @@ def main(
     run_name: str | None = None,
 ):
 
-
     with mlflow.start_run(run_name=run_name, experiment_id=experiment_id) as run:
-    
+
+
         Settings(
             process = process, 
             model = model,
@@ -66,8 +57,6 @@ def main(
 
         training_loop = run_rust_binary.submit(path_to_rust_binary)
         training_loop.wait()
-
-
 
 
 if __name__ == "__main__":
