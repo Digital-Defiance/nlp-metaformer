@@ -3,7 +3,7 @@
 """
 
 
-from training_loop import run_rust_binary, make_rust_executable, download_rust_binary
+from training import run_rust_binary, make_rust_executable, download_rust_binary
 from datagen import prepare_validation_slice, write_training_slices
 
 from typing import Literal
