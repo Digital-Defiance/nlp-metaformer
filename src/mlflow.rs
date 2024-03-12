@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::config::Cli;
+
 fn get_epoch_ms() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -90,4 +92,16 @@ impl MLFlowClient {
          };
         
     }
+}
+
+
+
+pub fn log_metrics(config: &Cli, metrics: Vec<Metric>) {
+    let run_id: String = String::from_str(config.mlflow_run_id.as_str()).unwrap();
+    let user: String = String::from_str(config.mlflow_tracking_username.as_str()).unwrap();
+    let password: String = String::from_str(config.mlflow_tracking_password.as_str()).unwrap();
+
+    let url = format!("{}/api/2.0/mlflow/runs/log-batch", config.mlflow_tracking_uri);
+    let mlflow_client = MLFlowClient { url, run_id, user, password };
+    mlflow_client.log_metrics(metrics);
 }

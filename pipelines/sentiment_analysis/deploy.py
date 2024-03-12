@@ -17,9 +17,19 @@ import numpy as np
 import tiktoken
 from prefect_shell import ShellOperation
 
+AttentionMechanisms = Literal[
+    "quadratic",
+    "metric", 
+    "scaled_dot_product"
+    "identity",
+    "average_pooling",
+]
+
+DEFAULT_ATTENTION_MECHANISM: AttentionMechanisms = "quadratic"
 SAVE_PATH: str = "output.safetensors"
 DEV_RUST_BINARY: str = "/__w/llm-voice-chat/llm-voice-chat/target/debug/llm-voice-chat"
 
+ENCODER = tiktoken.get_encoding("gpt2")
 
 class RustExitedWithError(RuntimeError):
     def __init__(self, code, error_msg):
@@ -44,25 +54,20 @@ class TrainingProcess(BaseSettings):
     executable_source: SourceExecutable = DEV_RUST_BINARY
 
   
-
 class Train(BaseSettings):
     epochs: int = 100
     learning_rate: float = 1e-4
 
-    def to_cmd_args(self):
-        return f"--learning-rate {self.learning_rate}"
 
 class Model(BaseSettings):
     encoding: Literal["tiktoken-gpt2"] = "tiktoken-gpt2"
-    attention_kind: Literal["Quadratic", "Metric", "ScaledDotProduct"] = "Quadratic"
+    attention_kind: AttentionMechanisms = DEFAULT_ATTENTION_MECHANISM
     dimension: int = 32
     depth: int = 1
     heads: int = 2
     context_window: int = 300
     input_vocabolary: int = 60_000
     output_vocabolary: int = 5
-
-
 
 class MLFLowSettings(BaseSettings):
     mlflow_tracking_uri: str
@@ -71,8 +76,6 @@ class MLFLowSettings(BaseSettings):
     mlflow_run_id: str
     experiment_id: int = 1
     run_name: str | None = None
-
-
 
 class Settings(BaseSettings):
     process: TrainingProcess
@@ -112,7 +115,6 @@ class Settings(BaseSettings):
 
 
 
-ENCODER = tiktoken.get_encoding("gpt2")
 
 def encode_text(text: str) -> list[int]:
     return ENCODER.encode(text.lower())

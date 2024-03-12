@@ -3,6 +3,9 @@ use self::mlp::create_mlp;
 use self::embedder::create_embedder_module;
 use crate::attention::quadratic_form::QuadraticAttention;
 use crate::attention::scaled_dot_product::ScaledDotProductAttention;
+use crate::config::Cli;
+use crate::files::read_dataslice;
+use crate::mlflow::{Metric, MetricAccumulator};
 
 pub mod layer_norm;
 pub mod commons;
@@ -12,12 +15,21 @@ pub mod mlp;
 
 use layer_norm::create_layer_norm;
 use commons::generate_init;
-use tch::nn;
-use tch::nn::Module;
+use tch::{kind, nn, Device};
+use tch::nn::{Module, Optimizer};
 use crate::attention::avg_pooling::AvgPooling;
 use tch::nn::func;
 use tch::Tensor;
 use tch;
+
+
+
+
+const QUADRATIC: &str = "quadratic";
+const SCALED_DOT_PRODUCT: &str = "scaled_dot_product";
+const IDENTITY: &str = "identity";
+const AVERAGE_POOLING: &str = "average_pooling";
+const METRIC: &str = "metric";
 
 
 
@@ -28,6 +40,7 @@ use tch;
 pub struct MetaFormer {
     embedding_dimension: i64,
     size_of_context_window: i64,
+    training_device: Device,
     layers: Vec<Box<dyn Module>>,
 }
 
@@ -39,45 +52,19 @@ impl Module for MetaFormer {
 }
 
 
-/// Creates a new empty metaformer layer.
-pub fn metaformer(
-    vs_path: &nn::Path,
-    embedding_dimension: i64,
-    size_of_vocabolary: i64,
-    size_of_context_window: i64,
-    device: tch::Device,
-) -> MetaFormer {
-
-    let embedder = create_embedder_module(
-        vs_path, 
-        embedding_dimension,
-        size_of_vocabolary,
-        size_of_context_window,
-        device
-    );
-
-    MetaFormer {
-        embedding_dimension,
-        size_of_context_window,
-        layers: vec![ Box::new(embedder) ]
-    }
-}
-
-
-
 impl MetaFormer {
 
-    pub fn add_mlp(self, vs_path: &nn::Path) -> Self {
+    fn add_mlp(self, vs_path: &nn::Path) -> Self {
         let layer = create_mlp(vs_path, self.embedding_dimension);
         self.add(vs_path, layer)
     }
 
-    pub fn add_avg_pooling(self, vs_path: &nn::Path, kernel_size: i64) -> Self {
+    fn add_avg_pooling(self, vs_path: &nn::Path, kernel_size: i64) -> Self {
         let layer = AvgPooling::new(kernel_size);
         self.add(vs_path, layer)
     }
 
-    pub fn add_scaled_dot_product(self, vs_path: &nn::Path, number_of_heads: i64) -> Self {
+    fn add_scaled_dot_product(self, vs_path: &nn::Path, number_of_heads: i64) -> Self {
         let layer = ScaledDotProductAttention::new(
             vs_path,
             number_of_heads,
@@ -88,7 +75,7 @@ impl MetaFormer {
         self.add(vs_path, layer)
     }
 
-    pub fn add_quadratic_form(self, vs_path: &nn::Path, number_of_heads: i64) -> Self {
+    fn add_quadratic_form(self, vs_path: &nn::Path, number_of_heads: i64) -> Self {
         let layer = QuadraticAttention::new(
             vs_path,
             number_of_heads,
@@ -100,7 +87,7 @@ impl MetaFormer {
     }
 
 
-    pub fn finish(mut self, vs_path: &nn::Path, output_tokens: i64) -> Self {
+    fn finish(mut self, vs_path: &nn::Path, output_tokens: i64) -> Self {
         
         let d = self.embedding_dimension;
         let t = output_tokens;
@@ -134,21 +121,119 @@ impl MetaFormer {
 
 
 
+impl MetaFormer {
+
+    pub fn perform_eval(&self, config: &Cli, slice_idx: i64, step: i64) -> Vec<Metric> {
+        let _no_grad: tch::NoGradGuard = tch::no_grad_guard();
+
+        let mut loss_accumulator = MetricAccumulator::new("loss/test");
+        let mut acc_accumulator = MetricAccumulator::new("acc/test");
+    
+        let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(slice_idx);
+    
+        let x_sc = dataslice.get("X").unwrap().to(self.training_device);
+        let y_s = dataslice.get("Y").unwrap().to(self.training_device);
+    
+        println!("Loaded slice to device.");
+    
+        // let t = args.output_tokens;
+        let s = y_s.size()[0]; // slice size s
+    
+        for batch_idx in 0..(s / config.batch_size) {
+            let start = batch_idx*config.batch_size;
+            let end = start + config.batch_size;
+    
+            let x_bc: tch::Tensor = x_sc.slice(0, start, end, 1);
+            let y_b = y_s.slice(0, start, end, 1);
+    
+            let logits_bct = self.forward(&x_bc);
+            let logits_bt = logits_bct.mean_dim(1, false,  kind::Kind::Float);
+            let loss = logits_bt.cross_entropy_for_logits(&y_b);
+    
+            let acc = logits_bt.accuracy_for_logits(&y_b);
+                
+            loss_accumulator.accumulate(loss.double_value(&[]));
+            acc_accumulator.accumulate(acc.double_value(&[]));
+    
+        };
+
+        vec![
+            loss_accumulator.to_metric(step),
+            acc_accumulator.to_metric(step)
+        ]
+    }
+
+    pub fn build_model(mut self, vs_path: &nn::Path, config: &Cli) -> MetaFormer {
+        for _ in 0..config.depth {
+            self = match config.attention_kind.as_str() {
+                QUADRATIC => self.add_quadratic_form(vs_path, config.heads),
+                SCALED_DOT_PRODUCT => self.add_scaled_dot_product(vs_path, config.heads),
+                IDENTITY => self,
+                AVERAGE_POOLING => self.add_avg_pooling(vs_path, config.kernel_size.unwrap()),
+                METRIC => todo!(),
+                _ => panic!("Not suported")
+            };
+            self = self.add_mlp(vs_path);
+        }
+        self.finish(vs_path, config.output_vocabolary)
+    }
+
+    pub fn perform_train_step(&self, config: &Cli, training_device: Device, train_step: i64,  opt: &mut Optimizer) -> Metric {
+        let mut loss_accumulator = MetricAccumulator::new("loss/train");
+        let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(train_step);
+        let x_sc = dataslice.get("X").unwrap().to(training_device);
+        let y_s = dataslice.get("Y").unwrap().to(training_device);
+        println!("Loaded slice to device.");
+        let s = y_s.size()[0]; // slice size s
+
+        for idx in 0..(s / config.batch_size) {
+            let start = idx*config.batch_size;
+            let end = start + config.batch_size;
+
+            let x_bc: tch::Tensor = x_sc.slice(0, start, end, 1);
+            let y_b = y_s.slice(0, start, end, 1);
+
+            let logits_bct = self.forward(&x_bc);
+            let logits_bt = logits_bct.mean_dim(1, false,  kind::Kind::Float);
+            let loss = logits_bt.cross_entropy_for_logits(&y_b);
+            
+            opt.backward_step(&loss);
+            loss_accumulator.accumulate(loss.double_value(&[]));
+        };
+
+        loss_accumulator.to_metric(train_step)
+    }
+    
+}
 
 
 
 
 
+/// Creates a new empty metaformer layer.
+pub fn metaformer(
+    vs_path: &nn::Path,
+    embedding_dimension: i64,
+    size_of_vocabolary: i64,
+    size_of_context_window: i64,
+    training_device: tch::Device,
+) -> MetaFormer {
 
+    let embedder = create_embedder_module(
+        vs_path, 
+        embedding_dimension,
+        size_of_vocabolary,
+        size_of_context_window,
+        training_device
+    );
 
-
-
-
-
-
-
-
-
+    MetaFormer {
+        embedding_dimension,
+        training_device,
+        size_of_context_window,
+        layers: vec![ Box::new(embedder) ]
+    }
+}
 
 
 
