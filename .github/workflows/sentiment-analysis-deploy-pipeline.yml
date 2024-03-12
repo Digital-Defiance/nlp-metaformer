@@ -1,23 +1,132 @@
-
 name: "Sentiment Analysis: Deploy"
 
 on:
   workflow_dispatch:
+    inputs:
+      machine:
+        description: 'Which machine to use'
+        required: true
+        default: 'local'
+        type: choice
+        options:
+          - m6a.xlarge
+          - m6a.2xlarge
+          - g4dn.2xlarge
+          - g4dn.xlarge
+          - local
+      image:
+        description: 'Production Environment'
+        required: true
+        default: 'ghcr.io/digital-defiance/sentiment-analysis-pipeline:main'
+        type: choice
+        options:
+          - ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
+      docker_options:
+        required: true
+        description: 'Extra docker options'
+        default: '--user root'
+        type: choice
+        options:
+          - '--user root'
+          - '--user root --gpus all'
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: digital-defiance/sentiment-analysis-pipeline
+  AWS_REGION: eu-south-1
 
 jobs:
-  deploy-sentiment-analysis-flow:
-    name: Deploy flow
-    runs-on: self-hosted
-    container:
-      image: ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
+  start-runner:
+    runs-on: ubuntu-latest
+    name: "Provision infrastructure"
+    outputs:
+      label: ${{ steps.set-output.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
     steps:
-      - uses: actions/checkout@master
+      - name: Configure AWS credentials
+        if: ${{ inputs.machine != 'local' }}
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:  ${{ env.AWS_REGION }}
+      - name: Start EC2 runner
+        id: start-ec2-runner
+        if: ${{ inputs.machine != 'local' }}
+        uses: digital-defiance/ec2-github-runner@feature/add-storage-option
+        with:
+          mode: start
+          root-volume-size: 50
+          iam-role-name: ec2-logs
+          pre-runner-script: |  # sudo yum update -y && sudo yum install docker git libicu -y
+              sudo systemctl enable docker
+              sudo systemctl start docker
+          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          market-type: spot
+          ec2-image-id: ami-0450c19b7a7f6250d  # ami-0d1e2ba0458f0cd7a  
+          ec2-instance-type: ${{ inputs.machine }}
+          subnet-id: subnet-0fc7dea0969cca860
+          security-group-id: sg-0c4cc0c0be64f1b08
+      - shell: bash
+        name: "Get runner tag"
+        id: set-output
+        run: |
+          if [[ ${{ inputs.machine }} == "local" ]]; then
+            echo "label=local" >> $GITHUB_OUTPUT
+          else
+            echo "label=${{ steps.start-ec2-runner.outputs.label }}" >> $GITHUB_OUTPUT
+          fi
+
+  deploy-vscode:
+    name: Deploy development environment
+    timeout-minutes: 1500
+    needs:
+      - start-runner
+    runs-on: ${{ needs.start-runner.outputs.label }}
+    container:
+      image: ${{ inputs.image }}
+      options: ${{ inputs.docker_options }}
+      env:
+        RUST_BACKTRACE: "full"
+        LIBTORCH_USE_PYTORCH: "1"
+        LLMVC_ENVIRONMENT: "prod"
+        MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URL }}
+        MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_USERNAME }} 
+        MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }} 
+
+    steps:
+      # stuff to be moved to the production image
+      - run: pip install psycopg2-binary # required for mlflow to talk to postgres
+      - run: pip install mlflow
+      - run: pip install prefect-shell
+      - name: Find and set torch lib path
+        run: |
+          SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+          TORCH_LIB_PATH="${SITE_PACKAGES}/torch/lib"
+          echo "LD_LIBRARY_PATH=$TORCH_LIB_PATH" >> $GITHUB_ENV
       - name: Login to prefect
         run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
-      - run: ls
-      - name: Deploy sentiment analysis flow
+
+      - name: Serve Pipeline
+        continue-on-error: true 
         run: python pipelines/sentiment_analysis/deploy.py
+      
+  stop-runner:
+    runs-on: ubuntu-latest
+    name: "Deprovision infrastructure"
+    needs:
+      - start-runner
+      - deploy-vscode
+    if: ${{ always() && inputs.machine != 'local' }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Stop EC2 runner
+        uses: digital-defiance/ec2-github-runner@v2
+        with:
+          mode: stop
+          github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          label: ${{ needs.start-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
