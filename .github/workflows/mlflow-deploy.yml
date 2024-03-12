@@ -34,7 +34,7 @@ jobs:
       # - run: pip install mlflow==2.11.1
       - uses: "DamianReeves/write-file-action@master"
         with:
-          path: $MLFLOW_AUTH_CONFIG_PATH
+          path: "${{ github.workspace }}/auth.ini"
           write-mode: overwrite
           contents: |
             [mlflow]
