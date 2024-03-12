@@ -11,15 +11,10 @@ from constants import SAVE_PATH
 from env import Data, Train, Model
 
 
-
-
-
 ENCODER = tiktoken.get_encoding("gpt2")
 
 def encode_text(text: str) -> list[int]:
     return ENCODER.encode(text.lower())
-
-
 
 class DatasetConnection:
 
@@ -87,9 +82,11 @@ def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str
 
 
 @task
-def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int, context_window: int):
+def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int):
     from torch.nn.utils.rnn import pad_sequence
     from torch import tensor
+
+    context_window: int = Model().context_window
 
 
     raw_sentiments, raw_reviews = fetch_data(epoch, slice)
@@ -118,34 +115,75 @@ def write_training_slices():
     data = Data()
     train = Train()
 
+
+    def yield_context():
+        step = 1
+        for epoch in range(train.epochs):
+            for slice_idx in range(data.slices):
+                yield step, epoch, slice_idx
+                step += 1
+
+
     with dataset_partitioning(
         number_of_epochs = train.epochs,
         number_of_partions = data.slices,
         dataset_link = data.train_source
     ) as fetch_data:
         logger = get_run_logger()
-        step = 0
-        for epoch in range(train.epochs):
-            for slice in range(data.slices):
-                logger.info(f"Constructing slice {slice} for epoch {epoch}")
-                processed_data = fetch_and_preprocess_data.fn(fetch_data, epoch, slice, Model().context_window)
-                save_data.fn(step, processed_data)
-                step += 1
+        for step, epoch, slice in yield_context():
+            logger.info(f"Constructing slice {slice} for epoch {epoch}")
+            processed_data = fetch_and_preprocess_data.fn(fetch_data, epoch, slice)
+            save_data.fn(step, processed_data)
+
+
+
 
 
 @task
-def prepare_validation_slice():
-    train = Train()
-    model = Model()
+def write_test_slices():
+
     data = Data()
+    train = Train()
+
     with dataset_partitioning(
         number_of_epochs = train.epochs,
         number_of_partions = data.slices,
         dataset_link = data.test_source
     ) as fetch_data:
-        epoch = 0
-        slice = 0
-        data = fetch_and_preprocess_data.fn(fetch_data, epoch, slice, model.context_window)
-        slice_idx = -1 # negative numbers for eval split
-        save_data.fn(slice_idx, data)
+        for slice_idx in range(1, data.slices):
+
+            processed_data = fetch_and_preprocess_data.fn(
+                fetch_data=fetch_data, 
+                epoch = 0,
+                slice = slice,
+                context_window=Model().context_window
+            )
+            save_data.fn(
+                idx = -(slice_idx + 1),
+                data = processed_data
+            )
+
+
+
+@task
+def prepare_validation_slice():
+
+    data = Data()
+
+    with dataset_partitioning(
+        number_of_epochs = Train().epochs,
+        number_of_partions = data.slices,
+        dataset_link = data.test_source
+    ) as fetch_data:
+
+        data = fetch_and_preprocess_data.fn(
+            fetch_data=fetch_data,
+            epoch=0,
+            slice=0,
+        )
+
+        save_data.fn(
+            idx = 0,
+            data = data,
+        )
 

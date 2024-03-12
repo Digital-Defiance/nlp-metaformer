@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 from typing import Literal
 import os
 
-from types import SourceExecutable, AttentionMechanisms
+from constants import SourceExecutable, AttentionMechanisms
 
 DEFAULT_TRAIN_DATA = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/train.parquet"
 DEFAULT_TEST_DATA = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/test.parquet"
