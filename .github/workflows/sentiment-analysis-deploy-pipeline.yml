@@ -75,8 +75,8 @@ jobs:
             echo "label=${{ steps.start-ec2-runner.outputs.label }}" >> $GITHUB_OUTPUT
           fi
 
-  deploy-vscode:
-    name: Deploy development environment
+  deploy:
+    name: Deploy Pipeline
     timeout-minutes: 1500
     needs:
       - start-runner
@@ -114,7 +114,7 @@ jobs:
     name: "Deprovision infrastructure"
     needs:
       - start-runner
-      - deploy-vscode
+      - deploy
     if: ${{ always() && inputs.machine != 'local' }}
     steps:
       - name: Configure AWS credentials
