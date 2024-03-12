@@ -150,13 +150,11 @@ def write_test_slices():
         number_of_partions = data.slices,
         dataset_link = data.test_source
     ) as fetch_data:
-        for slice_idx in range(1, data.slices):
-
+        for slice_idx in range(data.slices):
             processed_data = fetch_and_preprocess_data.fn(
-                fetch_data=fetch_data, 
+                fetch_data = fetch_data, 
                 epoch = 0,
-                slice = slice,
-                context_window=Model().context_window
+                slice = slice_idx,
             )
             save_data.fn(
                 idx = -(slice_idx + 1),

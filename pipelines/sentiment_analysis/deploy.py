@@ -4,7 +4,7 @@
 
 
 from training import run_rust_binary, make_rust_executable, download_rust_binary
-from datagen import prepare_validation_slice, write_training_slices
+from datagen import prepare_validation_slice, write_training_slices, write_test_slices
 
 from typing import Literal
 import mlflow
@@ -47,8 +47,8 @@ def main(
         ).to_env()
     
         log_params.submit()
-        prepare_validation_slice.submit()
-        write_training_slices.submit()
+        prepare_validation_slice.submit().wait()
+        training_slices = write_training_slices.submit()
 
         path_to_rust_binary = DEV_RUST_BINARY
         if process.executable_source != DEV_RUST_BINARY:
@@ -56,6 +56,9 @@ def main(
             make_rust_executable(path_to_rust_binary)
 
         training_loop = run_rust_binary.submit(path_to_rust_binary)
+
+        training_slices.wait()
+        write_test_slices.submit()
         training_loop.wait()
 
 

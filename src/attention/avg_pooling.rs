@@ -4,8 +4,8 @@ use tch::Tensor;
 
 
 
-/// implicit zero paddings on both sides of the input. Can be a single number or a tuple (padH, padW). Default: 0
-const DEFAULT_PADDING: i64 = 0;
+// implicit zero paddings on both sides of the input. Can be a single number or a tuple (padH, padW). Default: 0
+// const DEFAULT_PADDING: i64 = 0;
 
 /// when True, will use ceil instead of floor in the formula to compute the output shape. Default: False
 const DEFAULT_CEIL_MODE: bool = false;
@@ -37,10 +37,33 @@ impl Module for AvgPooling {
             self.kernel_size,
             // stride of the pooling operation. Can be a single number or a tuple (sH, sW). Default: kernel_size
             self.kernel_size,
-            DEFAULT_PADDING,
+            (self.kernel_size - 1) / 2,
             DEFAULT_CEIL_MODE, 
             DEFAULT_COUNT_INCLUDE_PAD, 
             DEFAULT_DIVISOR_OVERRIDE, 
         )
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*; // Import everything from the outer module
+    use tch::{Device, Kind, Tensor};
+
+    #[test]
+    fn test_avg_pooling_forward() {
+       // Initialize a AvgPooling layer with a kernel size that would typically preserve the input dimension
+       let kernel_size = 3;
+       let pooling = AvgPooling::new(kernel_size);
+
+       // Create a dummy input tensor of shape [batch, channels, height, width]
+       // For simplicity, let's create a tensor filled with ones, so the average should also be one
+       let b = 1;
+       let c = 5;
+       let d = 5;
+
+       let x_bcd = Tensor::ones(&[b, c, d], (Kind::Float, Device::Cpu));
+       pooling
+
+
     }
 }

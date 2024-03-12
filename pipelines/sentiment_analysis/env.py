@@ -5,25 +5,21 @@ import os
 
 from constants import SourceExecutable, AttentionMechanisms
 
-DEFAULT_TRAIN_DATA = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/train.parquet"
-DEFAULT_TEST_DATA = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/test.parquet"
 
-
-
+from pydantic import  model_validator
 class Data(BaseSettings):
-    
-    train_source: str = DEFAULT_TRAIN_DATA
-    test_source: str = DEFAULT_TEST_DATA
-    slices: int = 1
+    train_source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/train.parquet"
+    test_source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/test.parquet"
+    slices: int = 10
     batch_size: int = 32
 
 class TrainingProcess(BaseSettings):
-    use_gpu: bool = False
+    use_gpu: bool = True
     executable_source: SourceExecutable = DEV_RUST_BINARY
 
   
 class Train(BaseSettings):
-    epochs: int = 100
+    epochs: int = 1
     learning_rate: float = 1e-4
 
 
@@ -36,6 +32,14 @@ class Model(BaseSettings):
     context_window: int = 300
     input_vocabolary: int = 60_000
     output_vocabolary: int = 5
+    kernel_size: int | None = None
+
+
+    @model_validator(mode='after')
+    def check_passwords_match(self) -> 'UserModel':
+        if self.attention_kind == "avg_pooling":
+            assert sefl.kernel_size is not None
+        return self
 
 class MLFLowSettings(BaseSettings):
     mlflow_tracking_uri: str
