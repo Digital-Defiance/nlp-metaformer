@@ -16,7 +16,7 @@ use clap::Parser;
 use tch::{kind, nn::Module};
 use tch::nn::OptimizerConfig;
 use nn::Optimizer;
-use tch::TchError;
+use tch::{Device, TchError};
 use crate::mlflow::Metric;
 
 use metaformer::{metaformer, MetaFormer};
@@ -72,6 +72,45 @@ fn build_optimizer(vs:&nn::VarStore , config: &Cli) -> Optimizer {
     }
 }
 
+
+fn perform_eval(config: &Cli, training_device: Device, model: &MetaFormer, slice_idx: i64) -> Vec<Metric> {
+
+    let mut loss_accumulator = MetricAccumulator::new("loss/eval");
+    let mut acc_accumulator = MetricAccumulator::new("acc/eval");
+
+    let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(-1);
+
+    let x_sc = dataslice.get("X").unwrap().to(training_device);
+    let y_s = dataslice.get("Y").unwrap().to(training_device);
+    println!("Loaded slice to device.");
+    // let t = args.output_tokens;
+    let s = y_s.size()[0]; // slice size s
+
+    for idx in 0..(s / config.batch_size) {
+        let start = idx*config.batch_size;
+        let end = start + config.batch_size;
+
+        let x_bc: tch::Tensor = x_sc.slice(0, start, end, 1);
+        let y_b = y_s.slice(0, start, end, 1);
+
+        let logits_bct = model.forward(&x_bc);
+        let logits_bt = logits_bct.mean_dim(1, false,  kind::Kind::Float);
+        let loss = logits_bt.cross_entropy_for_logits(&y_b);
+
+        let acc = logits_bt.accuracy_for_logits(&y_b);
+            
+        loss_accumulator.accumulate(loss.double_value(&[]));
+        acc_accumulator.accumulate(acc.double_value(&[]));
+
+    };
+
+    vec![
+        loss_accumulator.to_metric(slice_idx),
+        acc_accumulator.to_metric(slice_idx)
+    ]
+
+}
+
 /// Implementation of gradient descent
 fn main() {
 
@@ -90,13 +129,12 @@ fn main() {
     let mut opt: Optimizer = build_optimizer(&vs, &config);
 
 
-    for global_idx in 0..config.slices*config.epochs {
-
+    for slice_idx in 0..config.slices*config.epochs {
 
         let avg_train_loss = {
             let mut loss_accumulator = MetricAccumulator::new("loss/train");
         
-            let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(global_idx);
+            let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(slice_idx);
     
             let x_sc = dataslice.get("X").unwrap().to(training_device);
             let y_s = dataslice.get("Y").unwrap().to(training_device);
@@ -120,43 +158,12 @@ fn main() {
                 loss_accumulator.accumulate(loss.double_value(&[]));
             };
 
-            loss_accumulator.to_metric(global_idx)
+            loss_accumulator.to_metric(slice_idx)
         };
 
-        let avg_eval_loss = {
-            let mut loss_accumulator = MetricAccumulator::new("loss/eval");
-            let mut acc_accumulator = MetricAccumulator::new("acc/eval");
-
-            let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(-1);
-
-            let x_sc = dataslice.get("X").unwrap().to(training_device);
-            let y_s = dataslice.get("Y").unwrap().to(training_device);
-            println!("Loaded slice to device.");
-            // let t = args.output_tokens;
-            let s = y_s.size()[0]; // slice size s
-
-            for idx in 0..(s / config.batch_size) {
-                let start = idx*config.batch_size;
-                let end = start + config.batch_size;
-
-                let x_bc: tch::Tensor = x_sc.slice(0, start, end, 1);
-                let y_b = y_s.slice(0, start, end, 1);
-
-                let logits_bct = model.forward(&x_bc);
-                let logits_bt = logits_bct.mean_dim(1, false,  kind::Kind::Float);
-                let loss = logits_bt.cross_entropy_for_logits(&y_b);
-
-                let acc = logits_bt.accuracy_for_logits(&y_b);
-                    
-                loss_accumulator.accumulate(loss.double_value(&[]));
-                acc_accumulator.accumulate(acc.double_value(&[]));
-
-            };
-
-            loss_accumulator.to_metric(global_idx)
-        };
-
-        log_metrics(&config, vec![avg_eval_loss, avg_train_loss]);
+        let mut metrics: Vec<Metric> = perform_eval(&config, training_device, &model, slice_idx);
+        metrics.push(avg_train_loss);
+        log_metrics(&config, metrics);
     }
 
 
