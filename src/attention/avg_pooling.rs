@@ -11,7 +11,7 @@ use tch::Tensor;
 const DEFAULT_CEIL_MODE: bool = false;
 
 /// when True, will include the zero-padding in the averaging calculation. Default: True
-const DEFAULT_COUNT_INCLUDE_PAD: bool = true;
+const DEFAULT_COUNT_INCLUDE_PAD: bool = false;
 
 /// if specified, it will be used as divisor, otherwise size of the pooling region will be used. Default: None
 const DEFAULT_DIVISOR_OVERRIDE: core::option::Option<i64> = None;
@@ -36,32 +36,43 @@ impl Module for AvgPooling {
         x_bcd.avg_pool2d(
             self.kernel_size,
             // stride of the pooling operation. Can be a single number or a tuple (sH, sW). Default: kernel_size
-            self.kernel_size,
-            (self.kernel_size - 1) / 2,
+            1,
+            self.kernel_size / 2,
             DEFAULT_CEIL_MODE, 
             DEFAULT_COUNT_INCLUDE_PAD, 
             DEFAULT_DIVISOR_OVERRIDE, 
         )
     }
 }
+
+
 #[cfg(test)]
 mod tests {
-    use super::*; // Import everything from the outer module
+    use super::*; 
     use tch::{Device, Kind, Tensor};
 
     #[test]
     fn test_avg_pooling_forward() {
-       let kernel_size = 3;
+       let kernel_size = 5;
        let pooling = AvgPooling::new(kernel_size);
 
   
-       let b = 1;
-       let c = 5;
-       let d = 5;
+       let b = 32;
+       let c = 300;
+       let d = 64;
 
        let x_bcd = Tensor::ones(&[b, c, d], (Kind::Float, Device::Cpu));
        let res = pooling.forward(&x_bcd);
-        res.print();
+        print!("here");
+        
+
+        assert_eq!(res.size()[0], x_bcd.size()[0]);
+        assert_eq!(res.size()[1], x_bcd.size()[1]);
+        assert_eq!(res.size()[2], x_bcd.size()[2]);
+
+
+
+       
 
 
 
