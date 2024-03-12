@@ -18,52 +18,72 @@ def encode_text(text: str) -> list[int]:
 
 class DatasetConnection:
 
+    
+
     def __init__(self, conn: duckdb.DuckDBPyConnection, dataset_link: str):
+        logger = get_run_logger()
+
+        self.generated_epochs = set()
+
         self.dataset_link = dataset_link
         self.conn = conn
-        self.uuid = uuid.uuid4().hex
+        self.uuid = "".join([x for x in uuid.uuid4().hex if not x.isnumeric()])
 
-        self.conn.execute(f"""
+        logger.debug(self.uuid)
+        logger.debug(self.dataset_link)
+
+
+        cmd = f"""
             CREATE TABLE {self.uuid} AS
             SELECT id
             FROM '{self.dataset_link}';
-        """)
+        """
+        logger.debug(cmd)
+        self.conn.execute(cmd)
 
-        self.count = self.conn.execute("""SELECT COUNT(*) FROM dataset""").fetchall()[0][0]
+
+        cmd = f"""SELECT COUNT(*) FROM {self.uuid}"""
+        logger.debug(cmd)
+        self.count = self.conn.execute(cmd).fetchall()[0][0]
 
 
     def generate_randomization(self, total_epochs: int, seed: int = 42):
 
         np.random.seed(seed)
 
-        for epoch_idx in range(total_epochs):
+    def select_partition(self, epoch_idx: int, start: int, limit: int):
 
+        if epoch_idx not in self.generated_epochs:
+            
             self.conn.execute(f"""
                 ALTER TABLE {self.uuid}
                 ADD COLUMN epoch_{epoch_idx}
                 INTEGER;
             """)
 
-            permutation = np.random.permutation(self.count) + 1
-            values = ", ".join((f"({val},)" for val in permutation))
-            self.conn.execute(f"""
-                INSERT INTO {self.uuid} (epoch_{epoch_idx})
-                VALUES {values};
-            """)
+            permutation = np.random.permutation(self.count)
+            print(epoch_idx, permutation)
+            values_to_insert = [(int(val) + 1, i + 1) for i, val in enumerate(permutation)]
+            sql_command = f"UPDATE {self.uuid} SET epoch_{epoch_idx} = ? WHERE id = ?;"
+            self.conn.executemany(sql_command, values_to_insert)
+            self.generated_epochs.add(epoch_idx)
 
-    def select_partition(self, epoch_idx: int, start: int, limit: int):
         return self.conn.execute(f"""
-            SELECT sentiment, review
+            SELECT remote.sentiment, remote.review
             FROM '{self.dataset_link}' as remote
-            JOIN {self.uuid} ON (dataset.epoch_{epoch_idx} = remote.id)
-            OFFSET {start}
-            LIMIT {limit};
+            INNER JOIN {self.uuid} ON {self.uuid}.id = remote.id
+            ORDER BY epoch_{epoch_idx} ASC
+            OFFSET {start} LIMIT {limit};
         """)
+
+
+
 
 
 
 @contextmanager
 def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str, seed: int = 42):
+
     with duckdb.connect() as conn:
         conn: duckdb.DuckDBPyConnection
         table = DatasetConnection(conn, dataset_link)
@@ -75,8 +95,11 @@ def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str
             limit = table.count // number_of_partions
             offset = limit*slice_idx
             for sentiment, text in table.select_partition(epoch_idx, offset, limit).fetchall():
-                sentiment = 1 if sentiment == "Pos" else 0
+                sentiment = 1 if sentiment == "pos" else 0
                 sentiments.append(sentiment)
+                text = text.strip()
+                text = text.replace("<br />", "")
+                text = text.lower()
                 reviews.append(text)
             return sentiments, reviews
         yield fetch_data
@@ -106,7 +129,7 @@ def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int):
 @task
 def save_data(idx: int, data) -> None:
     from safetensors import torch as stt
-    stt.save_file(data, f"{idx}_" + SAVE_PATH)
+    stt.save_file(data, f"tmp/{idx}_" + SAVE_PATH)
 
 
 
