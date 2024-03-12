@@ -26,7 +26,6 @@ use config::Cli;
 const EVAL_SLICE_IDX: i64 = 0;
 
 
-
 /// Implementation of gradient descent
 fn main() {
 
@@ -57,5 +56,3 @@ fn main() {
     }
 
 }
-
-
