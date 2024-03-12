@@ -7,7 +7,7 @@ const WAIT_SECONDS: u64 = 5;
 fn wait(path: &Path) {
     let mut wait = 0;
     while !path.exists() {
-        println!("File not found. Waiting {} seconds...", WAIT_SECONDS);
+        println!("File {} not found. Waiting {} seconds...", path.display(), WAIT_SECONDS);
         thread::sleep(Duration::from_secs(WAIT_SECONDS));
         
         wait += WAIT_SECONDS;
@@ -26,7 +26,7 @@ pub fn read_dataslice(global_idx: i64) -> std::collections::HashMap<String, tch:
     wait(path_to_slice);
     let dataslice = tch::Tensor::read_safetensors(path_to_slice).unwrap();
 
-    if global_idx == -1 {
+    if global_idx == 0 {
         dataslice.into_iter().collect()
     } else {
         match std::fs::remove_file(path_to_slice) {
