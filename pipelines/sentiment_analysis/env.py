@@ -36,9 +36,9 @@ class Model(BaseSettings):
 
 
     @model_validator(mode='after')
-    def check_passwords_match(self) -> 'UserModel':
+    def check_kernel(self) -> 'Model':
         if self.attention_kind == "avg_pooling":
-            assert sefl.kernel_size is not None
+            assert self.kernel_size is not None
         return self
 
 class MLFLowSettings(BaseSettings):
@@ -71,6 +71,8 @@ class Settings(BaseSettings):
         node: dict[str, any] = node or self.model_dump()
 
         for key, value in node.items():
+            if value is None:
+                continue
 
             if not isinstance(value, dict):
                 yield (key.upper(), str(value))

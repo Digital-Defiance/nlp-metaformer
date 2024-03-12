@@ -3,7 +3,7 @@ from typing import Literal
 AttentionMechanisms = Literal[
     "quadratic",
     "metric", 
-    "scaled_dot_product"
+    "scaled_dot_product",
     "identity",
     "average_pooling",
 ]
