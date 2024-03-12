@@ -12,6 +12,7 @@ AttentionMechanisms = Literal[
 
 
 SourceExecutable = Literal[
+    "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.3/llm-voice-chat",
     "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.2/llm-voice-chat",
     "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.1/llm-voice-chat",
     "/__w/llm-voice-chat/llm-voice-chat/target/debug/llm-voice-chat",
