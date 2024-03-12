@@ -65,7 +65,7 @@ def main(
         create_tmp()
 
         log_params.submit()
-        prepare_validation_slice.submit().wait()
+        prepare_validation_slice.submit()
         
 
         path_to_rust_binary = DEV_RUST_BINARY
