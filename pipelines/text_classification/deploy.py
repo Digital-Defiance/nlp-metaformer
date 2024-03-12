@@ -3,7 +3,7 @@
 """
 
 
-from training import run_rust_binary, make_rust_executable, download_rust_binary
+from training import run_rust_binary, make_rust_executable, download_rust_binary, shell_task
 from datagen import prepare_validation_slice, write_training_slices, write_test_slices
 
 from typing import Literal
@@ -22,6 +22,18 @@ def log_params():
         **Data().model_dump(),
     })
 
+    
+class EnvironmentSettings(BaseSettings): 
+    llmvc_environment: Literal["production", "staging", "dev"] = "production"
+
+
+@shell_task
+def clean_tmp():
+    return "rm -rf tmp"
+
+@shell_task
+def create_tmp():
+    return "mkdir -p tmp"
 
 @flow
 def main(
@@ -32,6 +44,10 @@ def main(
     experiment_id: int = 1,
     run_name: str | None = None,
 ):
+
+    clean_tmp()
+    create_tmp()
+
 
     with mlflow.start_run(run_name=run_name, experiment_id=experiment_id) as run:
         Settings(
@@ -48,13 +64,15 @@ def main(
     
         log_params.submit()
         prepare_validation_slice.submit().wait()
-        training_slices = write_training_slices.submit()
+        
 
         path_to_rust_binary = DEV_RUST_BINARY
         if process.executable_source != DEV_RUST_BINARY:
-            path_to_rust_binary = download_rust_binary(process.executable_source)
+            path_to_rust_binary = "./train"
+            download_rust_binary(process.executable_source, path_to_rust_binary)
             make_rust_executable(path_to_rust_binary)
 
+        training_slices = write_training_slices.submit()
         training_loop = run_rust_binary.submit(path_to_rust_binary)
 
         training_slices.wait()
@@ -64,8 +82,7 @@ def main(
 
 if __name__ == "__main__":
 
-    class EnvironmentSettings(BaseSettings): 
-        llmvc_environment: Literal["production", "staging", "dev"] = "production"
+
 
     main.serve(
         name = f"text-classification-{EnvironmentSettings().llmvc_environment}"

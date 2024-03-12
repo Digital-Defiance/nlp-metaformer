@@ -19,17 +19,28 @@ def encode_text(text: str) -> list[int]:
 class DatasetConnection:
 
     def __init__(self, conn: duckdb.DuckDBPyConnection, dataset_link: str):
+        logger = get_run_logger()
+
         self.dataset_link = dataset_link
         self.conn = conn
-        self.uuid = uuid.uuid4().hex
+        self.uuid = "".join([x for x in uuid.uuid4().hex if not x.isnumeric()])
 
-        self.conn.execute(f"""
+        logger.debug(self.uuid)
+        logger.debug(self.dataset_link)
+
+
+        cmd = f"""
             CREATE TABLE {self.uuid} AS
             SELECT id
             FROM '{self.dataset_link}';
-        """)
+        """
+        logger.debug(cmd)
+        self.conn.execute(cmd)
 
-        self.count = self.conn.execute("""SELECT COUNT(*) FROM dataset""").fetchall()[0][0]
+
+        cmd = f"""SELECT COUNT(*) FROM {self.uuid}"""
+        logger.debug(cmd)
+        self.count = self.conn.execute(cmd).fetchall()[0][0]
 
 
     def generate_randomization(self, total_epochs: int, seed: int = 42):
@@ -55,7 +66,7 @@ class DatasetConnection:
         return self.conn.execute(f"""
             SELECT sentiment, review
             FROM '{self.dataset_link}' as remote
-            JOIN {self.uuid} ON (dataset.epoch_{epoch_idx} = remote.id)
+            JOIN {self.uuid} ON ({self.uuid}.epoch_{epoch_idx} = remote.id)
             OFFSET {start}
             LIMIT {limit};
         """)
@@ -106,7 +117,7 @@ def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int):
 @task
 def save_data(idx: int, data) -> None:
     from safetensors import torch as stt
-    stt.save_file(data, f"{idx}_" + SAVE_PATH)
+    stt.save_file(data, f"tmp/{idx}_" + SAVE_PATH)
 
 
 
