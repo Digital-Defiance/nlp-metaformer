@@ -51,18 +51,18 @@ mod tests {
 
     #[test]
     fn test_avg_pooling_forward() {
-       // Initialize a AvgPooling layer with a kernel size that would typically preserve the input dimension
        let kernel_size = 3;
        let pooling = AvgPooling::new(kernel_size);
 
-       // Create a dummy input tensor of shape [batch, channels, height, width]
-       // For simplicity, let's create a tensor filled with ones, so the average should also be one
+  
        let b = 1;
        let c = 5;
        let d = 5;
 
        let x_bcd = Tensor::ones(&[b, c, d], (Kind::Float, Device::Cpu));
-       pooling
+       let res = pooling.forward(&x_bcd);
+        res.print();
+
 
 
     }
