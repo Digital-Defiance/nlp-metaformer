@@ -60,7 +60,7 @@ fn build_optimizer(vs:&nn::VarStore , config: &Cli) -> Optimizer {
 impl MetaFormer {
 
     fn perform_eval(&self, config: &Cli, training_device: Device, slice_idx: i64, step: i64) -> Vec<Metric> {
-        let _no_grad = tch::no_grad_guard();
+        let _no_grad: tch::NoGradGuard = tch::no_grad_guard();
 
         let mut loss_accumulator = MetricAccumulator::new("loss/test");
         let mut acc_accumulator = MetricAccumulator::new("acc/test");
@@ -175,7 +175,7 @@ fn main() {
         log_metrics(&config, metrics);
     }
 
-    for test_idx in 1..config.slices {
+    for test_idx in 1..(config.slices + 1) {
         let metrics: Vec<Metric> = model.perform_eval(&config, training_device,  -test_idx, -test_idx);
         log_metrics(&config, metrics);
     }
