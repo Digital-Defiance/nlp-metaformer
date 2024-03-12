@@ -1,4 +1,3 @@
-
 from prefect_shell import ShellOperation
 from prefect import task
 from env import Settings

@@ -34,7 +34,6 @@ def main(
 ):
 
     with mlflow.start_run(run_name=run_name, experiment_id=experiment_id) as run:
-
         Settings(
             process = process, 
             model = model,

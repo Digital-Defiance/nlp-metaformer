@@ -3,29 +3,19 @@ from pydantic_settings import BaseSettings
 from typing import Literal
 import os
 
-AttentionMechanisms = Literal[
-    "quadratic",
-    "metric", 
-    "scaled_dot_product"
-    "identity",
-    "average_pooling",
-]
+from types import SourceExecutable, AttentionMechanisms
+
+DEFAULT_TRAIN_DATA = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/train.parquet"
+DEFAULT_TEST_DATA = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/test.parquet"
 
 
 
 class Data(BaseSettings):
     
-    train_source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/train.parquet"
-    test_source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/test.parquet"
+    train_source: str = DEFAULT_TRAIN_DATA
+    test_source: str = DEFAULT_TEST_DATA
     slices: int = 1
     batch_size: int = 32
-
-
-SourceExecutable = Literal[
-    "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.2/llm-voice-chat",
-    "https://github.com/Digital-Defiance/llm-voice-chat/releases/download/v0.0.1/llm-voice-chat",
-    "/__w/llm-voice-chat/llm-voice-chat/target/debug/llm-voice-chat",
-]
 
 class TrainingProcess(BaseSettings):
     use_gpu: bool = False
@@ -54,6 +44,7 @@ class MLFLowSettings(BaseSettings):
     mlflow_run_id: str
     experiment_id: int = 1
     run_name: str | None = None
+
 
 class Settings(BaseSettings):
     process: TrainingProcess
