@@ -93,6 +93,7 @@ jobs:
         MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }} 
 
     steps:
+      - uses: actions/checkout@v4
       # stuff to be moved to the production image
       - run: pip install psycopg2-binary # required for mlflow to talk to postgres
       - run: pip install mlflow
