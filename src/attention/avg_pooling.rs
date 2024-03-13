@@ -41,7 +41,7 @@ impl Module for AvgPooling {
             DEFAULT_CEIL_MODE, 
             DEFAULT_COUNT_INCLUDE_PAD, 
             DEFAULT_DIVISOR_OVERRIDE, 
-        )
+        ) - x_bcd
     }
 }
 

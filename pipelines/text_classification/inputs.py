@@ -19,13 +19,13 @@ class TrainingProcess(BaseSettings):
 
   
 class Train(BaseSettings):
-    epochs: int = 5
+    epochs: int = 40
     learning_rate: float = 1e-4
 
 
 class Model(BaseSettings):
     encoding: Literal["tiktoken-gpt2"] = "tiktoken-gpt2"
-    attention_kind: AttentionMechanisms = DEFAULT_ATTENTION_MECHANISM
+    attention_kind: AttentionMechanisms =  DEFAULT_ATTENTION_MECHANISM
     dimension: int = 300
     depth: int = 5
     heads: int = 6
