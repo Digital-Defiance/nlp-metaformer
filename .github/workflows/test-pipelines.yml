@@ -11,7 +11,7 @@ jobs:
   test-pipelines:
     name: Deploy development environment
     timeout-minutes: 1500
-    runs-on: local
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
       options: --user root
@@ -37,5 +37,6 @@ jobs:
 
       - name: Login to prefect
         run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
-      - name: pytest pipelines/text_classification/datagen.py -vvv
+      
+      - run: pytest pipelines/text_classification/datagen.py -vvv
       
