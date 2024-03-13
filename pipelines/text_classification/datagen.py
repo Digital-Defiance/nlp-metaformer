@@ -1,24 +1,17 @@
 
-
-from contextlib import contextmanager
-
 import duckdb
 from duckdb.typing import *
 from numpy.random import default_rng
-
 from prefect import get_run_logger, task, flow
-import numpy as np
 import tiktoken
-from constants import SAVE_PATH
-from inputs import Data, Train, Model
-import uuid
+from inputs import  Model
 from safetensors import torch as stt
-from torch import Tensor
 from typing import Literal
-from functools import wraps, lru_cache
+from functools import wraps
 from torch.nn.utils.rnn import pad_sequence
 from torch import tensor
-from prefect.testing.utilities import prefect_test_harness
+import pytest
+
 
 Sentiment = Literal["pos", "neg"]
 
@@ -169,10 +162,9 @@ def prepare_slices(conn, rng, epochs: int, number_of_partions: int, data_source:
 
 
 
-import pytest
 
-@pytest.mark.parametrize("epochs", [4])
-@pytest.mark.parametrize("slices", [1])
+@pytest.mark.parametrize("epochs", [4, 1])
+@pytest.mark.parametrize("slices", [4, 2])
 def test_full(epochs: int, slices: int):
     import os
     import shutil
