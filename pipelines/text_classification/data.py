@@ -4,13 +4,19 @@ from duckdb.typing import *
 from numpy.random import default_rng
 from prefect import get_run_logger, task, flow
 import tiktoken
-from inputs import  Model
+from pipelines.text_classification.inputs import  Model
+from pipelines.commons import shell_task
+
 from safetensors import torch as stt
 from typing import Literal
 from functools import wraps
 from torch.nn.utils.rnn import pad_sequence
 from torch import tensor
+
 import pytest
+
+
+
 
 
 Sentiment = Literal["pos", "neg"]
@@ -20,6 +26,9 @@ ENCODER = tiktoken.get_encoding("gpt2")
 
 def encode_text(text: str) -> list[int]:
     return ENCODER.encode(text.lower())
+
+
+
 
 
 def execute(func):
@@ -43,6 +52,19 @@ def executemany(func):
         print(sql_cmd, sql_args)
         return conn.executemany(sql_cmd, sql_args)
     return prefect_task
+
+
+
+
+
+@shell_task
+def remove_folder(folder: str):
+    return f"rm -rf {folder}"
+
+@shell_task
+def create_folder(folder: str):
+    return f"mkdir -p {folder}"
+
 
 @execute
 def create_dataset_table(source: str):
@@ -117,6 +139,9 @@ def raw_data_to_tensor(raw_sentiments, raw_reviews):
 @flow(flow_run_name="{name_prefix}prepare-{epochs}-epochs-{number_of_partions}-slices-{folder}")
 def prepare_slices(conn, rng, epochs: int, number_of_partions: int, data_source: str, folder: str, name_prefix = ""):
     
+
+    remove_folder(folder)
+    create_folder(folder)
 
     logger = get_run_logger()
 

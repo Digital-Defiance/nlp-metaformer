@@ -1,9 +1,10 @@
-from constants import DEV_RUST_BINARY, DEFAULT_ATTENTION_MECHANISM
+from pipelines.text_classification.constants import DEV_RUST_BINARY, DEFAULT_ATTENTION_MECHANISM
 from pydantic_settings import BaseSettings
 from typing import Literal
 import os
+import torch.cuda
 
-from constants import SourceExecutable, AttentionMechanisms
+from pipelines.text_classification.constants import SourceExecutable, AttentionMechanisms
 from pydantic import  model_validator
 
 class Data(BaseSettings):
@@ -13,7 +14,7 @@ class Data(BaseSettings):
     batch_size: int = 64
 
 class TrainingProcess(BaseSettings):
-    use_gpu: bool = True
+    use_gpu: bool = torch.cuda.is_available()
     executable_source: SourceExecutable = DEV_RUST_BINARY
 
   
