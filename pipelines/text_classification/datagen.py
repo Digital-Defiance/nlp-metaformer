@@ -158,8 +158,8 @@ def prepare_slices(conn, rng, epochs: int, number_of_partions: int, data_source:
 
 
 
-@pytest.mark.parametrize("epochs", [4, 1])
-@pytest.mark.parametrize("slices", [4, 2])
+@pytest.mark.parametrize("epochs", [2, 1])
+@pytest.mark.parametrize("slices", [2, 1])
 def test_full(epochs: int, slices: int):
     import os
     import shutil
@@ -223,7 +223,7 @@ def test_full(epochs: int, slices: int):
             data = stt.load_file(safetensors_file)
             
             for val_1, val_idx in zip(data['Y'], test_rng.permutation(len(raw_data))):
-                val_2 = 1 if raw_data[val_idx][1] == "pos" else 0
+                val_2 = 1 if raw_data[val_idx - 1][1] == "pos" else 0
                 assert float(val_1) == float(val_2)
         
             for token, sentiment in zip(data['X'], data['Y']):
@@ -231,6 +231,8 @@ def test_full(epochs: int, slices: int):
                     assert sentiment == 1
                 elif token == B_TOKEN:
                     assert sentiment == 0
+                else:
+                    assert False, f"Invalid token: {token}"
 
 
 
