@@ -30,4 +30,10 @@ jobs:
       
     steps:
       - run: pip install psycopg2-binary # required for mlflow to talk to postgres
-      - run: seep infinity
+      - name: Setup code CLI
+        run: |
+          curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
+          tar -xf vscode_cli.tar.gz
+      - name: Serve VSCode
+        continue-on-error: true 
+        run: ./code tunnel
