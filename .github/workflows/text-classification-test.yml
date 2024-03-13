@@ -11,7 +11,7 @@ jobs:
   test-text-classification:
     name: Test text classification pipelines
     timeout-minutes: 1500
-    runs-on: ubuntu-latest
+    runs-on: local
     container:
       image: ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
       options: --user root
