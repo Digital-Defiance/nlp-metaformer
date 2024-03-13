@@ -39,5 +39,5 @@ jobs:
       - name: Login to prefect
         run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
       
-      - run: pytest pipelines/text_classification/datagen.py -vvv
+      - run: python -m pytest pipelines/text_classification/data.py -vvv
       
