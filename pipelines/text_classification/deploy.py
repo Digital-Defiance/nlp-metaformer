@@ -117,10 +117,10 @@ if __name__ == "__main__":
     class EnvironmentSettings(BaseSettings): 
         llmvc_environment: Literal["production", "staging", "development"] = "production"
 
-    
-    run(main)
-
-    # main.serve(
-    #    name = f"text-classification-{EnvironmentSettings().llmvc_environment}"
-    # )
+    if EnvironmentSettings().llmvc_environment == "development":
+        run(main)
+    else:
+        main.serve(
+            name = f"text-classification-{EnvironmentSettings().llmvc_environment}"
+        )
 
