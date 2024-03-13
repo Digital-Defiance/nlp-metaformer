@@ -5,7 +5,7 @@
 
 from pipelines.text_classification.run_rust import run_rust_binary, make_rust_executable, download_rust_binary
 from pipelines.text_classification.data import prepare_slices
-
+from pipelines.text_classification.constants import DEV_RUST_BINARY
 from typing import Literal
 import mlflow
 from pydantic_settings import BaseSettings
@@ -16,7 +16,6 @@ import duckdb
 
 from numpy.random import default_rng
 
-DEV_RUST_BINARY: str = "/__w/llm-voice-chat/llm-voice-chat/target/debug/llm-voice-chat"
 
 @task
 async def log_params(settings: Settings):
@@ -88,7 +87,7 @@ async def main(
             prepare_slices(
                 conn,
                 flow_rng,
-                train.epochs,
+                1,
                 data.slices,
                 data.test_source,
                 "test"

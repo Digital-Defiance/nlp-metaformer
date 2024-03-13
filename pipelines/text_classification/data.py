@@ -48,8 +48,6 @@ def executemany(func):
         logger = get_run_logger()
         sql_cmd, sql_args = func(*args, **kwargs)
         logger.debug("Executing command: %", sql_cmd)
-
-        print(sql_cmd, sql_args)
         return conn.executemany(sql_cmd, sql_args)
     return prefect_task
 
