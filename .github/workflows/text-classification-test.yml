@@ -1,4 +1,4 @@
-name: "Development Environment: Deploy"
+name: "Text Classification: Test"
 
 on:
   workflow_dispatch:
