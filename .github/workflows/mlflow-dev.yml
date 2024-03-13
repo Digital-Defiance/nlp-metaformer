@@ -1,0 +1,39 @@
+name: "MLFlow: Develop"
+
+on:
+  workflow_dispatch:
+    inputs:
+      machine:
+        description: 'Which machine to use'
+        required: true
+        default: 'mlflow'
+        type: choice
+        options:
+          - mlflow
+          - local
+
+jobs:
+  deploy-mlflow:
+    name: Deploy MLFlow
+    timeout-minutes: 9999999999999999999 # hopefully, never
+    runs-on: ${{ inputs.machine }}
+    container:
+      image: ghcr.io/mlflow/mlflow:v2.11.1
+      ports:
+        - 8000:8000
+    env:
+      MLFLOW_AUTH_CONFIG_PATH: "${{ github.workspace }}/auth.ini"
+      MLFLOW_HOST: 0.0.0.0
+      MLFLOW_PORT: 8000
+      MLFLOW_WORKERS: 2
+      MLFLOW_BACKEND_STORE_URI: ${{ secrets.DB_URI }}
+      
+    steps:
+      - run: pip install psycopg2-binary # required for mlflow to talk to postgres
+      - name: Setup code CLI
+        run: |
+          curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
+          tar -xf vscode_cli.tar.gz
+      - name: Serve VSCode
+        continue-on-error: true 
+        run: ./code tunnel
