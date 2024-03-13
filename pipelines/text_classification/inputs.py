@@ -19,7 +19,7 @@ class TrainingProcess(BaseSettings):
 
   
 class Train(BaseSettings):
-    epochs: int = 40
+    epochs: int = 5
     learning_rate: float = 1e-4
 
 

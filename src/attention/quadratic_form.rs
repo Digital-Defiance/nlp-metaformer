@@ -2,10 +2,7 @@
 use tch::nn;
 use tch::Tensor;
 
-
-pub fn generate_init() -> nn::Init {
-    nn::Init::Randn { mean: 0., stdev: 1. }
-}
+use crate::metaformer::commons::generate_init;
 
 #[derive(Debug)]
 pub struct QuadraticAttention {
