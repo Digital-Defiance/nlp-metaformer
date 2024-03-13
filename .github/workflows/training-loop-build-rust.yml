@@ -30,6 +30,7 @@ jobs:
           echo "RUST_BACKTRACE=full" >> $GITHUB_ENV
 
       - run: cargo check
+      - run: cargo test
       - if: ${{ github.event_name == 'release' }}
         run: cargo build --release --target-dir build
       - if:  ${{ github.event_name == 'release' }}
