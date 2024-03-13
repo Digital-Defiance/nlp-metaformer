@@ -83,11 +83,6 @@ def fetch_data(dataset_link: str, offset: int, limit: int) -> list[tuple[Sentime
         OFFSET {offset} LIMIT {limit};
     """
 
-# values: Iterator[tuple[int, int]]
-
-
-
-
 
 
 
@@ -232,17 +227,6 @@ def test_full(epochs: int, slices: int):
                     assert sentiment == 1
                 elif token == 65:
                     assert sentiment == 0
-
-
-
-
-
-
-
-
-
-
-
 
 
 
