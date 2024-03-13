@@ -1,5 +1,5 @@
 
-name: "Sentiment Analysis: Build"
+name: "Text Classification: Build"
 
 on:
   workflow_dispatch:
