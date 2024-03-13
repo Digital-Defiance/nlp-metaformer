@@ -217,23 +217,36 @@ def test_full(epochs: int, slices: int):
 
         test_rng = default_rng(seed=SEED)
 
-        for slice_idx in range(epochs*slices):
-            safetensors_file = f"{folder}/{slice_idx+1}_output.safetensors"
-            assert os.path.exists(safetensors_file), "Missing data from disk"
-            data = stt.load_file(safetensors_file)
+        slice_idx= 1
+        for _ in range(epochs):
+            
+            epoch_data = []
+            for _ in range(slices):
+                safetensors_file = f"{folder}/{slice_idx+1}_output.safetensors"
+                assert os.path.exists(safetensors_file), "Missing data from disk"
 
-            # will see what's going on in a bit
-            # for val_1, val_idx in zip(data['Y'], test_rng.permutation(len(raw_data))):
-            #    val_2 = 1 if raw_data[val_idx][1] == "pos" else 0
-            #    assert float(val_1) == float(val_2)
+                data = stt.load_file(safetensors_file)
+    
+                for val in data['Y']:
+                    epoch_data.append(val)
+
+                for token, sentiment in zip(data['X'], data['Y']):
+                    if token == A_TOKEN:
+                        assert sentiment == 1
+                    elif token == B_TOKEN:
+                        assert sentiment == 0
+                    else:
+                        assert False, f"Invalid token: {token}"
+                
+                slice_idx += 1
         
-            for token, sentiment in zip(data['X'], data['Y']):
-                if token == A_TOKEN:
-                    assert sentiment == 1
-                elif token == B_TOKEN:
-                    assert sentiment == 0
-                else:
-                    assert False, f"Invalid token: {token}"
+            epoch_permutation = test_rng.permutation(len(raw_data))
+
+            for val_1, val_idx in zip(epoch_data, epoch_permutation)):
+                val_2 = 1 if raw_data[val_idx][1] == "pos" else 0
+                assert float(val_1) == float(val_2)
+
+                
 
 
 
