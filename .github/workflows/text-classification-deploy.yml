@@ -1,4 +1,4 @@
-name: "Sentiment Analysis: Deploy"
+name: "Text Classification: Deploy"
 
 on:
   workflow_dispatch:
