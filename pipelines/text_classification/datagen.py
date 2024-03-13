@@ -4,6 +4,7 @@ from contextlib import contextmanager
 
 import duckdb
 from duckdb.typing import *
+from numpy.random import default_rng
 
 from prefect import get_run_logger, task, flow
 import numpy as np
@@ -31,7 +32,6 @@ def encode_text(text: str) -> list[int]:
 def execute(func):
 
     @task(name=func.__name__)
-    @lru_cache
     def prefect_task(conn: duckdb.DuckDBPyConnection, *args, **kwargs) -> list:
         logger = get_run_logger()
         sql_cmd = func(*args, **kwargs)
@@ -73,8 +73,8 @@ def count():
 
 
 @executemany
-def generate_permutation(number_of_rows: int):
-    permutation = np.random.permutation(number_of_rows)
+def generate_permutation(rng, number_of_rows: int):
+    permutation = rng.permutation(number_of_rows)
     return f"UPDATE dataset SET permutation = ? WHERE id = ?;", [
         (int(val) + 1, i + 1) for i, val in enumerate(permutation) 
     ]
@@ -127,7 +127,8 @@ def raw_data_to_tensor(raw_sentiments, raw_reviews):
     }
 
 @flow(flow_run_name="{name_prefix}prepare-{epochs}-epochs-{number_of_partions}-slices-{folder}")
-def prepare_slices(conn, epochs: int, number_of_partions: int, data_source: str, folder: str, name_prefix = ""):
+def prepare_slices(conn, rng, epochs: int, number_of_partions: int, data_source: str, folder: str, name_prefix = ""):
+    
 
     logger = get_run_logger()
 
@@ -149,8 +150,8 @@ def prepare_slices(conn, epochs: int, number_of_partions: int, data_source: str,
         for slice_idx in range(number_of_partions):
 
             logger.info(f"Constructing epoch {epoch} slice {slice_idx}")
-        
-            generate_permutation(conn, number_of_rows)
+            
+            generate_permutation(conn, rng, number_of_rows)
 
             data_from_db: list[tuple[Sentiment, str]] = fetch_data(
                 conn, 
@@ -168,8 +169,15 @@ def prepare_slices(conn, epochs: int, number_of_partions: int, data_source: str,
 
 
 
-def test_full():
+import pytest
+
+@pytest.mark.parametrize("epochs", [4])
+@pytest.mark.parametrize("slices", [1])
+def test_full(epochs: int, slices: int):
     import os
+    import shutil
+
+    SEED = 42
 
     raw_data = [
         (1, "pos", "A"),
@@ -180,14 +188,9 @@ def test_full():
 
     folder = "tmp"
     if os.path.exists(folder):
-        os.remove(f"{folder}/*")
-        os.rmdir(folder)
+        shutil.rmtree(folder)  
 
-    os.mkdir(folder)
-
-
-    epochs = 1
-    slices = 2
+    os.mkdir(folder) 
 
     with duckdb.connect() as conn:
 
@@ -200,8 +203,8 @@ def test_full():
         assert raw_data == conn.execute("SELECT * FROM source").fetchall(), "Mock source dataset failed sanity check."
 
 
-
-        prepare_slices(conn, epochs, slices, "source", folder, name_prefix = "test-")
+        flow_rng = default_rng(seed=SEED)
+        prepare_slices(conn, flow_rng, epochs, slices, "source", folder, name_prefix = "test-")
 
 
 
@@ -221,25 +224,23 @@ def test_full():
         permutations.sort()
         assert ids == permutations
 
+        test_rng = default_rng(seed=SEED)
 
-        all_data = []
-        for slice_idx in range():
+        for slice_idx in range(epochs*slices):
             safetensors_file = f"{folder}/{slice_idx+1}_output.safetensors"
             assert os.path.exists(safetensors_file), "Missing data from disk"
             data = stt.load_file(safetensors_file)
-            all_data.append(data)
+            
+            for val_1, val_idx in zip(data['Y'], test_rng.permutation(len(raw_data))):
+                val_2 = 1 if raw_data[val_idx][1] == "pos" else 0
+                assert float(val_1) == val_2
+        
             for token, sentiment in zip(data['X'], data['Y']):
                 if token == 64:
                     assert sentiment == 1
                 elif token == 65:
                     assert sentiment == 0
 
-
-        assert False, all_data
-
-
-if __name__ == "__main__":
-    ...
 
 
 
