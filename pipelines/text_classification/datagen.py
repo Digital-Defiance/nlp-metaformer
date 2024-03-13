@@ -166,6 +166,9 @@ def test_full(epochs: int, slices: int):
 
     SEED = 42
 
+    A_TOKEN = 64
+    B_TOKEN = 65
+
     raw_data = [
         (1, "pos", "A"),
         (2, "pos", "A"),
@@ -207,6 +210,7 @@ def test_full(epochs: int, slices: int):
             assert 1 <= permutation_idx <= 4
             permutations.append(permutation_idx)
             ids.append(dataset_id)
+    
         ids.sort()
         permutations.sort()
         assert ids == permutations
@@ -220,12 +224,12 @@ def test_full(epochs: int, slices: int):
             
             for val_1, val_idx in zip(data['Y'], test_rng.permutation(len(raw_data))):
                 val_2 = 1 if raw_data[val_idx][1] == "pos" else 0
-                assert float(val_1) == val_2
+                assert float(val_1) == float(val_2)
         
             for token, sentiment in zip(data['X'], data['Y']):
-                if token == 64:
+                if token == A_TOKEN:
                     assert sentiment == 1
-                elif token == 65:
+                elif token == B_TOKEN:
                     assert sentiment == 0
 
 
