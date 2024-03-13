@@ -114,6 +114,7 @@ jobs:
 
       #   development only
       - run: pip install jurigged
+      - run: pip install pytest
       - run: apt-get update && apt-get install -y procps
       - run: git config --global user.email "mail@ruicampos.org"
       - run: git config --global user.name "Rui Campos"

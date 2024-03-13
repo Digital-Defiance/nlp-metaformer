@@ -129,7 +129,7 @@ impl MetaFormer {
         let mut loss_accumulator = MetricAccumulator::new("loss/test");
         let mut acc_accumulator = MetricAccumulator::new("acc/test");
     
-        let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(slice_idx);
+        let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice("test", slice_idx);
     
         let x_sc = dataslice.get("X").unwrap().to(self.training_device);
         let y_s = dataslice.get("Y").unwrap().to(self.training_device);
@@ -180,7 +180,7 @@ impl MetaFormer {
 
     pub fn perform_train_step(&self, config: &Cli, training_device: Device, train_step: i64,  opt: &mut Optimizer) -> Metric {
         let mut loss_accumulator = MetricAccumulator::new("loss/train");
-        let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice(train_step);
+        let dataslice: std::collections::HashMap<String, tch::Tensor> = read_dataslice("train", train_step);
         let x_sc = dataslice.get("X").unwrap().to(training_device);
         let y_s = dataslice.get("Y").unwrap().to(training_device);
         println!("Loaded slice to device.");

@@ -1,33 +1,34 @@
-from constants import DEV_RUST_BINARY, DEFAULT_ATTENTION_MECHANISM
+from pipelines.text_classification.constants import DEV_RUST_BINARY, DEFAULT_ATTENTION_MECHANISM
 from pydantic_settings import BaseSettings
 from typing import Literal
 import os
+import torch.cuda
 
-from constants import SourceExecutable, AttentionMechanisms
+from pipelines.text_classification.constants import SourceExecutable, AttentionMechanisms
 from pydantic import  model_validator
 
 class Data(BaseSettings):
     train_source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/train.parquet"
     test_source: str = "https://github.com/Digital-Defiance/IMBd-dataset/raw/main/dataset/test.parquet"
-    slices: int = 10
-    batch_size: int = 64
+    slices: int = 1
+    batch_size: int = 32
 
 class TrainingProcess(BaseSettings):
-    use_gpu: bool = True
+    use_gpu: bool = torch.cuda.is_available()
     executable_source: SourceExecutable = DEV_RUST_BINARY
 
   
 class Train(BaseSettings):
-    epochs: int = 10
+    epochs: int = 40
     learning_rate: float = 1e-4
 
 
 class Model(BaseSettings):
     encoding: Literal["tiktoken-gpt2"] = "tiktoken-gpt2"
-    attention_kind: AttentionMechanisms = DEFAULT_ATTENTION_MECHANISM
-    dimension: int = 64
-    depth: int = 3
-    heads: int = 3
+    attention_kind: AttentionMechanisms =  DEFAULT_ATTENTION_MECHANISM
+    dimension: int = 300
+    depth: int = 5
+    heads: int = 6
     context_window: int = 300
     input_vocabolary: int = 60_000
     output_vocabolary: int = 5

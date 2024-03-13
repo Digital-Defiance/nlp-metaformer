@@ -93,7 +93,7 @@ impl Cli {
             print!("Current training device: CUDA");
             match cuda {
                 Device::Cuda(_) => cuda,
-                _ => todo!(),
+                _ => panic!("Invalid device specification. Did you mean CPU ?"),
             }
         } else if self.use_gpu == "False" {
             print!("Current training device: CPU");

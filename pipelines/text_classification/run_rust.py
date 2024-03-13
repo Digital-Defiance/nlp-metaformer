@@ -1,5 +1,6 @@
 
-from ..commons import shell_task
+from pipelines.commons import shell_task
+
 
 
 @shell_task
@@ -14,5 +15,4 @@ def make_rust_executable(path_to_rust_binary: str):
 def run_rust_binary(path_to_rust_binary: str):
     shell_command = path_to_rust_binary
     return shell_command
-
 
