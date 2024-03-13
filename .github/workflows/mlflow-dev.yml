@@ -1,0 +1,33 @@
+name: "MLFlow: Deploy"
+
+on:
+  workflow_dispatch:
+    inputs:
+      machine:
+        description: 'Which machine to use'
+        required: true
+        default: 'mlflow'
+        type: choice
+        options:
+          - mlflow
+          - local
+
+jobs:
+  deploy-mlflow:
+    name: Deploy MLFlow
+    timeout-minutes: 9999999999999999999 # hopefully, never
+    runs-on: ${{ inputs.machine }}
+    container:
+      image: ghcr.io/mlflow/mlflow:v2.11.1
+      ports:
+        - 8000:8000
+    env:
+      MLFLOW_AUTH_CONFIG_PATH: "${{ github.workspace }}/auth.ini"
+      MLFLOW_HOST: 0.0.0.0
+      MLFLOW_PORT: 8000
+      MLFLOW_WORKERS: 2
+      MLFLOW_BACKEND_STORE_URI: ${{ secrets.DB_URI }}
+      
+    steps:
+      - run: pip install psycopg2-binary # required for mlflow to talk to postgres
+      - run: seep infinity
