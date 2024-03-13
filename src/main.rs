@@ -45,16 +45,16 @@ fn main() {
 
     for train_step in 1..(config.slices*config.epochs + 1) {
         let avg_train_loss = model.perform_train_step(&config, training_device, train_step, &mut opt);
-        let mut metrics: Vec<Metric> = model.perform_eval(&config, EVAL_SLICE_IDX, train_step);
-        metrics.push(avg_train_loss);
-        log_metrics(&config, metrics);
+        // let mut metrics: Vec<Metric> = model.perform_eval(&config, EVAL_SLICE_IDX, train_step);
+        // metrics.push(avg_train_loss);
+        log_metrics(&config, vec![avg_train_loss]);
     }
 
 
     let displacement = 5 + config.slices*config.epochs;
     for test_idx in 1..(config.slices + 1) {
         let step = test_idx + displacement;
-        let metrics: Vec<Metric> = model.perform_eval(&config, -test_idx, step);
+        let metrics: Vec<Metric> = model.perform_eval(&config, test_idx, step);
         log_metrics(&config, metrics);
     }
 

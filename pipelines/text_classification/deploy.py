@@ -13,6 +13,7 @@ from prefect import flow, task, get_run_logger
 from pipelines.text_classification.inputs import Data, Train, Settings, Model, TrainingProcess, MLFLowSettings
 from anyio import run
 import duckdb
+from pipelines.commons import shell_task
 
 from numpy.random import default_rng
 
@@ -30,6 +31,15 @@ async def log_params(settings: Settings):
 
 
 
+@shell_task
+def remove_folder(folder: str):
+    return f"rm -rf {folder}"
+
+@shell_task
+def create_folder(folder: str):
+    return f"mkdir -p {folder}"
+
+
 
 @flow
 async def main(
@@ -40,7 +50,13 @@ async def main(
     experiment_id: int = 1,
     run_name: str | None = None,
 ): 
-    logger = get_run_logger()
+    # logger = get_run_logger()
+
+    for folder in ["test", "train"]:
+        await remove_folder(folder)
+        await create_folder(folder)
+
+
 
     with mlflow.start_run(run_name=run_name, experiment_id=experiment_id) as run:
 

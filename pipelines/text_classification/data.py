@@ -5,7 +5,6 @@ from numpy.random import default_rng
 from prefect import get_run_logger, task, flow
 import tiktoken
 from pipelines.text_classification.inputs import  Model
-from pipelines.commons import shell_task
 
 from safetensors import torch as stt
 from typing import Literal
@@ -48,20 +47,12 @@ def executemany(func):
         logger = get_run_logger()
         sql_cmd, sql_args = func(*args, **kwargs)
         logger.debug("Executing command: %", sql_cmd)
+
         return conn.executemany(sql_cmd, sql_args)
     return prefect_task
 
 
 
-
-
-@shell_task
-def remove_folder(folder: str):
-    return f"rm -rf {folder}"
-
-@shell_task
-def create_folder(folder: str):
-    return f"mkdir -p {folder}"
 
 
 @execute
@@ -138,8 +129,6 @@ def raw_data_to_tensor(raw_sentiments, raw_reviews):
 def prepare_slices(conn, rng, epochs: int, number_of_partions: int, data_source: str, folder: str, name_prefix = ""):
     
 
-    remove_folder(folder)
-    create_folder(folder)
 
     logger = get_run_logger()
 
