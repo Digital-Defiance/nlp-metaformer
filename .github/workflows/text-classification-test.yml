@@ -8,8 +8,8 @@ env:
   AWS_REGION: eu-south-1
 
 jobs:
-  test-pipelines:
-    name: Deploy development environment
+  test-text-classification:
+    name: Test text classification pipelines
     timeout-minutes: 1500
     runs-on: ubuntu-latest
     container:
