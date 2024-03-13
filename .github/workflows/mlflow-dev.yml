@@ -1,4 +1,4 @@
-name: "MLFlow: Deploy"
+name: "MLFlow: Develop"
 
 on:
   workflow_dispatch:
