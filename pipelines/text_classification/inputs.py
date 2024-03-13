@@ -66,6 +66,14 @@ class Settings(BaseSettings):
             mlflow = MLFLowSettings(),
         )
 
+
+    def to_env(self) -> None:
+        """ Loads every key value pair to the environment. """
+
+        for key, value in self.yield_flattened_items():
+            os.environ[key] = value
+
+
     def yield_flattened_items(self, node: dict | None = None):
         node: dict[str, any] = node or self.model_dump()
 
@@ -78,12 +86,3 @@ class Settings(BaseSettings):
                 continue
 
             yield from self.yield_flattened_items(node = value)
-
-
-    def to_env(self) -> None:
-        """ Loads every key value pair to the environment. """
-
-        for key, value in self.yield_flattened_items():
-            os.environ[key] = value
-
-

@@ -1,119 +1,107 @@
 
-
-from contextlib import contextmanager
-
 import duckdb
 from duckdb.typing import *
-from prefect import get_run_logger, task
-import numpy as np
+from numpy.random import default_rng
+from prefect import get_run_logger, task, flow
 import tiktoken
-from constants import SAVE_PATH
-from env import Data, Train, Model
-import uuid
+from inputs import  Model
+from safetensors import torch as stt
+from typing import Literal
+from functools import wraps
+from torch.nn.utils.rnn import pad_sequence
+from torch import tensor
+import pytest
+
+
+Sentiment = Literal["pos", "neg"]
+
 
 ENCODER = tiktoken.get_encoding("gpt2")
 
 def encode_text(text: str) -> list[int]:
     return ENCODER.encode(text.lower())
 
-class DatasetConnection:
 
-    
+def execute(func):
 
-    def __init__(self, conn: duckdb.DuckDBPyConnection, dataset_link: str):
+    @task(name=func.__name__)
+    def prefect_task(conn: duckdb.DuckDBPyConnection, *args, **kwargs) -> list:
         logger = get_run_logger()
+        sql_cmd = func(*args, **kwargs)
+        logger.debug("Executing command: %", sql_cmd)
+        return conn.execute(sql_cmd).fetchall()
+    return prefect_task
 
-        self.generated_epochs = set()
+def executemany(func):
+    @wraps(func)
+    @task
+    def prefect_task(conn: duckdb.DuckDBPyConnection, *args,  **kwargs) -> list:
+        logger = get_run_logger()
+        sql_cmd, sql_args = func(*args, **kwargs)
+        logger.debug("Executing command: %", sql_cmd)
 
-        self.dataset_link = dataset_link
-        self.conn = conn
-        self.uuid = "".join([x for x in uuid.uuid4().hex if not x.isnumeric()])
+        print(sql_cmd, sql_args)
+        return conn.executemany(sql_cmd, sql_args)
+    return prefect_task
 
-        logger.debug(self.uuid)
-        logger.debug(self.dataset_link)
+@execute
+def create_dataset_table(source: str):
+    return f"""
+        CREATE TABLE dataset AS
+        SELECT id
+        FROM '{source}';
+    """
 
+@execute
+def add_permutation_column():
+    return f"""
+        ALTER TABLE dataset
+        ADD COLUMN permutation
+        INTEGER;
+    """
 
-        cmd = f"""
-            CREATE TABLE {self.uuid} AS
-            SELECT id
-            FROM '{self.dataset_link}';
-        """
-        logger.debug(cmd)
-        self.conn.execute(cmd)
-
-
-        cmd = f"""SELECT COUNT(*) FROM {self.uuid}"""
-        logger.debug(cmd)
-        self.count = self.conn.execute(cmd).fetchall()[0][0]
-
-
-    def generate_randomization(self, total_epochs: int, seed: int = 42):
-
-        np.random.seed(seed)
-
-    def select_partition(self, epoch_idx: int, start: int, limit: int):
-
-        if epoch_idx not in self.generated_epochs:
-            
-            self.conn.execute(f"""
-                ALTER TABLE {self.uuid}
-                ADD COLUMN epoch_{epoch_idx}
-                INTEGER;
-            """)
-
-            permutation = np.random.permutation(self.count)
-            print(epoch_idx, permutation)
-            values_to_insert = [(int(val) + 1, i + 1) for i, val in enumerate(permutation)]
-            sql_command = f"UPDATE {self.uuid} SET epoch_{epoch_idx} = ? WHERE id = ?;"
-            self.conn.executemany(sql_command, values_to_insert)
-            self.generated_epochs.add(epoch_idx)
-
-        return self.conn.execute(f"""
-            SELECT remote.sentiment, remote.review
-            FROM '{self.dataset_link}' as remote
-            INNER JOIN {self.uuid} ON {self.uuid}.id = remote.id
-            ORDER BY epoch_{epoch_idx} ASC
-            OFFSET {start} LIMIT {limit};
-        """)
+@execute
+def count():
+    return f"""SELECT COUNT(*) FROM dataset"""
 
 
+@executemany
+def generate_permutation(rng, number_of_rows: int):
+    permutation = rng.permutation(number_of_rows)
+    return f"UPDATE dataset SET permutation = ? WHERE id = ?;", [
+        (int(val) + 1, i + 1) for i, val in enumerate(permutation) 
+    ]
 
 
+@execute
+def fetch_data(dataset_link: str, offset: int, limit: int) -> list[tuple[Sentiment, str]]:
+    return f"""
+        SELECT remote.sentiment, remote.review
+        FROM '{dataset_link}' as remote
+        INNER JOIN dataset ON dataset.id = remote.id
+        ORDER BY permutation ASC
+        OFFSET {offset} LIMIT {limit};
+    """
 
 
-@contextmanager
-def dataset_partitioning(number_of_epochs, number_of_partions, dataset_link: str, seed: int = 42):
-
-    with duckdb.connect() as conn:
-        conn: duckdb.DuckDBPyConnection
-        table = DatasetConnection(conn, dataset_link)
-        table.generate_randomization(number_of_epochs, seed=seed)
-        # res = table.select_partition(0, 1, 100).fetchall()
-        
-        def fetch_data(epoch_idx: int, slice_idx: int) -> tuple[list[int], list[str]]:
-            sentiments, reviews = [], []
-            limit = table.count // number_of_partions
-            offset = limit*slice_idx
-            for sentiment, text in table.select_partition(epoch_idx, offset, limit).fetchall():
-                sentiment = 1 if sentiment == "pos" else 0
-                sentiments.append(sentiment)
-                text = text.strip()
-                text = text.replace("<br />", "")
-                text = text.lower()
-                reviews.append(text)
-            return sentiments, reviews
-        yield fetch_data
 
 
 @task
-def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int):
-    from torch.nn.utils.rnn import pad_sequence
-    from torch import tensor
+def parse_data_from_db(data_from_db):
+    sentiments, reviews = [], []
+    for sentiment, text in data_from_db:
+        sentiment = 1 if sentiment == "pos" else 0
+        sentiments.append(sentiment)
+        text = text.strip()
+        text = text.replace("<br />", "")
+        text = text.lower()
+        reviews.append(text)
+    return sentiments, reviews
 
+
+@task
+def raw_data_to_tensor(raw_sentiments, raw_reviews):
     context_window: int = Model().context_window
-
-
-    raw_sentiments, raw_reviews = fetch_data(epoch, slice)
     sentiments = tensor(raw_sentiments)
     reviews = []
     for text in raw_reviews:
@@ -126,86 +114,139 @@ def fetch_and_preprocess_data(fetch_data: callable, epoch: int, slice: int):
         "X": pad_sequence(reviews, batch_first=True)
     }
 
-@task
-def save_data(idx: int, data) -> None:
-    from safetensors import torch as stt
-    stt.save_file(data, f"tmp/{idx}_" + SAVE_PATH)
+@flow(flow_run_name="{name_prefix}prepare-{epochs}-epochs-{number_of_partions}-slices-{folder}")
+def prepare_slices(conn, rng, epochs: int, number_of_partions: int, data_source: str, folder: str, name_prefix = ""):
+    
+
+    logger = get_run_logger()
+
+    logger.info(f"Initializing table for {folder}")
+
+    create_dataset_table(conn, data_source)
+
+    add_permutation_column(conn)
+
+    number_of_rows = count(conn)[0][0]
 
 
+    limit = number_of_rows // number_of_partions
+    step = 1
 
-@task
-def write_training_slices():
+    logger.info(f"Generating data for {folder} ...")
 
-    data = Data()
-    train = Train()
+    for epoch in range(epochs):
+        for slice_idx in range(number_of_partions):
 
+            logger.info(f"Constructing epoch {epoch} slice {slice_idx}")
+            
+            generate_permutation(conn, rng, number_of_rows)
 
-    def yield_context():
-        step = 1
-        for epoch in range(train.epochs):
-            for slice_idx in range(data.slices):
-                yield step, epoch, slice_idx
-                step += 1
-
-
-    with dataset_partitioning(
-        number_of_epochs = train.epochs,
-        number_of_partions = data.slices,
-        dataset_link = data.train_source
-    ) as fetch_data:
-        logger = get_run_logger()
-        for step, epoch, slice in yield_context():
-            logger.info(f"Constructing slice {slice} for epoch {epoch}")
-            processed_data = fetch_and_preprocess_data.fn(fetch_data, epoch, slice)
-            save_data.fn(step, processed_data)
-
-
-
-
-
-@task
-def write_test_slices():
-
-    data = Data()
-    train = Train()
-
-    with dataset_partitioning(
-        number_of_epochs = train.epochs,
-        number_of_partions = data.slices,
-        dataset_link = data.test_source
-    ) as fetch_data:
-        for slice_idx in range(data.slices):
-            processed_data = fetch_and_preprocess_data.fn(
-                fetch_data = fetch_data, 
-                epoch = 0,
-                slice = slice_idx,
-            )
-            save_data.fn(
-                idx = -(slice_idx + 1),
-                data = processed_data
+            data_from_db: list[tuple[Sentiment, str]] = fetch_data(
+                conn, 
+                data_source, 
+                offset=limit*slice_idx, 
+                limit = number_of_rows // number_of_partions
             )
 
+            sentiments, reviews = parse_data_from_db(data_from_db)
+            safetensors = raw_data_to_tensor(sentiments, reviews)
+            stt.save_file(safetensors, f"{folder}/{step}_output.safetensors")
+            step += 1
 
 
-@task
-def prepare_validation_slice():
 
-    data = Data()
 
-    with dataset_partitioning(
-        number_of_epochs = Train().epochs,
-        number_of_partions = data.slices,
-        dataset_link = data.test_source
-    ) as fetch_data:
 
-        data = fetch_and_preprocess_data.fn(
-            fetch_data=fetch_data,
-            epoch=0,
-            slice=0,
-        )
 
-        save_data.fn(
-            idx = 0,
-            data = data,
-        )
+@pytest.mark.parametrize("epochs", [2, 1])
+@pytest.mark.parametrize("slices", [2, 1])
+def test_full(epochs: int, slices: int):
+    import os
+    import shutil
+
+    SEED = 42
+
+    A_TOKEN = 64
+    B_TOKEN = 65
+
+    raw_data = [
+        (1, "pos", "A"),
+        (2, "pos", "A"),
+        (3, "neg", "B"),
+        (4, "neg", "B"),
+    ]
+
+    folder = "tmp"
+    if os.path.exists(folder):
+        shutil.rmtree(folder)  
+
+    os.mkdir(folder) 
+
+    with duckdb.connect() as conn:
+
+        conn.execute(f"""
+            CREATE TABLE source
+            (id INTEGER, sentiment VARCHAR, review VARCHAR);
+        """)
+        for row in raw_data:
+            conn.execute("INSERT INTO source VALUES (?, ?, ?)", row)
+        assert raw_data == conn.execute("SELECT * FROM source").fetchall(), "Mock source dataset failed sanity check."
+
+
+        flow_rng = default_rng(seed=SEED)
+        prepare_slices(conn, flow_rng, epochs, slices, "source", folder, name_prefix = "test-")
+
+
+
+        dataset = conn.execute("SELECT id, permutation FROM dataset").fetchall()
+        assert len(dataset) == len(raw_data), dataset
+
+        # Verify that the permutation column has been properly constructed
+        permutations, ids = [], []
+        for idx, (dataset_id, permutation_idx) in enumerate(dataset):
+            assert idx + 1 == dataset_id
+            assert permutation_idx is not None, f"Permutation column was not constructed properly, value is None. {dataset=}"
+            assert isinstance(permutation_idx, int)
+            assert 1 <= permutation_idx <= 4
+            permutations.append(permutation_idx)
+            ids.append(dataset_id)
+    
+        ids.sort()
+        permutations.sort()
+        assert ids == permutations
+
+        test_rng = default_rng(seed=SEED)
+
+        slice_idx= 1
+        for _ in range(epochs):
+            
+            epoch_data = []
+            for _ in range(slices):
+                safetensors_file = f"{folder}/{slice_idx+1}_output.safetensors"
+                assert os.path.exists(safetensors_file), "Missing data from disk"
+
+                data = stt.load_file(safetensors_file)
+    
+                for val in data['Y']:
+                    epoch_data.append(val)
+
+                for token, sentiment in zip(data['X'], data['Y']):
+                    if token == A_TOKEN:
+                        assert sentiment == 1
+                    elif token == B_TOKEN:
+                        assert sentiment == 0
+                    else:
+                        assert False, f"Invalid token: {token}"
+                
+                slice_idx += 1
+        
+            epoch_permutation = test_rng.permutation(len(raw_data))
+
+            for val_1, val_idx in zip(epoch_data, epoch_permutation)):
+                val_2 = 1 if raw_data[val_idx][1] == "pos" else 0
+                assert float(val_1) == float(val_2)
+
+                
+
+
 
