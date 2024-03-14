@@ -43,6 +43,12 @@ on:
           - '--user root'
           - '--user root --gpus all'
 
+      root_volume_size:
+        required: true
+        description: 'Size of root volume (Gb)'
+        default: "50"
+        
+
 env:
   AWS_REGION: eu-south-1
 
@@ -70,7 +76,7 @@ jobs:
         uses: digital-defiance/ec2-github-runner@feature/add-storage-option
         with:
           mode: start
-          root-volume-size: 50
+          root-volume-size: ${{ inputs.root_volume_size }}
           iam-role-name: ec2-logs
           pre-runner-script: |  # sudo yum update -y && sudo yum install docker git libicu -y
               sudo systemctl enable docker
