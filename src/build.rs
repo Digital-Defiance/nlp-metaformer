@@ -36,9 +36,10 @@ fn main() {
         "src/attention/metric.cpp",
     ];
 
-
     cc::Build::new()
+    
     .cuda(true)
+    
     .files(files)
     
     // .file()

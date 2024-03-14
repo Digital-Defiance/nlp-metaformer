@@ -8,7 +8,6 @@
 
 typedef torch::Tensor *tensor;
 */
-#pragma once
 
 
 #include <iostream>
