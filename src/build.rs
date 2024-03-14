@@ -37,6 +37,7 @@ fn main() {
     ];
     cc::Build::new()
     .cuda(true)
+    
     .files(files)
     
     // .file()
