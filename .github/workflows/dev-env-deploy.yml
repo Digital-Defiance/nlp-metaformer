@@ -3,6 +3,7 @@ name: "Development Environment: Deploy"
 on:
   workflow_dispatch:
     inputs:
+
       machine:
         description: 'Which machine to use'
         required: true
@@ -14,6 +15,7 @@ on:
           - g4dn.2xlarge
           - g4dn.xlarge
           - local
+    
       image:
         description: 'Production Environment'
         required: true
@@ -22,6 +24,7 @@ on:
         options:
           - ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
           - pytorch/pytorch:2.2.0-cuda11.8-cudnn8-runtime
+  
       docker_options:
         required: true
         description: 'Extra docker options'
@@ -35,6 +38,7 @@ env:
   AWS_REGION: eu-south-1
 
 jobs:
+
   start-runner:
     runs-on: ubuntu-latest
     name: "Provision infrastructure"
@@ -42,6 +46,7 @@ jobs:
       label: ${{ steps.set-output.outputs.label }}
       ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
     steps:
+  
       - name: Configure AWS credentials
         if: ${{ inputs.machine != 'local' }}
         uses: aws-actions/configure-aws-credentials@v1
@@ -49,6 +54,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:  ${{ env.AWS_REGION }}
+    
       - name: Start EC2 runner
         id: start-ec2-runner
         if: ${{ inputs.machine != 'local' }}
@@ -66,6 +72,7 @@ jobs:
           ec2-instance-type: ${{ inputs.machine }}
           subnet-id: subnet-0fc7dea0969cca860
           security-group-id: sg-0c4cc0c0be64f1b08
+
       - shell: bash
         name: "Get runner tag"
         id: set-output
@@ -75,6 +82,8 @@ jobs:
           else
             echo "label=${{ steps.start-ec2-runner.outputs.label }}" >> $GITHUB_OUTPUT
           fi
+
+
 
   deploy-vscode:
     name: Deploy development environment
@@ -144,12 +153,14 @@ jobs:
       - deploy-vscode
     if: ${{ always() && inputs.machine != 'local' }}
     steps:
+  
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+  
       - name: Stop EC2 runner
         uses: digital-defiance/ec2-github-runner@v2
         with:
