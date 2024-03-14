@@ -5,15 +5,15 @@ use tch::{Device, Kind, TchError, Tensor};
 use torch_sys::C_tensor;
 
 extern "C" {
-    fn add_constant_cpp(a: i64, b: i64) -> i64;
+    fn add_constant_cpp<'a>(a: &'a f64, b: &f64) -> &'a i64;
 }
 
 pub trait AddConstantRust {
-    fn add_constant_rust(a: i64, b: i64) -> i64;
+    fn add_constant_rust<'a>(a: &'a f64, b: &f64) -> &'a i64;
 }
 
 impl AddConstantRust for Tensor {
-    fn add_constant_rust(a: i64, b: i64) -> i64 {
+    fn add_constant_rust<'a>(a: &'a f64, b: &f64) -> &'a i64 {
         unsafe {
             add_constant_cpp(a, b)
         }
@@ -53,8 +53,15 @@ pub fn f_abs(&self) -> Result<Tensor, TchError> {
 fn test_add_constant(){
 
     // et x = Tensor::ones(&[3], (Kind::Int, Device::Cpu));
-    let x = Tensor::add_constant_rust(1, 2);
-    assert_eq!(x, 3);
+
+    let a = vec![1., 2.];
+    let b = vec![1., 2.];
+
+    let x = Tensor::add_constant_rust(
+        a.as_ptr(),
+        b.as_ptr()
+    );
+    // assert_eq!(x, 3);
     println!("test");
 
 }

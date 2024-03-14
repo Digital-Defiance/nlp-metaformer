@@ -17,9 +17,9 @@ typedef torch::Tensor *tensor;
 
 extern "C" {
     
-    int add_constant_cuda(int a, int b);
+    int add_constant_cuda(float *a, float *b);
 
-    int add_constant_cpp(int a, int b) {
+    int add_constant_cpp(float *a, float *b) {
         std::cout << "Hello, world!" << std::endl; 
         return add_constant_cuda(a, b);
     }

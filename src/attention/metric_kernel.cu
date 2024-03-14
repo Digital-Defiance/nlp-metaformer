@@ -9,8 +9,8 @@ __global__ void add_constant_kernel(int a, int b) {
 */
 
 extern "C" {
-    int add_constant_cuda(int a, int b) {
-    return a + b;
+    float *add_constant_cuda(float *a, float *b) {
+    return a;
 
     // add_constant_kernel<<<(n + 255) / 256, 256>>>(x, n);
 }
