@@ -3,7 +3,7 @@
 #include <iostream> 
 
 
-// void add_constant_cuda(float *x, float constant, int n);
+void add_constant_cuda(float *x, float constant, int n);
 
 typedef torch::Tensor *tensor;
 

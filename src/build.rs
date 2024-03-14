@@ -26,9 +26,16 @@ print('PYTHON_INCLUDE:', sysconfig.get_path('include'))
 
 
 fn main() {
+
+    let files = vec![
+        "src/attention/metric.cpp",
+        "src/attention/metric_kernel.cu"
+    ];
     cc::Build::new()
-    .cpp(true)
-    .file("src/attention/metric.cpp")
+    .cuda(true)
+    .files(files)
+    
+    // .file()
     .flag("-std=c++17")
     .warnings(false)
     .flag(&format!("-D_GLIBCXX_USE_CXX11_ABI={}", 0))
@@ -36,7 +43,7 @@ fn main() {
     .include("/opt/conda/lib/python3.10/site-packages/torch")
     .include("/opt/conda/lib/python3.10/site-packages/torch/include/torch/csrc/api/include")
     .include("/opt/conda/include/python3.10")
-    .flag(&format!("-Wl,-rpath=/opt/conda/lib/python3.10/site-packages/torch/lib"))
+    // .flag(&format!("-Wl,-rpath=/opt/conda/lib/python3.10/site-packages/torch/lib"))
     .compile("metric.a");
 }
 
