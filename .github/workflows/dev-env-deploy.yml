@@ -103,6 +103,14 @@ jobs:
         MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }} 
 
     steps:
+      - run: apt-get update
+      - run: apt-get install -y git
+      - uses: actions/checkout@v4
+      - run: git config --global user.email "mail@ruicampos.org"
+      - run: git config --global user.name "Rui Campos"
+      - run: git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
+      - run: git config pull.rebase false
+  
       # stuff to be moved to the production image
       - run: pip install psycopg2-binary # required for mlflow to talk to postgres
       - run: pip install mlflow
@@ -110,7 +118,6 @@ jobs:
 
       # development dependencies and configuration
       #   required for rust to compile
-      - uses: actions/checkout@v4
       - run: apt update
       - run: apt install libssh-dev -y
       - run: apt install pkg-config -y
@@ -125,13 +132,7 @@ jobs:
       #   development only
       - run: pip install pytest
   
-      - run: apt-get update
       - run: apt-get install -y procps
-      # - run: apt-get install -y git
-      - run: git config --global user.email "mail@ruicampos.org"
-      - run: git config --global user.name "Rui Campos"
-      - run: git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
-      - run: git config pull.rebase false
   
       - name: Login to prefect
         run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
