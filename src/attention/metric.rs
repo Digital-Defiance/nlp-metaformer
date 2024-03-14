@@ -53,8 +53,8 @@ pub fn f_abs(&self) -> Result<Tensor, TchError> {
 fn test_add_constant(){
 
     // et x = Tensor::ones(&[3], (Kind::Int, Device::Cpu));
-    Tensor::add_constant_rust(1, 2);
-
+    let x = Tensor::add_constant_rust(1, 2);
+    assert_eq!(x, 3);
     println!("test");
 
 }
