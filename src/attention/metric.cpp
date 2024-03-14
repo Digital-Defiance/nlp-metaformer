@@ -1,11 +1,18 @@
 #include <torch/extension.h>
+#include<torch/torch.h>
+#include <iostream> 
 
-// void add_constant_cuda(float *x, float constant, int n); // Declare the CUDA function
 
+// void add_constant_cuda(float *x, float constant, int n);
+
+typedef torch::Tensor *tensor;
 
 extern "C" {
-    int add_constant_cpp(int x, int c) {
-        return x + c ;
+    void add_constant_cpp(tensor self, int c) {
+            
+        std::cout << "Hello, world!" << std::endl; 
+
+        // do stuff
     }
 }
 

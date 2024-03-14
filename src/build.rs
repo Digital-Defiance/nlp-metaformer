@@ -3,7 +3,9 @@
 use cc;
 
 
+
 /*
+sadas
 const TORCH_VERSION: &str = "2.2.0";
 const PYTHON_PRINT_PYTORCH_DETAILS: &str = r"
 import torch
@@ -34,6 +36,7 @@ fn main() {
     .include("/opt/conda/lib/python3.10/site-packages/torch")
     .include("/opt/conda/lib/python3.10/site-packages/torch/include/torch/csrc/api/include")
     .include("/opt/conda/include/python3.10")
+    .flag(&format!("-Wl,-rpath=/opt/conda/lib/python3.10/site-packages/torch/lib"))
     .compile("metric.a");
 }
 
