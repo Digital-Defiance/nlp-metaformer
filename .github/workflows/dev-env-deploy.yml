@@ -114,19 +114,24 @@ jobs:
           echo "LD_LIBRARY_PATH=$TORCH_LIB_PATH" >> $GITHUB_ENV
 
       #   development only
-      - run: pip install jurigged
       - run: pip install pytest
-      - run: apt-get update && apt-get install -y procps
+  
+      - run: apt-get update
+      - run: apt-get install -y procps
+      - run: apt-get install -y git
       - run: git config --global user.email "mail@ruicampos.org"
       - run: git config --global user.name "Rui Campos"
       - run: git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
       - run: git config pull.rebase false
+  
       - name: Login to prefect
         run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
+    
       - name: Setup code CLI
         run: |
           curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
           tar -xf vscode_cli.tar.gz
+      
       - name: Serve VSCode
         continue-on-error: true 
         run: ./code tunnel
