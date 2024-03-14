@@ -23,7 +23,7 @@ on:
         type: choice
         options:
           - ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
-          - pytorch/pytorch:2.2.0-cuda11.8-cudnn8-runtime
+          - pytorch/pytorch:2.2.0-cuda11.8-cudnn8-runtime # Not a production image, 
   
       docker_options:
         required: true
@@ -100,16 +100,19 @@ jobs:
         LLMVC_ENVIRONMENT: "development"
         MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URL }}
         MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_USERNAME }} 
-        MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }} 
+        MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
+        TZ: "UTC" # https://github.com/PrefectHQ/prefect/issues/8047
 
     steps:
       - run: apt-get update
       - run: apt-get install -y git
       - uses: actions/checkout@v4
-      - run: git config --global user.email "mail@ruicampos.org"
-      - run: git config --global user.name "Rui Campos"
-      - run: git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
-      - run: git config pull.rebase false
+      - name: "Configure git repository for development"
+        run: |
+          git config --global user.email "mail@ruicampos.org"
+          git config --global user.name "Rui Campos"
+          git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
+          git config pull.rebase false
   
       # stuff to be moved to the production image
       - run: pip install psycopg2-binary # required for mlflow to talk to postgres
@@ -117,11 +120,17 @@ jobs:
       - run: pip install prefect-shell
 
       # development dependencies and configuration
-      #   required for rust to compile
       - run: apt update
       - run: apt install libssh-dev -y
       - run: apt install pkg-config -y
       - run: apt install curl -y
+      - run: apt-get install procps -y
+
+      - uses: Jimver/cuda-toolkit@v0.2.14
+        id: cuda-toolkit
+        with:
+          cuda: '11.8.0'
+      
       - uses: dtolnay/rust-toolchain@stable
       - name: Find and set torch lib path
         run: |
@@ -129,10 +138,7 @@ jobs:
           TORCH_LIB_PATH="${SITE_PACKAGES}/torch/lib"
           echo "LD_LIBRARY_PATH=$TORCH_LIB_PATH" >> $GITHUB_ENV
 
-      #   development only
       - run: pip install pytest
-  
-      - run: apt-get install -y procps
   
       - name: Login to prefect
         run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
