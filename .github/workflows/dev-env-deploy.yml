@@ -23,7 +23,7 @@ on:
         type: choice
         options:
           - ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
-          - nvidia/cuda:11.8.0-runtime-ubuntu22.04 # Not a production image
+          - pytorch/pytorch:2.2.0-cuda11.8-cudnn8-devel # Not a production image
   
       docker_options:
         required: true
