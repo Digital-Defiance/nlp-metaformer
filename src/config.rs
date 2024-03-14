@@ -1,7 +1,5 @@
 
 
-
-
 use clap::Parser;
 use tch::Device;
 use serde::Deserialize;
