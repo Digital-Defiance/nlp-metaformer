@@ -127,7 +127,7 @@ jobs:
   
       - run: apt-get update
       - run: apt-get install -y procps
-      - run: apt-get install -y git
+      # - run: apt-get install -y git
       - run: git config --global user.email "mail@ruicampos.org"
       - run: git config --global user.name "Rui Campos"
       - run: git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
