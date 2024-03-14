@@ -24,6 +24,15 @@ on:
         options:
           - ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
           - pytorch/pytorch:2.2.0-cuda11.8-cudnn8-devel # Not a production image
+
+      ami:
+        description: 'AMI'
+        required: true
+        default: 'ami-0450c19b7a7f6250d'
+        type: choice
+        options:
+          - ami-0450c19b7a7f6250d # pre-pulled container
+          - ami-024f19cd618c1acb2 # base gpu ubuntu
   
       docker_options:
         required: true
@@ -68,7 +77,7 @@ jobs:
               sudo systemctl start docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
-          ec2-image-id: ami-0450c19b7a7f6250d  # ami-0d1e2ba0458f0cd7a  
+          ec2-image-id: ${{ inputs.ami }} # ami-0450c19b7a7f6250d  # ami-0d1e2ba0458f0cd7a  
           ec2-instance-type: ${{ inputs.machine }}
           subnet-id: subnet-0fc7dea0969cca860
           security-group-id: sg-0c4cc0c0be64f1b08
