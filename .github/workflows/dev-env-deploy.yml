@@ -32,7 +32,7 @@ on:
         type: choice
         options:
           - ami-0450c19b7a7f6250d # pre-pulled container
-          - ami-024f19cd618c1acb2 # base gpu ubuntu
+          # - ami-024f19cd618c1acb2 # base gpu ubuntu
   
       docker_options:
         required: true
