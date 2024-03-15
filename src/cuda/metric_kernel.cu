@@ -33,5 +33,9 @@ extern "C" {
     	cudaMemcpy(c, d_C, SIZE_OF_VEC2, cudaMemcpyDeviceToHost);
 
         cudaDeviceSynchronize();
+
+        cudaFree(d_A);
+        cudaFree(d_B);
+        cudaFree(d_C);
     }
 }
