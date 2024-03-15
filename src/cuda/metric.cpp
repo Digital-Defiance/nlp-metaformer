@@ -10,10 +10,11 @@
 
 
 extern "C" {
-    float *add_constant_cuda(float *a, float *b);
-    float *add_constant_cpp(float *a, float *b) {
+    float *add_vectors_cuda(float *a, float *b, int n);
+    float *add_vectors_cpp(float *a, float *b, int n) {
         std::cout << "Hello, world!" << std::endl; 
-        return add_constant_cuda(a, b);
+
+        return add_vectors_cuda(a, b, n);
     }
 }
 

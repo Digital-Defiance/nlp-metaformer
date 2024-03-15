@@ -1,23 +1,16 @@
 
 
-/*
-
-/// @brief 
-/// @param a 
-/// @param b 
-/// @return 
-__global__ void add_constant_kernel(float *a, float *b) {
-    /* int index = blockIdx.x * blockDim.x + threadIdx.x;
-    int stride = blockDim.x * gridDim.x;
-    for (int i = index; i < n; i += stride)
-        x[i] += n; 
-    
+__global__ void add_vectors_kernel(float* result, float *a, float *b, int n) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    result[i] += a[i] + b[i]; 
 }
-*/
+
 
 extern "C" {
 
-    float* add_constant_cuda(float *a, float *b) {
-        return a;
+    float* add_vectors_cuda(float *a, float *b, int n) {
+        float *result;
+        add_vectors_kernel(result, a, b, n);
+        return result;
     }
 }
