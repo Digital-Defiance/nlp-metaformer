@@ -1,13 +1,15 @@
 
 
 use tch::{Device, Kind, TchError, Tensor};
+use torch_sys::C_tensor;
 
+type TensorPTR = *mut C_tensor;
 
 extern "C" {
     fn add_tensors_cuda(
-        result: *mut torch_sys::C_tensor,
-        a: *const torch_sys::C_tensor,
-        b: *const torch_sys::C_tensor
+        result: TensorPTR,
+        a: TensorPTR,
+        b: TensorPTR
     );
 }
 
@@ -20,8 +22,8 @@ impl AddTensors for Tensor {
         unsafe {
             add_tensors_cuda(
                 self.as_mut_ptr(),
-                a.as_ptr(),
-                b.as_ptr()
+                a.as_mut_ptr(),
+                b.as_mut_ptr()
             );
         }
         self
