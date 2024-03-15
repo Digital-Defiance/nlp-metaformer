@@ -1,5 +1,11 @@
 
 
+
+
+/// @brief 
+/// @param a 
+/// @param b 
+/// @return 
 __global__ void add_constant_kernel(float *a, float *b) {
     /* int index = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
@@ -10,11 +16,13 @@ __global__ void add_constant_kernel(float *a, float *b) {
 
 
 extern "C" {
-    float *add_constant_cuda(float *a, float *b) {
+
+    /// @brief 
+    /// @param a 
+    /// @param b 
+    /// @return 
+    float* add_constant_cuda(float *a, float *b) {
         add_constant_kernel<<<2,2>>>(a, b);
-
-    return a;
-
-    // add_constant_kernel<<<(n + 255) / 256, 256>>>(x, n);
-}
+        return a;
+    }
 }
