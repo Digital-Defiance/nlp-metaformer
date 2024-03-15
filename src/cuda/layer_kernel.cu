@@ -23,55 +23,73 @@ __global__ void add_tensors_kernel(scalar_t *a, scalar_t *b, scalar_t *c) {
 
 
 
-extern "C" {
-    void add_tensors_cuda(TensorPTR result, TensorPTR a, TensorPTR b) {
-        AT_DISPATCH_FLOATING_TYPES(a->type(), "cuda_add_tensors", ([&] {
+
+class MetricTensorAttention : public Function<MetricTensorAttention> {
+    public:
+
+        static torch::Tensor
+        forward(
+            AutogradContext *ctx,
+            torch::Tensor x_bcd,
+            torch::Tensor metric_1nkk
+        ) {
+            ctx->save_for_backward({x_bcd, metric_1nkk});
+            auto output_bcd = x_bcd.mm(metric_1nkk.t());
+
+            // TO DO
+            /*
+            
+            
+            AT_DISPATCH_FLOATING_TYPES(a->type(), "cuda_add_tensors", ([&] {
             add_tensors_kernel<scalar_t><<<2, 1>>>(
                 a->data<scalar_t>(),
                 b->data<scalar_t>(),
                 result->data<scalar_t>()
             );
         }));
+            */
+
+            return output_bcd;
+        }
+
+        static tensor_list backward(
+            AutogradContext *ctx,
+            tensor_list grad_outputs
+        ) {
+            auto saved = ctx->get_saved_variables();
+            auto input = saved[0];
+            auto weight = saved[1];
+            auto bias = saved[2];
+
+
+            // TO DO
+            /*
+            
+            
+            AT_DISPATCH_FLOATING_TYPES(a->type(), "cuda_add_tensors", ([&] {
+            add_tensors_kernel<scalar_t><<<2, 1>>>(
+                a->data<scalar_t>(),
+                b->data<scalar_t>(),
+                result->data<scalar_t>()
+            );
+        }));
+            */
+        
+            auto grad_output = grad_outputs[0];
+            auto grad_input = grad_output.mm(weight);
+            auto grad_weight = grad_output.t().mm(input);
+
+            return {grad_input, grad_weight};
+  }
+};
+
+
+extern "C" {
+    void f_metric_tensor_attention(TensorPTR x_bcd, TensorPTR metric_1nkk) {
+        MetricTensorAttention::apply(
+            *x_bcd,
+            *metric_1nkk
+        );
     }
 }
 
-
-
-
-class Layer : public Function<Layer> {
- public:
-  static torch::Tensor forward(
-      AutogradContext *ctx,
-      torch::Tensor input,
-      torch::Tensor weight,
-      torch::Tensor bias = torch::Tensor()
-    ) {
-        ctx->save_for_backward({input, weight, bias});
-        auto output = input.mm(weight.t());
-        if (bias.defined()) {
-            output += bias.unsqueeze(0).expand_as(output);
-        }
-        return output;
-  }
-
-  static tensor_list backward(
-        AutogradContext *ctx,
-        tensor_list grad_outputs
-    ) {
-        auto saved = ctx->get_saved_variables();
-        auto input = saved[0];
-        auto weight = saved[1];
-        auto bias = saved[2];
-
-        auto grad_output = grad_outputs[0];
-        auto grad_input = grad_output.mm(weight);
-        auto grad_weight = grad_output.t().mm(input);
-        auto grad_bias = torch::Tensor();
-
-        if (bias.defined()) {
-            grad_bias = grad_output.sum(0);
-        }
-
-        return {grad_input, grad_weight, grad_bias};
-  }
-};
