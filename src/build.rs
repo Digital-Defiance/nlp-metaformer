@@ -41,21 +41,21 @@ fn main() {
     let files = vec![
         "src/cuda/vecadd_kernel.cu",
         "src/cuda/vecadd.cpp",
+        "src/cuda/tensoradd.cpp",
+
     ];
 
     for file in &files {
       println!("cargo:rerun-if-changed={}", file);
     }
-
     cc::Build::new()
-
     .cuda(true)
     .pic(true)
     
     .files(files)
     
     .flag("-std=c++17")
-    .warnings(true)
+    .warnings(false)
     .flag(&format!("-D_GLIBCXX_USE_CXX11_ABI={}", 0))
     .flag("-c")
     .include("/opt/conda/lib/python3.10/site-packages/torch/include")

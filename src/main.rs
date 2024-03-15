@@ -10,6 +10,7 @@ pub mod config;
 pub mod mlflow;
 pub mod files;
 mod optimizer;
+pub mod cuda;
 
 use clap::Parser;
 use optimizer::build_optimizer;

@@ -1,11 +1,5 @@
 
 
-// #include <torch/extension.h>
-// #include <torch/torch.h>
-//#include <torch/extension.h>
-// typedef torch::Tensor *tensor;
-
-
 #include <iostream>
 
 void print_vector(float *vector) {
