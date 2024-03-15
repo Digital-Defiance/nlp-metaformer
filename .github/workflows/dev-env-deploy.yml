@@ -118,6 +118,9 @@ jobs:
         MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
         TZ: "UTC" # https://github.com/PrefectHQ/prefect/issues/8047
 
+        # enables debug information generation to improve backtraces for build dependencies
+        CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG: true 
+
     steps:
       - run: apt-get update
       - run: apt-get install -y git
