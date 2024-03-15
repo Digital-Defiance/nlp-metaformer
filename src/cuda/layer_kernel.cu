@@ -13,16 +13,11 @@ using namespace torch::autograd;
 typedef torch::Tensor *TensorPTR;
 
 
-
 template <typename scalar_t>
 __global__ void add_tensors_kernel(scalar_t *a, scalar_t *b, scalar_t *c) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     c[i] += a[i] + b[i];
 }
-
-
-
-
 
 class MetricTensorAttention : public Function<MetricTensorAttention> {
     public:
