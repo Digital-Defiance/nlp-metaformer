@@ -17,7 +17,6 @@ void print_vector(float *vector) {
 
 
 void print_all(float *a, float *b, float *c) {
-
         std::cout << "a: ";
         print_vector(a);
         std::cout << "b: ";
@@ -29,17 +28,10 @@ void print_all(float *a, float *b, float *c) {
 
 extern "C" {
     void add_vectors_cuda(float *a, float *b, float *c);
-
     float add_vectors_cpp(float *a, float *b, float *c) {
-        std::cout << "Hello, world from cpp!" << std::endl;
-
-
         print_all(a, b, c);
         add_vectors_cuda(a, b, c);
-        
-
         print_all(a, b, c);
-
     }
 }
 

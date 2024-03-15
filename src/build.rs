@@ -39,8 +39,8 @@ export CARGO_PROFILE_TEST_BUILD_OVERRIDE_DEBUG=true
 fn main() {
 
     let files = vec![
-        "src/cuda/metric_kernel.cu",
-        "src/cuda/metric.cpp",
+        "src/cuda/vecadd_kernel.cu",
+        "src/cuda/vecadd.cpp",
     ];
 
     for file in &files {
