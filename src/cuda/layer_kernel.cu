@@ -12,7 +12,6 @@ using namespace torch::autograd;
 
 typedef torch::Tensor *TensorPTR;
 
-
 template <typename scalar_t> 
 __global__ void metric_attention_kernel(scalar_t *x_bcd, scalar_t *metric_1nkk) {
     
