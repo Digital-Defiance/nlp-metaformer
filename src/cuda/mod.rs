@@ -1,2 +1,2 @@
-pub mod vecadd;
-mod tensoradd;
+// pub mod vecadd;
+pub mod tensoradd;

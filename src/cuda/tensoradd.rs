@@ -2,10 +2,9 @@
 
 use tch::{Device, Kind, TchError, Tensor};
 
-use torch_sys::C_tensor;
 
 extern "C" {
-    fn add_tensors_cpp(
+    fn add_tensors_cuda(
         result: *mut torch_sys::C_tensor,
         a: *const torch_sys::C_tensor,
         b: *const torch_sys::C_tensor
@@ -13,13 +12,13 @@ extern "C" {
 }
 
 pub trait AddTensors {
-    fn add_tensors(self,a: &Tensor, b: &Tensor) -> Tensor;
+    fn add_tensors(self, a: &Tensor, b: &Tensor) -> Tensor;
 }
 
 impl AddTensors for Tensor {
     fn add_tensors(mut self, a: &Tensor, b: &Tensor) -> Tensor {
         unsafe {
-            add_tensors_cpp(
+            add_tensors_cuda(
                 self.as_mut_ptr(),
                 a.as_ptr(),
                 b.as_ptr()
@@ -33,12 +32,12 @@ impl AddTensors for Tensor {
 #[test]
 fn test_add_constant(){
 
+    let device = Device::cuda_if_available();
+    let a = Tensor::from_slice(&[5., 25.]).to(device);
+    let b = Tensor::from_slice(&[1., 2.]).to(device);
+    let _c = Tensor::from_slice(&[6., 27.]).to(device);
 
-    let a = Tensor::from_slice(&[5., 25.]);
-    let b = Tensor::from_slice(&[1., 2.]);
-    let _c = Tensor::from_slice(&[6., 27.]);
-
-    let result = Tensor::zeros(&[1, 2], (Kind::Float, Device::Cpu));
+    let result = Tensor::zeros(&[1, 2], (Kind::Float, device));
     let result = result.add_tensors(&a, &b);
 
     

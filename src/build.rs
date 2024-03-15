@@ -39,10 +39,12 @@ export CARGO_PROFILE_TEST_BUILD_OVERRIDE_DEBUG=true
 fn main() {
 
     let files = vec![
-        "src/cuda/vecadd_kernel.cu",
-        "src/cuda/vecadd.cpp",
+       // "src/cuda/vecadd_kernel.cu",
+        // "src/cuda/vecadd.cpp",
+
+
         "src/cuda/tensoradd_kernel.cu",
-        "src/cuda/tensoradd.cpp",
+      // "src/cuda/tensoradd.cpp",
 
     ];
 
@@ -58,7 +60,7 @@ fn main() {
     .flag("-std=c++17")
     .warnings(false)
     .flag(&format!("-D_GLIBCXX_USE_CXX11_ABI={}", 0))
-    .flag("-c")
+   // .flag("-c")
     .include("/opt/conda/lib/python3.10/site-packages/torch/include")
     .include("/opt/conda/lib/python3.10/site-packages/torch")
     .include("/opt/conda/lib/python3.10/site-packages/torch/include/torch/csrc/api/include")
