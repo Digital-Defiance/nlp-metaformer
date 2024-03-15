@@ -1,16 +1,15 @@
 
 
-__global__ void add_vectors_kernel(float* result, float *a, float *b) {
+__global__ void add_vectors_kernel(float *a, float *b, float *c) {
     int i = threadIdx.x;
-    result[i] += a[i] + b[i]; 
+    c[i] += a[i] + b[i];
 }
 
 
 extern "C" {
-
-    void add_vectors_cuda(float *result, float *a, float *b, int n) {
+    void add_vectors_cuda(float *a, float *b, float *c) {
         int numBlocks = 1;
-        int threadsPerBlock = n;
-        add_vectors_kernel<<<numBlocks, threadsPerBlock>>>(result, a, b);
+        int numThreadsPerBlock = 2;
+        add_vectors_kernel<<<numBlocks, numThreadsPerBlock>>>(a, b, c);
     }
 }
