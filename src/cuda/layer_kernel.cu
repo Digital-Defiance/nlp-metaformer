@@ -13,15 +13,19 @@ using namespace torch::autograd;
 typedef torch::Tensor *TensorPTR;
 
 
-template <typename scalar_t>
-__global__ void add_tensors_kernel(scalar_t *a, scalar_t *b, scalar_t *c) {
+template <typename scalar_t> 
+__global__ void metric_attention_kernel(scalar_t *x_bcd, scalar_t *metric_1nkk) {
+    
+    /// TO DO 
+    
     int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+
     c[i] += a[i] + b[i];
 }
 
 class MetricTensorAttention : public Function<MetricTensorAttention> {
     public:
-
         static torch::Tensor
         forward(
             AutogradContext *ctx,
@@ -47,7 +51,8 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             return output_bcd;
         }
 
-        static tensor_list backward(
+        static tensor_list
+        backward(
             AutogradContext *ctx,
             tensor_list grad_outputs
         ) {
