@@ -36,6 +36,8 @@ extern "C" {
 
         print_all(a, b, c);
         add_vectors_cuda(a, b, c);
+        
+
         print_all(a, b, c);
 
     }
