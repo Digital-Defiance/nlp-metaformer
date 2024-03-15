@@ -112,11 +112,17 @@ jobs:
       env:
         RUST_BACKTRACE: "full"
         LIBTORCH_USE_PYTORCH: "1"
+
+        # Flag for my code 
         LLMVC_ENVIRONMENT: "development"
+
+        # These are consumed by MLFLow and other processes int he application
         MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URL }}
         MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_USERNAME }} 
         MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
-        TZ: "UTC" # https://github.com/PrefectHQ/prefect/issues/8047
+
+        # https://github.com/PrefectHQ/prefect/issues/8047
+        TZ: "UTC"
 
         # enables debug information generation to improve backtraces for build dependencies
         CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG: true 
