@@ -36,10 +36,9 @@ fn test_add_constant(){
 
     let a = Tensor::from_slice(&[5., 25.]);
     let b = Tensor::from_slice(&[1., 2.]);
-    let c = Tensor::from_slice(&[6., 27.]);
+    let _c = Tensor::from_slice(&[6., 27.]);
 
-    let mut result = Tensor::zeros(&[1, 2], (Kind::Float, Device::Cpu));
-
+    let result = Tensor::zeros(&[1, 2], (Kind::Float, Device::Cpu));
     let result = result.add_tensors(&a, &b);
 
     

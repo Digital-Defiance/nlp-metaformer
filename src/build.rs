@@ -41,6 +41,7 @@ fn main() {
     let files = vec![
         "src/cuda/vecadd_kernel.cu",
         "src/cuda/vecadd.cpp",
+        "src/cuda/tensoradd_kernel.cu",
         "src/cuda/tensoradd.cpp",
 
     ];
