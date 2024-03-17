@@ -74,7 +74,7 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
                     metric_1nkk.data<scalar_t>(),
                     grad_metric_1nkk.data<scalar_t>()
                 );
-            }));  
+            }));
                   
             auto grad_output = grad_outputs[0];
             // auto grad_input = grad_output.mm(weight);
