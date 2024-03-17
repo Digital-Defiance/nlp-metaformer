@@ -19,8 +19,8 @@ __global__ void metric_attention_forwards_kernel(
         scalar_t *metric_1nkk
 ) {
     /// TODO metric_attention_forwards_kernel
-    // int i = blockDim.x * blockIdx.x + threadIdx.x;
-    // c[i] += a[i] + b[i];
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    output_bcd[i] += input_bcd[i] + metric_1nkk[i];
 }
 
 
@@ -49,7 +49,7 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             ctx->save_for_backward({input_bcd, metric_1nkk, output_bcd});
 
             AT_DISPATCH_FLOATING_TYPES(input_bcd.type(), "metric_attention_forwards_kernel", ([&] {
-                metric_attention_backwards_kernel<scalar_t><<<2, 1>>>(
+                metric_attention_forwards_kernel<scalar_t><<<2, 1>>>(
                     input_bcd.data<scalar_t>(),
                     output_bcd.data<scalar_t>(),
                     metric_1nkk.data<scalar_t>()
@@ -92,7 +92,7 @@ extern "C" {
         CHECK_INPUT(input_bcd);
         CHECK_INPUT(output_bcd);
         CHECK_INPUT(metric_1nkk);
-
+        
         MetricTensorAttention::apply(
             *input_bcd,
             *output_bcd,

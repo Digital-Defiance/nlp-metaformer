@@ -39,7 +39,7 @@ fn test_add_constant(){
 
     let mut output_bcd = Tensor::zeros(&[1, 2], (Kind::Float, device));
     input_bcd.metric_tensor_attention(&mut output_bcd, &mut metric_1nkk);
-    input_bcd.print();
+    output_bcd.print();
    //  assert!(result.equal(&c));
 
 
