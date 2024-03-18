@@ -8,22 +8,25 @@ type TensorPTR = *mut C_tensor;
 type ImmutableTensorPTR = *const C_tensor;
 
 extern "C" {
-    fn f_metric_tensor_attention(input_bcd: ImmutableTensorPTR,  output_bcd: TensorPTR,  metric_1nkk: TensorPTR);
+    fn f_metric_tensor_attention(out: &mut TensorPTR, input_bcd: ImmutableTensorPTR,  metric_1nkk: TensorPTR) -> C_tensor;
 }
 
 pub trait MetricAttention {
-    fn metric_tensor_attention(&self, output_bcd: &mut Tensor, metric_1nkk: &mut Tensor) ;
+    fn metric_tensor_attention(&self, metric_1nkk: &mut Tensor) -> Tensor;
 }
 
 impl MetricAttention for Tensor {
-    fn metric_tensor_attention(&self, output_bcd: &mut Tensor, metric_1nkk: &mut Tensor) {
+    fn metric_tensor_attention(&self, metric_1nkk: &mut Tensor) -> Tensor {
+        let mut c_tensors = [std::ptr::null_mut(); 1];
         unsafe {
             f_metric_tensor_attention(
+                c_tensors.as_mut_ptr(),
                 self.as_ptr(),
-                output_bcd.as_mut_ptr(),
                 metric_1nkk.as_mut_ptr()
             );
+            Tensor::from_ptr(c_tensors[0])
         }
+
     }
 }
 
@@ -36,10 +39,16 @@ fn test_add_constant(){
     let data: &[c_float; 2] = &[5., 25.];
     let input_bcd = Tensor::from_slice(data).to(device);
     let mut metric_1nkk = Tensor::from_slice(data).to(device);
-
-    let mut output_bcd = Tensor::zeros(&[1, 2], (Kind::Float, device));
-    input_bcd.metric_tensor_attention(&mut output_bcd, &mut metric_1nkk);
+    let output_bcd = input_bcd.metric_tensor_attention( &mut metric_1nkk);
     output_bcd.print();
+    output_bcd.abs
+
+   
+   
+   
+   
+   
+   
    //  assert!(result.equal(&c));
 
 

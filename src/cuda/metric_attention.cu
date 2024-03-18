@@ -99,15 +99,21 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
 
 
 extern "C" {
-    torch::Tensor f_metric_tensor_attention(TensorPTR input_bcd, TensorPTR metric_1nkk) {
+    torch::Tensor f_metric_tensor_attention(TensorPTR *out, TensorPTR input_bcd, TensorPTR metric_1nkk) {
 
         CHECK_INPUT(input_bcd);
         CHECK_INPUT(metric_1nkk);
         
-        return MetricTensorAttention::apply(
+
+        // taken from torch sys:
+        // auto outputs__ = torch::abs(*self);
+        // out__[0] = new torch::Tensor(outputs__);
+        
+        auto outputs = MetricTensorAttention::apply(
             *input_bcd,
             *metric_1nkk
         );
+        out[0] = new torch::Tensor(outputs);
     }
 }
 
