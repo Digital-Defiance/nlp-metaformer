@@ -1,7 +1,7 @@
 
 
 use libc::c_float;
-use tch::{nn::{self, OptimizerConfig}, Device, Kind, TchError, Tensor};
+use tch::{kind, nn::{self, OptimizerConfig}, Device, Kind, TchError, Tensor};
 use torch_sys::C_tensor;
 
 use crate::{metaformer::commons::generate_init, optimizer::build_optimizer};
@@ -40,9 +40,14 @@ fn test_backwards_pass(){
 
     let device = Device::cuda_if_available();
 
-    let data: &[c_float; 2] = &[5., 25.];
-    let input_bcd = Tensor::from_slice(data).to(device).set_requires_grad(true);
-    let gt_output_bcd = Tensor::from_slice(data).to(device).set_requires_grad(true);
+    let data = &[5., 25.];
+
+    let input_bcd = Tensor::zeros(&[2, 2], (kind::Kind::Float, device));
+
+
+
+
+    let gt_output_bcd = Tensor::zeros(&[2, 2], (kind::Kind::Float, device));
 
 
    //  assert!(result.equal(&c));
