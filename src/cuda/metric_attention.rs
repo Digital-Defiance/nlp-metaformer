@@ -8,7 +8,7 @@ type TensorPTR = *mut C_tensor;
 type ImmutableTensorPTR = *const C_tensor;
 
 extern "C" {
-    fn f_metric_tensor_attention(out: &mut TensorPTR, input_bcd: ImmutableTensorPTR,  metric_1nkk: TensorPTR) -> C_tensor;
+    fn f_metric_tensor_attention(out: *mut TensorPTR, input_bcd: ImmutableTensorPTR,  metric_1nkk: TensorPTR);
 }
 
 pub trait MetricAttention {
@@ -41,7 +41,6 @@ fn test_add_constant(){
     let mut metric_1nkk = Tensor::from_slice(data).to(device);
     let output_bcd = input_bcd.metric_tensor_attention( &mut metric_1nkk);
     output_bcd.print();
-    output_bcd.abs
 
    
    
