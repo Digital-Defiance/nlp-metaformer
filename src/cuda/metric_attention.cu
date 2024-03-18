@@ -27,26 +27,34 @@ __global__ void metric_attention_forwards_kernel(
 template <typename scalar_t> 
 __global__ void metric_attention_backwards_kernel(
         scalar_t *input_bcd,
-        scalar_t *output_bcd,
-        scalar_t *metric_1nkk
-        scalar_t *grad_metric_1nkk
+        scalar_t *metric_1nkk,
+
+        scalar_t *grad_input_bcd,
+        scalar_t *grad_metric_1nkk,
+    
+        scalar_t *grad_output_bcd
 ) {
     /// TODO metric_attention_backwards_kernel
     int i = blockDim.x * blockIdx.x + threadIdx.x;
-    grad_metric_1nkk[i] = 2*input_bcd[i]*metric_1nkk[i];
+
+    grad_input_bcd[i] = grad_output_bcd[i]*metric_1nkk[i]**2;
+    grad_metric_1nkk[i] = grad_output_bcd[i]*2*input_bcd[i]*metric_1nkk[i];
 }
 
 
+// Testing phase, this implements y_bi = w_1i*x_bi**2 for now
 class MetricTensorAttention : public Function<MetricTensorAttention> {
     public:
         static torch::Tensor
         forward(
             AutogradContext *ctx,
             torch::Tensor input_bcd,
-            torch::Tensor output_bcd,
             torch::Tensor metric_1nkk
         ) {
             ctx->save_for_backward({input_bcd, metric_1nkk });
+
+            auto device = input_bcd.device();
+            auto output_bcd = torch::zeros(input_bcd.size()).to(device);
 
             AT_DISPATCH_FLOATING_TYPES(input_bcd.type(), "metric_attention_forwards_kernel", ([&] {
                 metric_attention_forwards_kernel<scalar_t><<<2, 1>>>(
@@ -63,38 +71,41 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             AutogradContext *ctx,
             tensor_list grad_outputs
         ) {
-            auto saved = ctx->get_saved_variables();
 
+            torch::Tensor grad_output_bcd = grad_outputs[0];
+
+            auto saved = ctx->get_saved_variables();
             torch::Tensor input_bcd = saved[0];
             torch::Tensor metric_1nkk = saved[1];
+
+            auto grad_input_bcd = torch::zeros(input_bcd.size()).to(input_bcd.device());
+            auto grad_metric_1nkk = torch::zeros(metric_1nkk.size()).to(metric_1nkk.device());
 
             AT_DISPATCH_FLOATING_TYPES(input_bcd.type(), "metric_attention_backwards_kernel", ([&] {
                 metric_attention_backwards_kernel<scalar_t><<<2, 1>>>(
                     input_bcd.data<scalar_t>(),
                     metric_1nkk.data<scalar_t>(),
-                    grad_metric_1nkk.data<scalar_t>()
+                    
+                    grad_input_bcd.data<scalar_t>(),
+                    grad_metric_1nkk.data<scalar_t>(),
+        
+                    grad_output_bcd.data<scalar_t>(),
                 );
             }));
-                  
-            auto grad_output = grad_outputs[0];
-            // auto grad_input = grad_output.mm(weight);
-            // auto grad_weight = grad_output.t().mm(input);
 
-            return {}; // {grad_input, grad_weight};
+            return {grad_input_bcd, grad_metric_1nkk};
   }
 };
 
 
 extern "C" {
-    void f_metric_tensor_attention(TensorPTR input_bcd, TensorPTR output_bcd, TensorPTR metric_1nkk) {
+    torch::Tensor f_metric_tensor_attention(TensorPTR input_bcd, TensorPTR metric_1nkk) {
 
         CHECK_INPUT(input_bcd);
-        CHECK_INPUT(output_bcd);
         CHECK_INPUT(metric_1nkk);
         
-        MetricTensorAttention::apply(
+        return MetricTensorAttention::apply(
             *input_bcd,
-            *output_bcd,
             *metric_1nkk
         );
     }
