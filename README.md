@@ -4,6 +4,47 @@ Speak with a language model.
 
 ---
 
+## Cuda Kernel
+
+
+Projection of a sequence $x$ of $c$ embeddings of dimension $d$ onto $n$ spaces of dimension $k$
+
+$$p^{nck} = P^{nk}_d  x^{cd}$$
+
+Dot product of each embedding with each other embedding using the metric tensor M
+
+$$q^{ncc'} = M^{n}_{kk'} p^{nck} p^{nc'k'}$$
+
+Reducing the number of computations by grouping the terms strategically, note that Mkk' = Mk'k
+
+$$= \delta_{kk'} M^n_{kk'} p^{nck} p^{nc'k'} + 2 (1 - \delta_{kk'}) \delta_{k>k'} M^n_{kk'} p^{nck} p^{nc'k'}$$
+
+1 - dirac is not needed since delta k > k' already guarantees the condition
+
+$$= M^n_{kk} p^{nck} p^{nc'k} + 2  \delta_{k>k'} M^n_{kk'} p^{nck} p^{nc'k'}$$
+
+Assuming the existence of a pairing function F(k, k') that indexes an upper triangular matrix, and that the coordinates k, k' can be retrieved with f and g, that is k = f(F(k, k')) and k' = g(F(k, k')). This is a reasonable assumption because I'll just use a lookup table.
+
+$$= \delta_{f(l)g(l)} \bar M^n_{l} p^{ncf(l)} p^{nc'f(l)}+ 2 (1 - \delta_{f(l)g(l)}) \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
+
+$$= \delta_{f(l)g(l)} \bar M^n_{l} \left [ 
+  (p^{ncf(l)})^2 + 2\delta_{c>c'}  p^{ncf(l)} p^{nc'f(l)}
+\right ] + 2 (1 - \delta_{f(l)g(l)}) \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
+
+
+$$= \delta_{f(l)g(l)} \bar M^n_{l} \left [ 
+  (p^{ncf(l)})^2 + 2\delta_{c>c'}  p^{ncf(l)} p^{nc'f(l)}
+\right ] + 2 (1 - \delta_{f(l)g(l)}) \bar M^n_l (
+  p^{ncf(l)} p^{ncg(l)} + 2 \delta_{c > c'} p^{ncf(l)} p^{nc'g(l)}
+)$$
+
+$$= \delta_{f(l)g(l)} \bar M^n_{l} \left [ 
+  \delta_{f(u)g(v)} (p^{nf(u)f(l)})^2 + 2 (1 -  \delta_{f(u)g(v)}) p^{nf(u)f(l)} p^{ng(u)f(l)}
+\right ] + 2 (1 - \delta_{f(l)g(l)}) \bar M^n_l \left [
+   \delta_{f(u)g(v)}  p^{nf(u)f(l)} p^{nf(u)g(l)} + 2 (1 -  \delta_{f(u)g(v)}) p^{nf(u)f(l)} p^{ng(u)g(l)}
+\right ]$$
+
+
 ## Experiments
 
 Note: all workflows have been removed, pipelines are being moved to prefect
