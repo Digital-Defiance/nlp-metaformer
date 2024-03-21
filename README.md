@@ -11,11 +11,11 @@ Let $P$ be a projection of a sequence $x$ of $c$ $d$-dimensional embeddings onto
 
 $$p^{nck} = P^{nk}_d  x^{cd}$$
 
-At the heart of the proposed attention mechanism is the dot product of each embedding with each other embedding using a learnable metric tensor $M$, given by
+At the heart of the proposed attention mechanism is the dot product of each embedding with each other embedding using $n$ learnable metric tensors $M$, given by
 
 $$q^{ncc'} = M^{n}_{kk'} p^{nck} p^{nc'k'}$$
 
-Reducing the number of computations by grouping the terms strategically, note that Mkk' = Mk'k
+Noting that the metric tensor is symmetric, we can reduce the number of computations by grouping the terms strategically, that is, since $M_{kk'} = M_{k'k}$, then
 
 $$= \delta_{kk'} M^n_{kk'} p^{nck} p^{nc'k'} + 2 (1 - \delta_{kk'}) \delta_{k>k'} M^n_{kk'} p^{nck} p^{nc'k'}$$
 
