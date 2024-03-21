@@ -19,11 +19,15 @@ Noting that the metric tensor is symmetric, we can reduce the number of computat
 
 $$q^{ncc'} = \delta_{kk'} M^n_{kk'} p^{nck} p^{nc'k'} + 2 \delta_{k>k'} M^n_{kk'} p^{nck} p^{nc'k'}$$
 
-1 - dirac is not needed since delta k > k' already guarantees the condition
+Let $F(k, k')$ be a pairing function that indexes an upper triangular matrix and $f$ and $g$ integer valued functions that retrieve the first and second argument of $F$, that is
 
-$$= M^n_{kk} p^{nck} p^{nc'k} + 2  \delta_{k>k'} M^n_{kk'} p^{nck} p^{nc'k'}$$
+$$  k = f(F(k, k')) $$
 
-Assuming the existence of a pairing function F(k, k') that indexes an upper triangular matrix, and that the coordinates k, k' can be retrieved with f and g, that is k = f(F(k, k')) and k' = g(F(k, k')). This is a reasonable assumption because I'll just use a lookup table.
+and
+
+$$ k' = g(F(k, k')) $$
+
+Such an arrangement is easily achieved computationally by storing two arrays to be used as a lookup table for $f$ and $g$. 
 
 $$= \delta_{f(l)g(l)} \bar M^n_{l} p^{ncf(l)} p^{nc'f(l)}+ 2 (1 - \delta_{f(l)g(l)}) \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
 
