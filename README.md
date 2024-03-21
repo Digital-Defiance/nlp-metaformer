@@ -4,8 +4,9 @@ Speak with a language model.
 
 ---
 
-## Cuda Kernel
+## Cuda Kernel of the Metric Tensor Attention
 
+### Determination of the analytic expression
 
 Let $P$ be a projection of a sequence $x$ of $c$ embeddings from $R^d$ onto $n$ spaces of dimension $k$, expressed in tensor notation by
 
@@ -71,6 +72,10 @@ Computation of the gradients is straightforward,
 
 
 $$ \partial_{\bar M^n _ {l}} q^{nul} _ {l} = \frac {q^{nul} _ {l}}{\bar M^n _ {l}} $$
+
+
+### Implementation details
+
 
 
 
