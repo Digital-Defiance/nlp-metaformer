@@ -70,7 +70,7 @@ For a given combination of $u$ and $l$, there's only one term to be calculated. 
 Computation of the gradients is straightforward,
 
 
-$$ \partial_{\bar M^n _ {l}} q^{nul} _ {l} =  p^{nf(u)f(l)} p^{nf(u)f(l)} \delta_{f(l)g(l)} \delta^{f(u)g(u)}  +   2 p^{nf(u)f(l)} p^{ng(u)f(l)} \delta_{f(l)g(l)} \tilde \delta^{f(u)g(u)} +    2    \bar  p^{nf(u)f(l)} p^{nf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta_{f(l)g(l)} + 4   p^{nf(u)f(l)} p^{ng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta_{f(l)g(l)}$$
+$$ \partial_{\bar M^n _ {l}} q^{nul} _ {l} = \frac {q^{nul} _ {l}}{\bar M^n _ {l}} $$
 
 
 
