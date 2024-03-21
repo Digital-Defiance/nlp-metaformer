@@ -7,17 +7,17 @@ Speak with a language model.
 ## Cuda Kernel
 
 
-Let $P$ be a projection of a sequence $x$ of $c$ $d$-dimensional embeddings onto $n$ spaces of dimension $k$, expressed by
+Let $P$ be a projection of a sequence $x$ of $c$ embeddings from $R^d$ onto $n$ spaces of dimension $k$, expressed in tensor notation by
 
 $$p^{nck} = P^{nk}_d  x^{cd}$$
 
-At the heart of the proposed attention mechanism is the dot product of each embedding with each other embedding using $n$ learnable metric tensors $M$, given by
+At the heart of the proposed attention mechanism is a learnable dot product of each projected embedding with each other embedding. This is achieved using $n$ learnable metric tensors $M$ and is given by
 
 $$q^{ncc'} = M^{n}_{kk'} p^{nck} p^{nc'k'}$$
 
-Noting that the metric tensor is symmetric, we can reduce the number of computations by grouping the terms strategically, that is, since $M_{kk'} = M_{k'k}$, then
+The metric tensor is symmetric, so we can reduce the number of computations by grouping the terms strategically, that is, since $M_{kk'} = M_{k'k}$, then
 
-$$q^{ncc'} = \delta_{kk'} M^n_{kk'} p^{nck} p^{nc'k'} + 2 \delta_{k>k'} M^n_{kk'} p^{nck} p^{nc'k'}$$
+$$q^{ncc'} = \delta^{kk'} M^n_{kk'} p^{nck} p^{nc'k'} + 2 \delta^{k>k'} M^n_{kk'} p^{nck} p^{nc'k'}$$
 
 Let $F(k, k')$ be a pairing function that indexes an upper triangular matrix and $f$ and $g$ integer valued functions that retrieve the first and second argument of $F$, that is
 
@@ -27,15 +27,15 @@ and
 
 $$ k' = g(F(k, k')) $$
 
-Such an arrangement is easily achieved computationally by storing two arrays to be used as a lookup table for $f$ and $g$. Finally, let $l=F(k, k')$, and 
+Such an arrangement is easily achieved by storing two arrays to be used as a lookup table for $f$ and $g$. Finally, let $l=F(k, k')$, and 
 
 $$ \bar M^n_{l} =  M^n_{f(l)g(l)} $$
 
-we thus rewrite our expression as
+,we thus rewrite our expression as
 
-$$q^{ncc'} = \delta_{f(l)g(l)} \bar M^n_{l} p^{ncf(l)} p^{nc'f(l)} + 2 \tilde \delta_{f(l)g(l)}   \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
+$$q^{ncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{ncf(l)} p^{nc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
 
-where $\tilde \delta_{f(l)g(l)} = 1 - \delta_{f(l)g(l)} $. At this point, our expression already fits quite well inside a cuda kernel, note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, we thus have that $q^{ncc'} =q^{nc'c}$ and the procedure we just did for $kk'$ can be done for $cc'$. 
+where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. At this point, our expression already fits quite well inside a cuda kernel, note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, we thus have that $q^{ncc'} =q^{nc'c}$ and the procedure we just did for $kk'$ can be done for $cc'$. 
 
 Let's use the same pairing function on the triangle matrix spanned by the range of $c$ and use the index $u$ to take the role of $l$ in this case. To avoid overuse of notation, the convention I'll use is that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$. 
 
