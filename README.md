@@ -33,7 +33,9 @@ $$ \bar M^n_{l} =  M^n_{f(l)g(l)} $$
 
 we thus rewrite our expression as
 
-$$q^{ncc'} = \delta_{f(l)g(l)} \bar M^n_{l} p^{ncf(l)} p^{nc'f(l)}+ 2 (1 - \delta_{f(l)g(l)}) \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
+$$q^{ncc'} = \delta_{f(l)g(l)} \bar M^n_{l} p^{ncf(l)} p^{nc'f(l)}+ 2 \tilde \delta_{f(l)g(l)}   \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
+
+where $\tilde \delta_{f(l)g(l)} = 1 - \delta_{f(l)g(l)} $
 
 $$= \delta_{f(l)g(l)} \bar M^n_{l} \left [ 
   (p^{ncf(l)})^2 + 2\delta_{c>c'}  p^{ncf(l)} p^{nc'f(l)}
