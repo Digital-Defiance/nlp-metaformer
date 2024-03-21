@@ -62,7 +62,7 @@ $$q^{ncc'} = \delta_{f(l)g(l)} \bar M^n_{l} \left [ \delta_{f(u)g(u)} p^{nf(u)f(
 
 which we'll now group according to the $\delta$'s
 
-$$q^{ncc'} =   p^{nf(u)f(l)} p^{nf(u)f(l)} \bar M^n_{l} \delta_{f(l)g(l)} \delta_{f(u)g(u)} +    \bar M^n_{l} 2     p^{nf(u)f(l)} (  p^{ng(u)f(l)}   +  p^{nf(u)g(l)}  ) \tilde \delta_{f(l)g(l)}  \delta_{f(u)g(u)} + 4   \bar M^n_l  \tilde    p^{nf(u)f(l)} p^{ng(u)g(l)} \delta_{f(u)g(u)} \tilde \delta_{f(l)g(l)}   $$
+$$q^{ncc'} =   p^{nf(u)f(l)} p^{nf(u)f(l)} \bar M^n_{l} \delta_{f(l)g(l)} \delta_{f(u)g(u)} +   2 \bar M^n_{l}     p^{nf(u)f(l)} (  p^{ng(u)f(l)}   +  p^{nf(u)g(l)}  ) \tilde \delta_{f(l)g(l)}  \delta_{f(u)g(u)} + 4   \bar M^n_l  \tilde    p^{nf(u)f(l)} p^{ng(u)g(l)} \delta_{f(u)g(u)} \tilde \delta_{f(l)g(l)}   $$
 
 
 ----
