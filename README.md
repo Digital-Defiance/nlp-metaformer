@@ -11,7 +11,7 @@ Let $P$ be a projection of a sequence $x$ of $c$ $d$-dimensional embeddings onto
 
 $$p^{nck} = P^{nk}_d  x^{cd}$$
 
-Dot product of each embedding with each other embedding using the metric tensor M
+At the heart of the proposed attention mechanism is the dot product of each embedding with each other embedding using a learnable metric tensor $M$, given by
 
 $$q^{ncc'} = M^{n}_{kk'} p^{nck} p^{nc'k'}$$
 
