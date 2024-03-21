@@ -27,7 +27,11 @@ and
 
 $$ k' = g(F(k, k')) $$
 
-Such an arrangement is easily achieved computationally by storing two arrays to be used as a lookup table for $f$ and $g$. Finally, let $l=F(k, k')$, we thus rewrite our expression as
+Such an arrangement is easily achieved computationally by storing two arrays to be used as a lookup table for $f$ and $g$. Finally, let $l=F(k, k')$, and 
+
+$$ \bar M^n_{l} =  M^n_{f(l)g(l)} $$
+
+we thus rewrite our expression as
 
 $$q^{ncc'} = \delta_{f(l)g(l)} \bar M^n_{l} p^{ncf(l)} p^{nc'f(l)}+ 2 (1 - \delta_{f(l)g(l)}) \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
 
