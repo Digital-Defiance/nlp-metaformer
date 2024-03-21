@@ -35,7 +35,7 @@ we thus rewrite our expression as
 
 $$q^{ncc'} = \delta_{f(l)g(l)} \bar M^n_{l} p^{ncf(l)} p^{nc'f(l)}+ 2 \tilde \delta_{f(l)g(l)}   \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
 
-where $\tilde \delta_{f(l)g(l)} = 1 - \delta_{f(l)g(l)} $. At this point, our expression already fits quite well inside a cuda kernel, note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. 
+where $\tilde \delta_{f(l)g(l)} = 1 - \delta_{f(l)g(l)} $. At this point, our expression already fits quite well inside a cuda kernel, note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, we thus have that $q^{ncc'} =q^{nc'c} $ and the procedure we just did for $kk'$ can be done for $cc'$.
 
 $$= \delta_{f(l)g(l)} \bar M^n_{l} \left [ 
   (p^{ncf(l)})^2 + 2\delta_{c>c'}  p^{ncf(l)} p^{nc'f(l)}
