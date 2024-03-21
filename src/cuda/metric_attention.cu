@@ -14,13 +14,32 @@ typedef torch::Tensor *TensorPTR;
 
 template <typename scalar_t> 
 __global__ void metric_attention_forwards_kernel(
-        scalar_t *input_bcd,
-        scalar_t *output_bcd,
-        scalar_t *metric_1nkk
+    scalar_t *p_nck,
+    scalar_t *f_l, scalar_t *g_l, int Nl,
+    scalar_t *f_u, scalar_t *g_u, int Nu,
+    scalar_t *M_nl
 ) {
     /// TODO metric_attention_forwards_kernel
     int i = blockDim.x * blockIdx.x + threadIdx.x;
-    output_bcd[i] = input_bcd[i]*metric_1nkk[i]*metric_1nkk[i];
+
+    int c = f_u[u];
+    int c_ = g_u[u];
+
+    int k = f_l[l];
+    int k_ = g_l[l];
+
+
+    if (c == c_ and k == k_){
+        output[n][u][l] = M_nl[n][l]*p[n][c][k]*p[n][c][k];
+    } else if (k == k_ and c != c_) {
+        output[n][u][l] = 2*M_nl[n][l]*p[n][c][k];
+    } else if (c == c_ and k != k_) {
+        output[n][u][l] =
+    } else if (c != c_ and k != k_) {
+        output[n][u][l] =
+    }
+
+
 }
 
 
@@ -48,8 +67,10 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
         static torch::Tensor
         forward(
             AutogradContext *ctx,
-            torch::Tensor input_bcd,
-            torch::Tensor metric_1nkk
+            torch::Tensor p_nck,
+            torch::Tensor f_l, torch::Tensor g_l, int Nl,
+            torch::Tensor f_u, torch::Tensor g_u, int Nu,
+            torch::Tensor M_nl
         ) {
             ctx->save_for_backward({input_bcd, metric_1nkk });
 
