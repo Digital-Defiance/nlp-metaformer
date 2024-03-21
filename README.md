@@ -62,29 +62,12 @@ $$q^{nu} = \delta_{f(l)g(l)} \bar M^n_{l} \left [ \delta^{f(u)g(u)} p^{nf(u)f(l)
 
 which we'll now group according to the $\delta$'s
 
-$$q^{nu} =   \left [ \bar M^n_{l} p^{nf(u)f(l)} p^{nf(u)f(l)} \delta_{f(l)g(l)} \delta^{f(u)g(u)}  +   2 \bar M^n_{l}  p^{nf(u)f(l)} p^{ng(u)f(l)} \delta_{f(l)g(l)} \tilde \delta^{f(u)g(u)} \right ]  + 2 \tilde \delta_{f(l)g(l)}   \bar M^n_l \left [ \delta^{f(u)g(u)} p^{nf(u)f(l)} p^{nf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)g(l)} \right ]$$
+$$q^{nu} =   \left [ \bar M^n_{l} p^{nf(u)f(l)} p^{nf(u)f(l)} \delta_{f(l)g(l)} \delta^{f(u)g(u)}  +   2 \bar M^n_{l}  p^{nf(u)f(l)} p^{ng(u)f(l)} \delta_{f(l)g(l)} \tilde \delta^{f(u)g(u)} \right ]  + 2    \bar M^n_l \left [  p^{nf(u)f(l)} p^{nf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta_{f(l)g(l)} + 2     p^{nf(u)f(l)} p^{ng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta_{f(l)g(l)} \right ]$$
 
 
 ----
 
 
-
-$$= \delta_{f(l)g(l)} \bar M^n_{l} \left [ 
-  (p^{ncf(l)})^2 + 2\delta_{c>c'}  p^{ncf(l)} p^{nc'f(l)}
-\right ] + 2 (1 - \delta_{f(l)g(l)}) \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
-
-
-$$= \delta_{f(l)g(l)} \bar M^n_{l} \left [ 
-  (p^{ncf(l)})^2 + 2\delta_{c>c'}  p^{ncf(l)} p^{nc'f(l)}
-\right ] + 2 (1 - \delta_{f(l)g(l)}) \bar M^n_l (
-  p^{ncf(l)} p^{ncg(l)} + 2 \delta_{c > c'} p^{ncf(l)} p^{nc'g(l)}
-)$$
-
-$$= \delta_{f(l)g(l)} \bar M^n_{l} \left [ 
-  \delta_{f(u)g(v)} (p^{nf(u)f(l)})^2 + 2 (1 -  \delta_{f(u)g(v)}) p^{nf(u)f(l)} p^{ng(u)f(l)}
-\right ] + 2 (1 - \delta_{f(l)g(l)}) \bar M^n_l \left [
-   \delta_{f(u)g(v)}  p^{nf(u)f(l)} p^{nf(u)g(l)} + 2 (1 -  \delta_{f(u)g(v)}) p^{nf(u)f(l)} p^{ng(u)g(l)}
-\right ]$$
 
 
 ## Experiments
