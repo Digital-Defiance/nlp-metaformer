@@ -53,7 +53,7 @@ $$\rho^{nul} = \delta_{f(u)g(u)} p^{nf(u)f(l)} p^{ng(u)g(l)}$ + 2  \tilde \delta
 
 further contraction results in
 
-$$\rho^{nul} =  p^{nf(u)f(l)} p^{nf(u)g(l)}$ + 2  \tilde \delta_{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)g(l)}$$
+$$\rho^{nul} =  p^{nf(u)f(l)} p^{nf(u)g(l)} + 2  \tilde \delta_{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)g(l)}$$
 
 
 ----
