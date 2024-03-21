@@ -8,7 +8,7 @@ Speak with a language model.
 
 ### Determination of the analytic expression
 
-Let $P$ be a projection of a sequence $x$ of $c$ embeddings from $R^d$ onto $n$ spaces of dimension $k$, expressed in tensor notation by
+Let $P$ be a projection of a sequence $x$ of $c$ embeddings from $\mathbf R^d$ onto $n$ spaces of dimension $k$, expressed in Ricci notation by
 
 $$p^{nck} = P^{nk}_d  x^{cd}$$
 
@@ -20,23 +20,29 @@ The metric tensor is symmetric, so we can reduce the number of computations by g
 
 $$q^{ncc'} = \delta^{kk'} M^n_{kk'} p^{nck} p^{nc'k'} + 2 \delta^{k>k'} M^n_{kk'} p^{nck} p^{nc'k'}$$
 
-Let $F(k, k')$ be a pairing function that indexes an upper triangular matrix and $f$ and $g$ integer valued functions that retrieve the first and second argument of $F$, that is
+Let $F_N(v, w)$ be a pairing function that indexes an upper triangular matrix from $\mathbf R^{N\times N} $ and $f$ and $g$, integer valued functions that retrieve the first and second argument of $F_N$, that is
 
-$$  k = f(F(k, k')) $$
+$$  v = f(F_{N}(v, w)) $$
 
 and
 
-$$ k' = g(F(k, k')) $$
+$$ w = g(F_{N}(v, w)) $$
 
-Such an arrangement is easily achieved by storing two arrays to be used as a lookup table for $f$ and $g$. Finally, let $l=F(k, k')$, and 
+Such an arrangement is easily achieved by storing two arrays to be used as a lookup table for $f$ and $g$. 
+
+Finally, let $l=F_{N_l}(k, k')$, and define
 
 $$ \bar M^n_{l} =  M^n_{f(l)g(l)} $$
 
-,we thus rewrite our expression as
+which we use to rewrite our original expression as
 
 $$q^{ncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{ncf(l)} p^{nc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
 
-where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. At this point, our expression already fits quite well inside a cuda kernel, note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, we thus have that $q^{ncc'} =q^{nc'c}$ and the procedure we just did for $kk'$ can be done for $cc'$. 
+where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. 
+
+At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. 
+
+However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, it follows that $q^{ncc'} =q^{nc'c}$, so the procedure we just did for $kk'$ can be done for $cc'$. 
 
 Let's use the same pairing function on the triangle matrix spanned by the range of $c$ and use the index $u$ to take the role of $l$ in this case. To avoid overuse of notation, the convention I'll use is that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$. 
 
