@@ -60,6 +60,10 @@ Substituting this back, while attending to the relevant substitution on the firs
 
 $$q^{ncc'} = \delta_{f(l)g(l)} \bar M^n_{l} \left [ \delta_{f(u)g(u)} p^{nf(u)f(l)} p^{nf(u)f(l)} + 2  \tilde \delta_{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)f(l)} \right ]  + 2 \tilde \delta_{f(l)g(l)}   \bar M^n_l \left [ \delta_{f(u)g(u)} p^{nf(u)f(l)} p^{nf(u)g(l)} + 2  \tilde \delta_{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)g(l)} \right ]$$
 
+which we'll now group according to the $\delta$'s
+
+$$q^{ncc'} =  \delta_{f(u)g(u)} p^{nf(u)f(l)} p^{nf(u)f(l)}  \delta_{f(l)g(l)} \bar M^n_{l} +   \delta_{f(l)g(l)} \bar M^n_{l} 2  \tilde \delta_{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)f(l)}   + 2 \tilde \delta_{f(l)g(l)}   \bar M^n_l \left [ \delta_{f(u)g(u)} p^{nf(u)f(l)} p^{nf(u)g(l)} + 2  \tilde \delta_{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)g(l)} \right ]$$
+
 
 
 ----
