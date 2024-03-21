@@ -62,7 +62,7 @@ $$q^{nu} = \delta_{f(l)g(l)} \bar M^n_{l} \left [ \delta^{f(u)g(u)} p^{nf(u)f(l)
 
 which we'll now group according to the $\delta$'s
 
-$$q^{nu} =   p^{nf(u)f(l)} p^{nf(u)f(l)} \bar M^n_{l} \delta_{f(l)g(l)} \delta_{f(u)g(u)} +   2 \bar M^n_{l}     p^{nf(u)f(l)} (  p^{ng(u)f(l)}   +  p^{nf(u)g(l)}  ) \tilde \delta_{f(l)g(l)}  \delta_{f(u)g(u)} + 4   \bar M^n_l  \tilde    p^{nf(u)f(l)} p^{ng(u)g(l)} \delta_{f(u)g(u)} \tilde \delta_{f(l)g(l)}   $$
+$$q^{nu} =   \left [ \delta_{f(l)g(l)} \delta^{f(u)g(u)} \bar M^n_{l} p^{nf(u)f(l)} p^{nf(u)f(l)} + \delta_{f(l)g(l)} \tilde \delta^{f(u)g(u)}  2 \bar M^n_{l}  p^{nf(u)f(l)} p^{ng(u)f(l)} \right ]  + 2 \tilde \delta_{f(l)g(l)}   \bar M^n_l \left [ \delta^{f(u)g(u)} p^{nf(u)f(l)} p^{nf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)g(l)} \right ]$$
 
 
 ----
