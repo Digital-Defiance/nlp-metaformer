@@ -51,6 +51,10 @@ which we can similarly split into two expressions
 
 $$\rho^{nul} = \delta_{f(u)g(u)} p^{nf(u)f(l)} p^{ng(u)g(l)}$ + 2  \tilde \delta_{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)g(l)}$$
 
+further contraction results in
+
+$$\rho^{nul} =  p^{nf(u)f(l)} p^{nf(u)g(l)}$ + 2  \tilde \delta_{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)g(l)}$$
+
 
 ----
 
