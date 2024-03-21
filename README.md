@@ -64,6 +64,8 @@ which we'll now group according to the $\delta$'s
 
 $$q^{nul} _ {l} =  \bar M^n _ {l} p^{nf(u)f(l)} p^{nf(u)f(l)} \delta_{f(l)g(l)} \delta^{f(u)g(u)}  +   2 \bar M^n_{l}  p^{nf(u)f(l)} p^{ng(u)f(l)} \delta_{f(l)g(l)} \tilde \delta^{f(u)g(u)} +    2    \bar M^n_l p^{nf(u)f(l)} p^{nf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta_{f(l)g(l)} + 4   \bar M^n_l   p^{nf(u)f(l)} p^{ng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta_{f(l)g(l)}$$
 
+For a given combination of $u$ and $l$, there's only one term to be calculated. All terms will be computed in paralel on the gpu and collected onto a tensor that represents $q^{nul} _ {l}$, as demanded by the tensor notation, a sum is then performed over $l$ to obtain $q^{nu}$. The lookup tables for $f$ and $g$ are then used to recover $q^{ncc'}$ which is then comunicated back to torch for the rest of the attention mechanism.
+
 
 ----
 
