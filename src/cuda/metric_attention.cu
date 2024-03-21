@@ -15,31 +15,30 @@ typedef torch::Tensor *TensorPTR;
 template <typename scalar_t> 
 __global__ void metric_attention_forwards_kernel(
     scalar_t *p_nck,
-    scalar_t *f_l, scalar_t *g_l, int Nl,
-    scalar_t *f_u, scalar_t *g_u, int Nu,
-    scalar_t *M_nl
+    scalar_t *f_l, scalar_t *g_l,
+    scalar_t *f_u, scalar_t *g_u,
+    scalar_t *M_nl, scalar_t *q_nul
 ) {
-    /// TODO metric_attention_forwards_kernel
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    // int i = blockDim.x * blockIdx.x + threadIdx.x;
+    int n = ...;
+    int l = ...;
+    int u = ...;
 
-    int c = f_u[u];
-    int c_ = g_u[u];
+    int fu = f_u[u];
+    int gu = g_u[u];
 
-    int k = f_l[l];
-    int k_ = g_l[l];
+    int fl = f_l[l];
+    int gl = g_l[l];
 
-
-    if (c == c_ and k == k_){
-        output[n][u][l] = M_nl[n][l]*p[n][c][k]*p[n][c][k];
-    } else if (k == k_ and c != c_) {
-        output[n][u][l] = 2*M_nl[n][l]*p[n][c][k];
-    } else if (c == c_ and k != k_) {
-        output[n][u][l] =
-    } else if (c != c_ and k != k_) {
-        output[n][u][l] =
+    if (fl == gl and fu == gu){
+        q_nul[n][u][l] = M_nl[n][l]*p[n][fu][fl]*p[n][fu][fl];
+    } else if (fl == gl and fu != gu) {
+        q_nul[n][u][l] = 2*M_nl[n][l]*p[n][fu][fl]*p[n][gu][fl];
+    } else if (fu == gu and fl != gl) {
+        q_nul[n][u][l] = 2*M_nl[n][l]*p[n][fu][fl]*p[n][fu][gl];
+    } else if (fu != gu and fl != gl) {
+        q_nul[n][u][l] = 4*M_nl[n][l]*p[n][fu][fl]*p[n][gu][gl];
     }
-
-
 }
 
 
