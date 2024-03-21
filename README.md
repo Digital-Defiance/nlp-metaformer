@@ -39,6 +39,23 @@ where $\tilde \delta_{f(l)g(l)} = 1 - \delta_{f(l)g(l)} $. At this point, our ex
 
 Let's use the same pairing function on the triangle matrix spanned by the range of $c$ and use the index $u$ to take the role of $l$ in this case. To avoid overuse of notation, the convention I'll use is that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$. 
 
+To avoid repetition, I'll do the treatment for the following expression 
+
+$$\rho^{ncc'l} = p^{ncf(l)} p^{nc'g(l)}$$
+
+and perform symbol substitution where necessary in order to place it back on the expression we're working. Performing direct substitution we get
+
+$$\rho^{nul} = p^{nf(u)f(l)} p^{ng(u)g(l)}$$
+
+which we can similarly split into two expressions
+
+$$\rho^{nul} = \delta_{f(u)g(u)} p^{nf(u)f(l)} p^{ng(u)g(l)}$ + 2  \tilde \delta_{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)g(l)}$$
+
+
+----
+
+
+
 $$= \delta_{f(l)g(l)} \bar M^n_{l} \left [ 
   (p^{ncf(l)})^2 + 2\delta_{c>c'}  p^{ncf(l)} p^{nc'f(l)}
 \right ] + 2 (1 - \delta_{f(l)g(l)}) \bar M^n_l p^{ncf(l)} p^{nc'g(l)}$$
