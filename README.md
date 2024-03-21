@@ -7,7 +7,7 @@ Speak with a language model.
 ## Cuda Kernel
 
 
-Projection of a sequence $x$ of $c$ embeddings of dimension $d$ onto $n$ spaces of dimension $k$
+Let $P$ be a projection of a sequence $x$ of $c$ $d$-dimensional embeddings onto $n$ spaces of dimension $k$, expressed by
 
 $$p^{nck} = P^{nk}_d  x^{cd}$$
 
