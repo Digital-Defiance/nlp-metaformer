@@ -55,6 +55,11 @@ Note that further contraction is possible on the first term but $\delta$ cannot 
 
 $$\rho^{nul} = \delta_{f(u)g(u)} p^{nf(u)f(l)} p^{nf(u)g(l)} + 2  \tilde \delta_{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)g(l)}$$
 
+Substituting this back, while attending to the relevant substitution on the first term of the original expression,
+
+
+$$q^{ncc'} = \delta_{f(l)g(l)} \bar M^n_{l} p^{ncf(l)} p^{nc'f(l)}+ 2 \tilde \delta_{f(l)g(l)}   \bar M^n_l \left [ \delta_{f(u)g(u)} p^{nf(u)f(l)} p^{nf(u)g(l)} + 2  \tilde \delta_{f(u)g(u)}   p^{nf(u)f(l)} p^{ng(u)g(l)} \right ]$$
+
 
 
 ----
