@@ -13,23 +13,31 @@ using namespace torch::autograd;
 typedef torch::Tensor *TensorPTR;
 
 
+template<typename scalar_t, int D>
+using CudaTensorView = torch::PackedTensorAccessor32<scalar_t, D, torch::RestrictPtrTraits>;
+
 template <typename scalar_t> 
 __global__ void metric_attention_forwards_kernel(
-    torch::PackedTensorAccessor32<scalar_t, 4> p_bnck,
-    torch::PackedTensorAccessor32<scalar_t, 1> f_l,
-    torch::PackedTensorAccessor32<scalar_t, 1> g_l,
-    torch::PackedTensorAccessor32<scalar_t, 1> f_u,
-    torch::PackedTensorAccessor32<scalar_t, 1> g_u,
-    torch::PackedTensorAccessor32<scalar_t, 2> M_nl,
-    torch::PackedTensorAccessor32<scalar_t, 4> q_bnul
+    CudaTensorView<scalar_t, 4> p_bnck,
+    CudaTensorView<scalar_t, 1> f_l, CudaTensorView<scalar_t, 1> g_l,
+    CudaTensorView<scalar_t, 1> f_u, CudaTensorView<scalar_t, 1> g_u,
+    CudaTensorView<scalar_t, 2> M_nl,
+    CudaTensorView<scalar_t, 4> q_bnul,
+    int Nb, int Nn, int Nl, int Nu 
 ) {
 
     int idx = blockIdx.x * blockDim.x + threadIdx.x; // Global thread index
 
-    int b = ...;
-    int n = ...;
-    int l = ...;
-    int u = ...;
+    int b = idx % Nb;
+    idx = (idx / Nb);
+
+    int n = idx % Nn;
+    idx = idx / Nn;
+
+    int l = idx % Nl;
+    idx = idx / Nl;
+
+    int u = idx % Nu;
 
     int fu = f_u[u];
     int gu = g_u[u];
