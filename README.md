@@ -39,9 +39,7 @@ $$q^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde
 
 where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. 
 
-At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. 
-
-However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, it follows that $q^{bncc'} =q^{bnc'c}$, so the procedure we just did for $kk'$ can be done for $cc'$. 
+At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, it follows that $q^{bncc'} =q^{bnc'c}$, so the procedure we just did for $kk'$ can be done for $cc'$. 
 
 Let's use the same pairing function on the triangle matrix spanned by the range of $c$ and use the index $u$ to take the role of $l$ in this case. To avoid overuse of notation, the convention I'll use is that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$. 
 
