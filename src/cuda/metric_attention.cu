@@ -12,14 +12,22 @@ using namespace torch::autograd;
 
 typedef torch::Tensor *TensorPTR;
 
+
+
 template <typename scalar_t> 
 __global__ void metric_attention_forwards_kernel(
-    scalar_t *p_nck,
-    scalar_t *f_l, scalar_t *g_l,
-    scalar_t *f_u, scalar_t *g_u,
-    scalar_t *M_nl, scalar_t *q_nul
+    torch::PackedTensorAccessor32<scalar_t, 4> p_bnck,
+    torch::PackedTensorAccessor32<scalar_t, 1> f_l,
+    torch::PackedTensorAccessor32<scalar_t, 1> g_l,
+    torch::PackedTensorAccessor32<scalar_t, 1> f_u,
+    torch::PackedTensorAccessor32<scalar_t, 1> g_u,
+    torch::PackedTensorAccessor32<scalar_t, 2> M_nl,
+    torch::PackedTensorAccessor32<scalar_t, 4> q_bnul
 ) {
-    // int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+    int idx = blockIdx.x * blockDim.x + threadIdx.x; // Global thread index
+
+    int b = ...;
     int n = ...;
     int l = ...;
     int u = ...;
@@ -31,15 +39,17 @@ __global__ void metric_attention_forwards_kernel(
     int gl = g_l[l];
 
     if (fl == gl and fu == gu){
-        q_nul[n][u][l] = M_nl[n][l]*p[n][fu][fl]*p[n][fu][fl];
+        q_bnul[b][n][u][l] = M_nl[n][l]*p_bnck[b][n][fu][fl]*p_bnck[b][n][fu][fl];
     } else if (fl == gl and fu != gu) {
-        q_nul[n][u][l] = 2*M_nl[n][l]*p[n][fu][fl]*p[n][gu][fl];
-    } else if (fu == gu and fl != gl) {
-        q_nul[n][u][l] = 2*M_nl[n][l]*p[n][fu][fl]*p[n][fu][gl];
-    } else if (fu != gu and fl != gl) {
-        q_nul[n][u][l] = 4*M_nl[n][l]*p[n][fu][fl]*p[n][gu][gl];
+        q_bnul[b][n][u][l] = 2*M_nl[n][l]*p_bnck[b][n][fu][fl]*p_bnck[b][n][gu][fl];
+    } else if (fl != gl and fu == gu) {
+        q_bnul[b][n][u][l] = 2*M_nl[n][l]*p_bnck[b][n][fu][fl]*p_bnck[b][n][fu][gl];
+    } else if (fl != gl and fu != gu) {
+        q_bnul[b][n][u][l] = 4*M_nl[n][l]*p_bnck[b][n][fu][fl]*p_bnck[b][n][gu][gl];
     }
 }
+
+
 
 
 template <typename scalar_t> 
@@ -60,30 +70,44 @@ __global__ void metric_attention_backwards_kernel(
 }
 
 
-// Testing phase, this implements y_bi = w_1i*x_bi**2 for now
 class MetricTensorAttention : public Function<MetricTensorAttention> {
     public:
         static torch::Tensor
         forward(
             AutogradContext *ctx,
-            torch::Tensor p_nck,
-            torch::Tensor f_l, torch::Tensor g_l, int Nl,
-            torch::Tensor f_u, torch::Tensor g_u, int Nu,
+            torch::Tensor p_bnck,
+            torch::Tensor f_l,
+            torch::Tensor g_l, 
+            torch::Tensor f_u,
+            torch::Tensor g_u,
             torch::Tensor M_nl
         ) {
-            ctx->save_for_backward({input_bcd, metric_1nkk });
+            ctx->save_for_backward({ M_nl });
 
-            auto device = input_bcd.device();
-            auto output_bcd = torch::zeros(input_bcd.sizes()).to(device);
+            const auto device = input_bcd.device();
+            auto q_nul = torch::zeros(p_nck.sizes()).to(device);
+
+            const auto batch_size = p_nck.size(0);
+            const auto Nl = f_l.size(0);
+            const auto Nu = f_u.size(0);
+            const auto Nn = M_nl.size(0);
+
+            const int total_threads = batch_size*Nl*Nu*Nn
+            const int threads_per_block = 1024;
+            const int number_of_blocks = (total_threads + threads_per_block - 1) / threads_per_block;
 
             AT_DISPATCH_FLOATING_TYPES(input_bcd.type(), "metric_attention_forwards_kernel", ([&] {
-                metric_attention_forwards_kernel<scalar_t><<<2, 1>>>(
-                    input_bcd.data<scalar_t>(),
-                    output_bcd.data<scalar_t>(),
-                    metric_1nkk.data<scalar_t>()
+                metric_attention_forwards_kernel<scalar_t><<<number_of_blocks, threads_per_block>>>(
+                    p_bnck.packed_accessor32<scalar_t, 4>(),
+                    f_l.packed_accessor32<scalar_t, 1>(),
+                    g_l.packed_accessor32<scalar_t, 1>(),
+                    f_u.packed_accessor32<scalar_t, 1>(),
+                    g_u.packed_accessor32<scalar_t, 1>(),
+                    M_nl.packed_accessor32<scalar_t, 2>()
                 );
             }));
-            return output_bcd;
+
+            return q_bnul;
         }
 
         static tensor_list
@@ -123,26 +147,27 @@ extern "C" {
     // note: the naming convention relates to
     // the theoretical derivation present in the readme
     void f_metric_tensor_attention(
-        TensorPTR *q_nu1,
-        TensorPTR p_nck,
+        TensorPTR *q_1bnu,
+        TensorPTR p_bnck,
         TensorPTR f_l, TensorPTR g_l, int Nl,
         TensorPTR f_u, TensorPTR g_u, int Nu,
         TensorPTR M_nl
     ) {
 
-        CHECK_INPUT(p_nck);
+        CHECK_INPUT(p_bnck);
+        CHECK_INPUT(*q_1bnu);
         CHECK_INPUT(f_l); CHECK_INPUT(g_l);
         CHECK_INPUT(f_u); CHECK_INPUT(g_u);
         CHECK_INPUT(M_nl);
-        
-        auto outputs = MetricTensorAttention::apply(
-            *p_nck,
+
+
+        q_1bnu[0] = new torch::Tensor(
+            MetricTensorAttention::apply(
+            *p_bnck,
             *f_l, *g_l, Nl,
             *f_u, *g_u, Nu,
             *M_nl
-        );
-
-        q_nu1[0] = new torch::Tensor(outputs);
+        ));
     }
 }
 
