@@ -7,7 +7,7 @@
 
 ### Determination of the analytic expression
 
-Let $P$ be a projection of a batch of size $d$ of a sequence $x$ of $c$ embeddings from $\mathbf R^d$ onto $n$ spaces of dimension $k$, expressed in Ricci notation by
+Let $P^{nk}_d$ be $n$ learnable projections from $\mathbf R^{N_d}$ to $\mathbf R^{N_k}$ and $x^{bcd}$ a batch of $N_b$ sequences containing $N_c$ embeddings from $\mathbf R^{N_d}$. The action of these projections are expressed in Ricci notation by
 
 $$p^{bnck} = P^{nk}_d  x^{bcd}$$
 
