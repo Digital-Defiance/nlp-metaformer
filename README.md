@@ -1,6 +1,5 @@
-# LLM Voice Chat
+# NLP MetaFormer - An ablation study on the transformer network 
 
-Speak with a language model.
 
 ---
 
