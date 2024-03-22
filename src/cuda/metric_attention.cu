@@ -13,7 +13,6 @@ using namespace torch::autograd;
 typedef torch::Tensor *TensorPTR;
 
 
-
 template <typename scalar_t> 
 __global__ void metric_attention_forwards_kernel(
     torch::PackedTensorAccessor32<scalar_t, 4> p_bnck,
