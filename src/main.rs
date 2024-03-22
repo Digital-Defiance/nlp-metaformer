@@ -10,6 +10,7 @@ pub mod config;
 pub mod mlflow;
 pub mod files;
 mod optimizer;
+pub mod cuda;
 
 use clap::Parser;
 use optimizer::build_optimizer;
@@ -20,8 +21,29 @@ use metaformer::{metaformer, MetaFormer};
 use mlflow::log_metrics;
 
 use tch;
+use tch::Device;
 use tch::nn;
 use config::Cli;
+
+
+impl Cli {
+    pub fn get_device(&self) -> Device {
+        let cuda = Device::cuda_if_available();
+        if self.use_gpu == "True" {
+            print!("Current training device: CUDA");
+            match cuda {
+                Device::Cuda(_) => cuda,
+                _ => panic!("Invalid device specification. Did you mean CPU ?"),
+            }
+        } else if self.use_gpu == "False" {
+            print!("Current training device: CPU");
+            Device::Cpu
+        } else {
+            panic!("Invalid device configuration. Check USE_GPU env var.");
+        }
+    }
+}
+
 
 
 /// Implementation of gradient descent

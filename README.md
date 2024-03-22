@@ -4,6 +4,92 @@ Speak with a language model.
 
 ---
 
+## Cuda Kernel of the Metric Tensor Attention
+
+### Determination of the analytic expression
+
+Let $P$ be a projection of a batch of size $d$ of a sequence $x$ of $c$ embeddings from $\mathbf R^d$ onto $n$ spaces of dimension $k$, expressed in Ricci notation by
+
+$$p^{bnck} = P^{nk}_d  x^{bcd}$$
+
+At the heart of the proposed attention mechanism is a learnable dot product of each projected embedding with each other embedding. This is achieved using $n$ learnable metric tensors $M$ and is given by
+
+$$q^{bncc'} = M^{n}_{kk'} p^{bnck} p^{bnc'k'}$$
+
+The metric tensor is symmetric, so we can reduce the number of computations by grouping the terms strategically, that is, since $M_{kk'} = M_{k'k}$, then
+
+$$q^{bncc'} = \delta^{kk'} M^n_{kk'} p^{bnck} p^{bnc'k'} + 2 \delta^{k>k'} M^n_{kk'} p^{bnck} p^{bnc'k'}$$
+
+Let $F_N(v, w)$ be a pairing function that indexes an upper triangular matrix from $\mathbf R^{N\times N} $ and $f$ and $g$, integer valued functions that retrieve the first and second argument of $F_N$, that is
+
+$$  v = f(F_{N}(v, w)) $$
+
+and
+
+$$ w = g(F_{N}(v, w)) $$
+
+Such an arrangement is easily achieved by storing two arrays to be used as a lookup table for $f$ and $g$. 
+
+Finally, let $l=F_{N_l}(k, k')$, and define
+
+$$ \bar M^n_{l} =  M^n_{f(l)g(l)} $$
+
+which we use to rewrite our original expression as
+
+$$q^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bncf(l)} p^{bnc'g(l)}$$
+
+where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. 
+
+At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. 
+
+However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, it follows that $q^{bncc'} =q^{bnc'c}$, so the procedure we just did for $kk'$ can be done for $cc'$. 
+
+Let's use the same pairing function on the triangle matrix spanned by the range of $c$ and use the index $u$ to take the role of $l$ in this case. To avoid overuse of notation, the convention I'll use is that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$. 
+
+To avoid repetition, I'll do the treatment for the following expression 
+
+$$\rho^{bncc'l} = p^{bncf(l)} p^{bnc'g(l)}$$
+
+and perform symbol substitution where necessary in order to place it back on the expression we're working. Performing direct substitution we get
+
+$$\rho^{bnul} = p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
+
+which we can similarly split into two expressions
+
+$$\rho^{bnul} = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bng(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
+
+Note that further contraction is possible on the first term but $\delta$ cannot be removed otherwise $u$ spans the entire triangular matrix, so we get 
+
+$$\rho^{bnul} = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
+
+Substituting this back, while attending to the relevant substitution on the first term of the original expression,
+
+
+$$q^{bnul} _ {l} = \delta^{f(l)g(l)} \bar M^n_{l} \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)f(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)f(l)} \right ]  + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ]$$
+
+which we'll now group according to the $\delta$'s
+
+$$q^{bnul} _ {l} =  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  +   2 \bar M^n_{l}  p^{bnf(u)f(l)} p^{bng(u)f(l)} \delta^{f(l)g(l)} \tilde \delta^{f(u)g(u)} +    2    \bar M^n_l p^{bnf(u)f(l)} p^{bnf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} + 4   \bar M^n_l   p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}$$
+
+For a given combination of $u$ and $l$, there's only one term to be calculated. All terms will be computed in paralel on the gpu and collected onto a tensor that represents $q^{bnul} _ {l}$, as demanded by the tensor notation, a sum is then performed over $l$ to obtain $q^{bnu}$. The lookup tables for $f$ and $g$ are then used to recover $q^{bncc'}$ which is then comunicated back to torch for the rest of the attention mechanism.
+
+
+Computation of the gradients is straightforward,
+
+
+$$ \partial_{\bar M^n _ {l}} q^{bnul} _ {l} = \frac {q^{bnul} _ {l}}{\bar M^n _ {l}} $$
+
+
+### Implementation details
+
+
+
+
+----
+
+
+
+
 ## Experiments
 
 Note: all workflows have been removed, pipelines are being moved to prefect

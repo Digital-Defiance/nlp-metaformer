@@ -3,6 +3,7 @@ name: "Development Environment: Deploy"
 on:
   workflow_dispatch:
     inputs:
+
       machine:
         description: 'Which machine to use'
         required: true
@@ -14,6 +15,7 @@ on:
           - g4dn.2xlarge
           - g4dn.xlarge
           - local
+    
       image:
         description: 'Production Environment'
         required: true
@@ -21,6 +23,17 @@ on:
         type: choice
         options:
           - ghcr.io/digital-defiance/sentiment-analysis-pipeline:main
+          - pytorch/pytorch:2.2.0-cuda11.8-cudnn8-devel # Not a production image
+
+      ami:
+        description: 'AMI'
+        required: true
+        default: 'ami-0450c19b7a7f6250d'
+        type: choice
+        options:
+          - ami-0450c19b7a7f6250d # pre-pulled container
+          # - ami-024f19cd618c1acb2 # base gpu ubuntu
+  
       docker_options:
         required: true
         description: 'Extra docker options'
@@ -30,10 +43,17 @@ on:
           - '--user root'
           - '--user root --gpus all'
 
+      root_volume_size:
+        required: true
+        description: 'Size of root volume (Gb)'
+        default: "50"
+        
+
 env:
   AWS_REGION: eu-south-1
 
 jobs:
+
   start-runner:
     runs-on: ubuntu-latest
     name: "Provision infrastructure"
@@ -41,6 +61,7 @@ jobs:
       label: ${{ steps.set-output.outputs.label }}
       ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
     steps:
+  
       - name: Configure AWS credentials
         if: ${{ inputs.machine != 'local' }}
         uses: aws-actions/configure-aws-credentials@v1
@@ -48,23 +69,25 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:  ${{ env.AWS_REGION }}
+    
       - name: Start EC2 runner
         id: start-ec2-runner
         if: ${{ inputs.machine != 'local' }}
         uses: digital-defiance/ec2-github-runner@feature/add-storage-option
         with:
           mode: start
-          root-volume-size: 50
+          root-volume-size: ${{ inputs.root_volume_size }}
           iam-role-name: ec2-logs
           pre-runner-script: |  # sudo yum update -y && sudo yum install docker git libicu -y
               sudo systemctl enable docker
               sudo systemctl start docker
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           market-type: spot
-          ec2-image-id: ami-0450c19b7a7f6250d  # ami-0d1e2ba0458f0cd7a  
+          ec2-image-id: ${{ inputs.ami }} # ami-0450c19b7a7f6250d  # ami-0d1e2ba0458f0cd7a  
           ec2-instance-type: ${{ inputs.machine }}
           subnet-id: subnet-0fc7dea0969cca860
           security-group-id: sg-0c4cc0c0be64f1b08
+
       - shell: bash
         name: "Get runner tag"
         id: set-output
@@ -74,6 +97,8 @@ jobs:
           else
             echo "label=${{ steps.start-ec2-runner.outputs.label }}" >> $GITHUB_OUTPUT
           fi
+
+
 
   deploy-vscode:
     name: Deploy development environment
@@ -87,24 +112,44 @@ jobs:
       env:
         RUST_BACKTRACE: "full"
         LIBTORCH_USE_PYTORCH: "1"
+
+        # Flag for my code 
         LLMVC_ENVIRONMENT: "development"
+
+        # These are consumed by MLFLow and other processes int he application
         MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URL }}
         MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_USERNAME }} 
-        MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }} 
+        MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_PASSWORD }}
+
+        # https://github.com/PrefectHQ/prefect/issues/8047
+        TZ: "UTC"
+
+        # enables debug information generation to improve backtraces for build dependencies
+        CARGO_PROFILE_DEV_BUILD_OVERRIDE_DEBUG: true 
 
     steps:
+      - run: apt-get update
+      - run: apt-get install -y git
+      - uses: actions/checkout@v4
+      - name: "Configure git repository for development"
+        run: |
+          git config --global user.email "mail@ruicampos.org"
+          git config --global user.name "Rui Campos"
+          git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
+          git config pull.rebase false
+  
       # stuff to be moved to the production image
       - run: pip install psycopg2-binary # required for mlflow to talk to postgres
       - run: pip install mlflow
       - run: pip install prefect-shell
 
       # development dependencies and configuration
-      #   required for rust to compile
-      - uses: actions/checkout@v4
       - run: apt update
       - run: apt install libssh-dev -y
       - run: apt install pkg-config -y
       - run: apt install curl -y
+      - run: apt-get install procps -y
+      
       - uses: dtolnay/rust-toolchain@stable
       - name: Find and set torch lib path
         run: |
@@ -112,20 +157,16 @@ jobs:
           TORCH_LIB_PATH="${SITE_PACKAGES}/torch/lib"
           echo "LD_LIBRARY_PATH=$TORCH_LIB_PATH" >> $GITHUB_ENV
 
-      #   development only
-      - run: pip install jurigged
       - run: pip install pytest
-      - run: apt-get update && apt-get install -y procps
-      - run: git config --global user.email "mail@ruicampos.org"
-      - run: git config --global user.name "Rui Campos"
-      - run: git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
-      - run: git config pull.rebase false
+  
       - name: Login to prefect
         run: yes | prefect cloud login --key ${{ secrets.PREFECT_API_KEY }} --workspace 'digital-defiance/default'
+    
       - name: Setup code CLI
         run: |
           curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64' --output vscode_cli.tar.gz
           tar -xf vscode_cli.tar.gz
+      
       - name: Serve VSCode
         continue-on-error: true 
         run: ./code tunnel
@@ -138,12 +179,14 @@ jobs:
       - deploy-vscode
     if: ${{ always() && inputs.machine != 'local' }}
     steps:
+  
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+  
       - name: Stop EC2 runner
         uses: digital-defiance/ec2-github-runner@v2
         with:
