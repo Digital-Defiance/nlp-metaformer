@@ -11,7 +11,7 @@ Let $P^{nk}_d$ be $N_n$ learnable projections from $\mathbf R^{N_d}$ to $\mathbf
 
 $$p^{bnck} = P^{nk}_d  x^{bcd}$$
 
-At the heart of the proposed attention mechanism is a learnable dot product of each projected embedding with each other embedding. This is achieved using $n$ learnable metric tensors $M^{n}_{kk'}$ and is given by
+At the heart of the proposed attention mechanism is a learnable dot product of each projected embedding with each other embedding. This is achieved using $N_n$ learnable metric tensors $M^{n}_{kk'}$ and is given by
 
 $$q^{bncc'} = M^{n}_{kk'} p^{bnck} p^{bnc'k'}$$
 
