@@ -19,7 +19,7 @@ The metric tensor is symmetric, so we can reduce the number of computations by g
 
 $$q^{bncc'} = \delta^{kk'} M^n_{kk'} p^{bnck} p^{bnc'k'} + 2 \delta^{k>k'} M^n_{kk'} p^{bnck} p^{bnc'k'}$$
 
-Let $F_N(v, w)$ be a pairing function that indexes an upper triangular matrix from $\mathbf R^{N\times N}$ and $f$ and $g$, integer valued functions that retrieve the first and second argument of $F_N$, that is
+Let $F_N(v, w)$ be a pairing function that indexes the elements above and including the diagonal of a matrix from $\mathbf R^{N\times N}$, and $f$ and $g$ integer valued functions that retrieve the first and second argument of $F_N$, that is
 
 $$  v = f(F_{N}(v, w)) $$
 
