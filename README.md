@@ -60,14 +60,6 @@ $$\rho^{bnul} = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \del
 
 Substituting this back, while attending to the relevant substitution on the first term of the original expression,
 
-
-$$q^{bnul} _ {l} = \delta^{f(l)g(l)} \bar M^n_{l} \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)f(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)f(l)} \right ]  + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ]$$
-
-which we'll now group according to the $\delta$'s
-
-$$q^{bnul} _ {l} =  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  +   2 \bar M^n_{l}  p^{bnf(u)f(l)} p^{bng(u)f(l)} \delta^{f(l)g(l)} \tilde \delta^{f(u)g(u)} +    2    \bar M^n_l p^{bnf(u)f(l)} p^{bnf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} + 4   \bar M^n_l   p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}$$
-
-
 $$
 \begin{aligned}
 q^{bnul} _ {l} &= \delta^{f(l)g(l)} \bar M^n_{l} \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)f(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)f(l)} \right ] \\
