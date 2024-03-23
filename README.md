@@ -67,7 +67,30 @@ which we'll now group according to the $\delta$'s
 
 $$q^{bnul} _ {l} =  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  +   2 \bar M^n_{l}  p^{bnf(u)f(l)} p^{bng(u)f(l)} \delta^{f(l)g(l)} \tilde \delta^{f(u)g(u)} +    2    \bar M^n_l p^{bnf(u)f(l)} p^{bnf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} + 4   \bar M^n_l   p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}$$
 
+
+$$
+\begin{aligned}
+q^{bnul} _ {l} &= \delta^{f(l)g(l)} \bar M^n_{l} \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)f(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)f(l)} \right ] \\
+&\quad + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ]
+\end{aligned}
+$$
+
+which we'll now group according to the $\delta$'s
+
+$$
+\begin{aligned}
+q^{bnul} _ {l} &=  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  \\
+&\quad + 2 \bar M^n_{l}  p^{bnf(u)f(l)} p^{bng(u)f(l)} \delta^{f(l)g(l)} \tilde \delta^{f(u)g(u)} \\
+&\quad + 2 \bar M^n_l p^{bnf(u)f(l)} p^{bnf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} \\
+&\quad + 4 \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}
+\end{aligned}
+$$
+
+
+
 For a given combination of $u$ and $l$, there's only one term to be calculated. All terms will be computed in paralel on the gpu and collected onto a tensor that represents $q^{bnul} _ {l}$, as demanded by the tensor notation, a sum is then performed over $l$ to obtain $q^{bnu}$. The lookup tables for $f$ and $g$ are then used to recover $q^{bncc'}$ which is then comunicated back to torch for the rest of the attention mechanism.
+
+
 
 
 Computation of the gradients is straightforward,
