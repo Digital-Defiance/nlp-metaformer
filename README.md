@@ -108,7 +108,7 @@ $$
 
 
 $$
-\bar p^{bcl} = p^{bnck}
+y^{bcd} = E_l^d \bar p^{bcl}
 $$
 
 ----
