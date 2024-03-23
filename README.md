@@ -3,9 +3,8 @@
 
 ---
 
-## Cuda Kernel of the Metric Tensor Attention
 
-### Determination of the analytic expression
+### CUDA Kernel of the Metric Tensor Attention
 
 Let $P^{nk}_d$ be $N_n$ learnable projections from $\mathbf R^{N_d}$ to $\mathbf R^{N_k}$ and $x^{bcd}$ a batch of $N_b$ sequences containing $N_c$ embeddings from $\mathbf R^{N_d}$. The action of these projections is expressed in Ricci notation by
 
@@ -77,10 +76,40 @@ Computation of the gradients is straightforward,
 $$ \partial_{\bar M^n _ {l}} q^{bnul} _ {l} = \frac {q^{bnul} _ {l}}{\bar M^n _ {l}} $$
 
 
-### Implementation details
+
+### From scaled dot product attention to metric tensor attentin
+
+To motivate the introduction of a modified attention we'll look at how the scaled dot product attention from 2017 is equivalent to a general quadratic form, and argue on the basis of interpretability and regularization for the imposition that the form be a metric. I have found that the formulas in the original paper are not very riguorous and at times, open to interpretation, so I'll be using ricci notation to fill in the gaps based on my knowledge of the code implementations from the original authors.
 
 
+$$
+q^{bnck} = Q_d^{nk} x^{bcd}
+$$
 
+$$
+k^{bnck} = K_d^{nk} x^{bcd}
+$$
+
+$$
+v^{bnck} = V_d^{nk} x^{bcd}
+$$
+
+$$
+s^{bncc'} = \textrm{softmax}^{c'} \left ( q^{bnck} k^{bnc'k'} \delta_{kk'} \right ) 
+$$
+
+$$
+p^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
+$$
+
+$$
+\bar p^{bcl} = p^{bnck}
+$$
+
+
+$$
+\bar p^{bcl} = p^{bnck}
+$$
 
 ----
 
