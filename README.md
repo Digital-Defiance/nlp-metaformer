@@ -95,7 +95,7 @@ v^{bnck} = V_d^{nk} x^{bcd}
 $$
 
 $$
-s^{bncc'} = \textrm{softmax}^{c'} \left ( q^{bnck} k^{bnc'k'} \delta_{kk'} \right ) 
+s^{bncc'} = \textrm{softmax}^{c'} \left ( \frac{1}{\sqrt{N_k}} q^{bnck} k^{bnc'k'} \delta_{kk'} \right ) 
 $$
 
 $$
