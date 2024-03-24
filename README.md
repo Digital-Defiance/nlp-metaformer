@@ -4,7 +4,9 @@
 ---
 
 
-### CUDA Kernel of the Metric Tensor Attention
+## CUDA Kernel of the Metric Tensor Attention
+
+### Forwards Pass
 
 Let $P^{nk}_d$ be $N_n$ learnable projections from $\mathbf R^{N_d}$ to $\mathbf R^{N_k}$ and $x^{bcd}$ a batch of $N_b$ sequences containing $N_c$ embeddings from $\mathbf R^{N_d}$. The action of these projections is expressed in Ricci notation by
 
@@ -90,10 +92,9 @@ For a given combination of $u$ and $l$, there's only one term to be calculated. 
 
 -->
 
+### Backwards Pass
 
-
-Computation of the gradients:
-
+Gradient with respect with the metric coordinates:
 
 $$\partial_{M^{n'}_ {k'''k''''}} q^{bncc'} =  \partial_{M^{n'}_{k'''k''''}}  M^{n} _{kk'}  p^{bnck} p^{bnc'k'}$$
 
@@ -119,10 +120,10 @@ $$
 
 
 
----
+Gradient with respect to the input coordinates
 
 $$
-\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_{kk'} \partial_{p^{bnc''k''}} p^{bnck} p^{bnc'k'}
+\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_ {kk'} \partial_{p^{bnc''k''}} p^{bnck} p^{bnc'k'}
 $$
 
 
