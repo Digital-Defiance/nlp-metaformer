@@ -230,7 +230,7 @@ $$
 r^{bncc'} = U^n_{dd'} x^{bcd}   x^{bc'd'} 
 $$
 
-Disregarding training dynamics and efficiency considerations, we see that this is a complete mathematical equivalence. However, there is good reason not to keep this form. Even considering the case of using queries and keys, we see that the quadratic form is making use of $nd^2$ parameters while the original formulation uses $2ndk$, thus as long as $k<d/2$, that approach is more memory efficient.
+Disregarding training dynamics and efficiency considerations, we see that this is a complete mathematical equivalence. However, there is good reason not to keep this form. Even considering the case of using queries and keys, we see that the quadratic form is making use of $nd^2$ parameters while the original formulation uses $2ndk$, thus as long as $k < d/2$, that approach is more memory efficient.
 
 However, it is not the most efficient reformulation that can be squeezed out of the quadratic form,
 
