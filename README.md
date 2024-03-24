@@ -54,6 +54,10 @@ $$ t^{bnck} = s^{bncc'} p^{bnc''k} \delta_{c'c''} $$
 $$ t^{bnck} = s^{bnc}_ {c'} p^{bnc'k} $$
 
 
+$$ t^{bnck} = \delta^{cc'} s^{bnc}_ {c'} p^{bnc'k} + 2 \delta^{c>c'} s^{bnc}_ {c'} p^{bnc'k} $$
+
+$$ t^{bnck} = s^{bnc}_ {c} p^{bnck} + 2 \delta^{c>c'} s^{bnc}_ {c'} p^{bnc'k} $$
+
 
 p^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
 
