@@ -123,9 +123,13 @@ $$
 
 
 $$
-\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'}    +  M^{n}_ {kk''} p^{bnck} = Q^{bnc'c}_{k''}
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'}    +  M^{n}_ {kk''} p^{bnck} 
 $$
 
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'}    +  M^{n}_ {k''k} p^{bnck} 
+$$
 
 ## Intro
 
