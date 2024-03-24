@@ -12,14 +12,21 @@ using namespace torch::autograd;
 
 typedef torch::Tensor *TensorPTR;
 typedef const int Vec1[];
-
 template<typename scalar_t, size_t D>
 using CudaTensorView = torch::PackedTensorAccessor32<scalar_t, D, torch::RestrictPtrTraits>;
+
+using Constant1DLookup = CudaTensorView<size_t, 1>;
+
+using constants_list = std::vector<at::Tensor>;
+
 
 template <typename scalar_t> 
 __global__ void metric_attention_forwards_kernel(
     CudaTensorView<scalar_t, 4> p_bnck,
-    Vec1 f_l, Vec1 g_l, Vec1 f_u, Vec1 g_u,
+    Constant1DLookup f_l,
+    Constant1DLookup g_l,
+    Constant1DLookup f_u,
+    Constant1DLookup g_u,
     CudaTensorView<scalar_t, 2> M_nl,
     CudaTensorView<scalar_t, 4> q_bnul
 ) {
@@ -79,21 +86,23 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
         static variable_list forward(
             AutogradContext *ctx,
             Variable p_bnck,
-            Vec1 f_l,
-            Vec1 g_l,
-            Vec1 f_u,
-            Vec1 g_u,
-            const int Nu,
-            Variable M_nl
+            Variable M_nl,
+            constants_list constants
         ) {
-            ctx->save_for_backward({ M_nl });
 
             const auto device = p_bnck.device();
             auto q_nul = torch::zeros(p_bnck.sizes()).to(device);
+    
+            auto f_l = constants[0];
+            auto g_l = constants[1];
+            auto f_u = constants[2];
+            auto g_u = constants[3];
+
 
             const auto Nb = p_bnck.size(0);
-            const auto Nl =  M_nl.size(1);
+            const auto Nl = M_nl.size(1);
             const auto Nn = M_nl.size(0);
+            const auto Nu = f_u.size(0);
 
             const int total_threads = Nb*Nl*Nu*Nn;
             const int threads_per_block = 1024;
@@ -104,11 +113,17 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             AT_DISPATCH_FLOATING_TYPES(p_bnck.type(), "metric_attention_forwards_kernel", ([&] {
                 metric_attention_forwards_kernel<scalar_t><<<number_of_blocks, threads_per_block>>>(
                     p_bnck.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>(),
-                    f_l, g_l, f_u, g_u,
+                    f_l.packed_accessor32<size_t, 1, torch::RestrictPtrTraits>(),
+                    g_l.packed_accessor32<size_t, 1, torch::RestrictPtrTraits>(),
+                    f_u.packed_accessor32<size_t, 1, torch::RestrictPtrTraits>(),
+                    g_u.packed_accessor32<size_t, 1, torch::RestrictPtrTraits>(),
                     M_nl.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                     q_bnul.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>()
                 );
             }));
+
+            ctx->save_for_backward({ q_bnul, M_nl, f_l, g_l, f_u, g_u });
+
 
             return { q_bnul };
         }
@@ -118,8 +133,13 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             torch::Tensor grad_q_bnul = grad_outputs[0];
 
             auto saved = ctx->get_saved_variables();
-            auto p_bnck = saved[0];
+            auto q_bnul = saved[0];
             auto M_nl = saved[1];
+            auto f_l = saved[2];
+            auto g_l = saved[3];
+            auto f_u = saved[4];
+            auto g_u = saved[5];
+
           
             const auto device = M_nl.device();
             auto grad_p_bnck = torch::zeros_like(p_bnck).to(device);
@@ -149,9 +169,11 @@ extern "C" {
     void f_metric_tensor_attention(
         TensorPTR *q_1bnu,
         TensorPTR p_bnck,
-        TensorPTR f_l, TensorPTR g_l, int Nl,
-        TensorPTR f_u, TensorPTR g_u, int Nu,
-        TensorPTR M_nl
+        TensorPTR M_nl,
+        TensorPTR f_l,
+        TensorPTR g_l,
+        TensorPTR f_u,
+        TensorPTR g_u
     ) {
 
         CHECK_INPUT(p_bnck);
@@ -160,14 +182,13 @@ extern "C" {
         CHECK_INPUT(f_u); CHECK_INPUT(g_u);
         CHECK_INPUT(M_nl);
 
-
-        q_1bnu[0] = new torch::Tensor(
-            MetricTensorAttention::apply(
+        constants_list constants = {*f_l, *g_l, *f_u, *g_u};
+        auto res = MetricTensorAttention::apply(
                 *p_bnck,
-                *f_l, *g_l, Nl,
-                *f_u, *g_u, Nu,
-                *M_nl
-        ));
+                *M_nl,
+                constants
+        )[0];
+        q_1bnu[0] = new torch::Tensor(res);
     }
 }
 
