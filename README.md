@@ -85,12 +85,64 @@ For a given combination of $u$ and $l$, there's only one term to be calculated. 
 
 
 
-Computation of the gradients is straightforward,
+Computation of the gradients:
 
 
-$$ \partial_{\bar M^n _ {l}} q^{bnul} _ {l} = \frac {q^{bnul} _ {l}}{\bar M^n _ {l}} $$
+$$
+\partial_{M^{n'}_{k'''k''''}} q^{bncc'} =  \partial_{M^{n'}_{k'''k''''}}  M^{n}_{kk'}  p^{bnck} p^{bnc'k'}
+$$
 
 
+$$
+\partial_{M^{n'}_{k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \partial_{M^{n'}_{k'''k''''}}  M^{n}_{kk'}  
+$$
+
+$$
+\partial_{M^{n'}_{k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \delta^{nn'} \delta_{kk'''} \delta_{k'k''''}  
+$$
+
+$$
+\partial_{M^{n}_{k'''k''''}} q^{bncc'} =   p^{bnck'''} p^{bnc'k''''}
+$$
+
+$$
+\partial_{M^{n}_{kk'}} q^{bncc'} =   p^{bnck} p^{bnc'k'}
+$$
+
+
+$$
+\partial_{M^n_l} q^{bnu} =   p^{bnf(u)f(l)} p^{bng(u)g(l)}
+$$
+
+
+
+---
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_{kk'} \partial_{p^{bnc''k''}} p^{bnck} p^{bnc'k'}
+$$
+
+
+
+
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_{kk'} \left ( p^{bnc'k'} \partial_{p^{bnc''k''}} p^{bnck}  +  p^{bnck} \partial_{p^{bnc''k''}} p^{bnc'k'} \right )
+$$
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_{kk'} \left ( p^{bnc'k'} \delta_{c''c} \delta_{k''k}  +  p^{bnck} \delta_{c''c'} \delta_{k''k'}   \right ) 
+$$
+
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n}_{kk'} p^{bnc'k'}  \delta_{k''k}  +  M^{n}_{kk'} p^{bnck} \delta_{k''k'}  
+$$
+
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n}_{k''k'} p^{bnc'k'}    +  M^{n}_{kk''} p^{bnck} = Q^{bnc'c}_{k''}
+$$
 
 ### From scaled dot product attention to metric tensor attentin
 
