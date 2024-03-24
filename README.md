@@ -36,11 +36,12 @@ which we use to rewrite our original expression as
 
 $$q^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bncf(l)} p^{bnc'g(l)}$$
 
-where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. 
-
-At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, it follows that $q^{bncc'} =q^{bnc'c}$, so the flattening procedure we just did for $kk'$ can be done for $cc'$. Let's use the same pairing function on the triangle matrix spanned by the range of $c$ and use the index $u$ to take the role of $l$ in this case. To avoid overuse of notation, the convention I'll use is that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$. 
+where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. Note that a further computational saving is unlocked with the usage of a metric tensor, since dot products are comutative it follows that $q^{bncc'} =q^{bnc'c}$, so the flattening procedure we just did for $kk'$ can be done for $cc'$. Let $u=F_{N_c}(c, c')$  and agree on the convention that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$, so we rewrite the forwards kernel as
 
 $$\bar q^{bnu} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
+
+
+
 
 
 <!---
