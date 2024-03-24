@@ -174,6 +174,7 @@ $$
 
 To motivate the introduction of a modified attention we'll look at how the scaled dot product attention from 2017 is equivalent to a general quadratic form, and argue on the basis of interpretability and regularization for the imposition that the form be a metric. I have found that the formulas in the original paper are not very riguorous and at times, open to interpretation, so I'll be using ricci notation to fill in the gaps based on my knowledge of the code implementations from the original authors.
 
+The transformations $Q_d^{nk}$, $K_d^{nk}$ and $V_d^{nk}$ act on the input embeddings to produce the well known keys, queries and values,
 
 $$
 q^{bnck} = Q_d^{nk} x^{bcd}
@@ -187,22 +188,48 @@ $$
 v^{bnck} = V_d^{nk} x^{bcd}
 $$
 
+The queries and keys are multiplied toguether and scaled before being softmaxed, producing the scores matrix,
+
 $$
 s^{bncc'} = \textrm{softmax}^{c'} \left ( \frac{1}{\sqrt{N_k}} q^{bnck} k^{bnc'k'} \delta_{kk'} \right ) 
 $$
 
-$$
-p^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
-$$
-
-$$
-\bar p^{bcl} = p^{bnck}
-$$
+the use of the $N_k$ is what gives this core machanism its name, scaled dot product attention. The scores matrix is then applied to the values 
 
 
 $$
-y^{bcd} = E_l^d \bar p^{bcl}
+t^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
 $$
+
+and the result is reflatened and projected to the original embedding space
+
+$$
+\bar t^{bcl} = t^{bnck}
+$$
+
+
+$$
+y^{bcd} = E_l^d \bar t^{bcl}
+$$
+
+Our focus is on the step right before the application of a softmax 
+
+$$
+r^{bncc'} =  q^{bnck} k^{bnc'k'} \delta_{kk'}
+$$
+
+By substituting the operations that produced the queries and keys, we can see how the quadratic form emerges
+
+$$
+r^{bncc'} = Q_d^{nk}  K_{d'}^{nk'} \delta_{kk'} x^{bcd}   x^{bc'd'} 
+$$
+
+Defining $U^n_{dd'}=Q_d^{nk}  K_{d'}^{nk'} \delta_{kk'} $, 
+
+$$
+r^{bncc'} = U^n_{dd'} x^{bcd}   x^{bc'd'} 
+$$
+
 
 ----
 
