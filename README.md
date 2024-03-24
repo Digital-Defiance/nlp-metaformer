@@ -8,7 +8,7 @@
 
 ### From scaled dot product attention to metric tensor attention
 
-In this section, we demonstrate that the scaled dot product attention from 2017 is equivalent to a general quadratic form which lends itself to a mathematically equivelent, but more efficient formulation of the attention mechanism. Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product using Ricci calculus.
+In this section, we point out that the scaled dot product attention from 2017 is equivalent to a general quadratic form which lends itself to a mathematically equivelent, but more efficient formulation of the attention mechanism. Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product using Ricci calculus.
 
 The transformations $Q_d^{nk}$, $K_d^{nk}$ and $V_d^{nk}$ act on the input embeddings to produce the well known keys, queries and values,
 
