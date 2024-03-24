@@ -38,9 +38,14 @@ $$q^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde
 
 where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. 
 
-At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, it follows that $q^{bncc'} =q^{bnc'c}$, so the procedure we just did for $kk'$ can be done for $cc'$. 
+At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, it follows that $q^{bncc'} =q^{bnc'c}$, so the flattening procedure we just did for $kk'$ can be done for $cc'$. Let's use the same pairing function on the triangle matrix spanned by the range of $c$ and use the index $u$ to take the role of $l$ in this case. To avoid overuse of notation, the convention I'll use is that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$. 
 
-Let's use the same pairing function on the triangle matrix spanned by the range of $c$ and use the index $u$ to take the role of $l$ in this case. To avoid overuse of notation, the convention I'll use is that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$. 
+$$\bar q^{bnu} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
+
+
+<!---
+
+--- this was wrong but might still be used at a later step 
 
 To avoid repetition, I'll do the treatment for the following expression 
 
@@ -78,7 +83,7 @@ q^{bnul} _ {l} &=  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)
 \end{aligned}
 $$
 
-
+-->
 
 For a given combination of $u$ and $l$, there's only one term to be calculated. All terms will be computed in paralel on the gpu and collected onto a tensor that represents $q^{bnul} _ {l}$, as demanded by the tensor notation, a sum is then performed over $l$ to obtain $q^{bnu}$. The lookup tables for $f$ and $g$ are then used to recover $q^{bncc'}$ which is then comunicated back to torch for the rest of the attention mechanism.
 
