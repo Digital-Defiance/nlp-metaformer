@@ -70,53 +70,6 @@ However, for now, we'll choose this as our forwards pass
 $$q^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bncf(l)} p^{bnc'g(l)}$$
 
 
-
-<!---
-
---- this was wrong but might still be used at a later step 
-
-To avoid repetition, I'll do the treatment for the following expression 
-
-$$\rho^{bncc'l} = p^{bncf(l)} p^{bnc'g(l)}$$
-
-and perform symbol substitution where necessary in order to place it back on the expression we're working. Performing direct substitution we get
-
-$$\rho^{bnul} = p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
-
-which we can similarly split into two expressions
-
-$$\rho^{bnul} = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bng(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
-
-Note that further contraction is possible on the first term but $\delta$ cannot be removed otherwise $u$ spans the entire triangular matrix, so we get 
-
-$$\rho^{bnul} = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
-
-Substituting this back, while attending to the relevant substitution on the first term of the original expression,
-
-$$
-\begin{aligned}
-q^{bnul} _ {l} &= \delta^{f(l)g(l)} \bar M^n_{l} \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)f(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)f(l)} \right ] \\
-&\quad + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ]
-\end{aligned}
-$$
-
-which we'll now group according to the $\delta$'s
-
-$$
-\begin{aligned}
-q^{bnul} _ {l} &=  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  \\
-&\quad + 2 \bar M^n_{l}  p^{bnf(u)f(l)} p^{bng(u)f(l)} \delta^{f(l)g(l)} \tilde \delta^{f(u)g(u)} \\
-&\quad + 2 \bar M^n_l p^{bnf(u)f(l)} p^{bnf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} \\
-&\quad + 4 \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}
-\end{aligned}
-$$
-
-
-For a given combination of $u$ and $l$, there's only one term to be calculated. All terms will be computed in paralel on the gpu and collected onto a tensor that represents $q^{bnul} _ {l}$, as demanded by the tensor notation, a sum is then performed over $l$ to obtain $q^{bnu}$. The lookup tables for $f$ and $g$ are then used to recover $q^{bncc'}$ which is then comunicated back to torch for the rest of the attention mechanism.
-
-
--->
-
 ### Backwards Pass
 
 Gradient with respect with the metric coordinates:
@@ -127,7 +80,7 @@ $$\partial_{M^{n'}_ {k'''k''''}} q^{bncc'} =  \partial_{M^{n'}_{k'''k''''}}  M^{
 $$\partial_{M^{n'} _ {k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \partial_{M^{n'}_ {k'''k''''}}  M^{n}_{kk'}$$
 
 $$
-\partial_{M^{n'} _ {k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \delta^{nn'} \delta _ {kk'''} \delta_{k'k''''}
+\partial_{M^{n'} _ {k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \delta^{nn'} \delta ^ {kk'''} \delta^{k'k''''}
 $$
 
 $$
@@ -160,12 +113,12 @@ $$
 $$
 
 $$
-\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_ {kk'}  \left ( p^{bnc'k'} \delta_{c''c} \delta_{k''k}  +  p^{bnck} \delta_{c''c'} \delta_{k''k'}   \right )
+\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_ {kk'}  \left ( p^{bnc'k'} \delta^{c''c} \delta^{k''k}  +  p^{bnck} \delta^{c''c'} \delta^{k''k'}   \right )
 $$
 
 
 $$
-\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {kk'} p^{bnc'k'}  \delta_{k''k}  +  M^{n}_ {kk'} p^{bnck} \delta_{k''k'}
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {kk'} p^{bnc'k'}  \delta^{k''k}  +  M^{n}_ {kk'} p^{bnck} \delta^{k''k'}
 $$
 
 
