@@ -58,7 +58,7 @@ $$ t^{bnck} = \delta^{cc'} s^{bnc}_ {c'} p^{bnc'k} + 2 \delta^{c>c'} s^{bnc}_ {c
 
 $$ t^{bnck} = s^{bnc}_ {c} p^{bnck} + 2 \delta^{c>c'} s^{bnc}_ {c'} p^{bnc'k} $$
 
-$$ t^{bnf(u)f(l)} = \delta^{f(u)g(u)} s^{bn}_ {u} p^{bnf(u)f(l)} + 2 \delta^{c>c'} s^{bnc}_ {c'} p^{bnc'k} $$
+$$ t^{bnf(u)f(l)} = \delta^{f(u)g(u)} s^{bn}_ {u} p^{bnf(u)f(l)} + 2 \tilde \delta^{f(u)g(u)} s^{bn}_ {u} p^{bng(u)f(l)} $$
 
 
 p^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
