@@ -94,11 +94,11 @@ $$
 
 
 $$
-\partial_{M^{n'}_{k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \partial_{M^{n'}_{k'''k''''}}  M^{n}_{kk'}  
+\partial_{M^{n'}_{k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \partial_{M^{n'}_{k'''k''''}}  M^{n}_{kk'}
 $$
 
 $$
-\partial_{M^{n'}_{k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \delta^{nn'} \delta_{kk'''} \delta_{k'k''''}  
+\partial_{M^{n'}_{k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \delta^{nn'} \delta_{kk'''} \delta_{k'k''''}
 $$
 
 $$
@@ -131,12 +131,12 @@ $$
 $$
 
 $$
-\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_{kk'} \left ( p^{bnc'k'} \delta_{c''c} \delta_{k''k}  +  p^{bnck} \delta_{c''c'} \delta_{k''k'}   \right ) 
+\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_{kk'} \left ( p^{bnc'k'} \delta_{c''c} \delta_{k''k}  +  p^{bnck} \delta_{c''c'} \delta_{k''k'}   \right )
 $$
 
 
 $$
-\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n}_{kk'} p^{bnc'k'}  \delta_{k''k}  +  M^{n}_{kk'} p^{bnck} \delta_{k''k'}  
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n}_{kk'} p^{bnc'k'}  \delta_{k''k}  +  M^{n}_{kk'} p^{bnck} \delta_{k''k'}
 $$
 
 
