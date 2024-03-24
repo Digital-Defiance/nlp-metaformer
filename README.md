@@ -83,10 +83,11 @@ q^{bnul} _ {l} &=  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)
 \end{aligned}
 $$
 
--->
 
 For a given combination of $u$ and $l$, there's only one term to be calculated. All terms will be computed in paralel on the gpu and collected onto a tensor that represents $q^{bnul} _ {l}$, as demanded by the tensor notation, a sum is then performed over $l$ to obtain $q^{bnu}$. The lookup tables for $f$ and $g$ are then used to recover $q^{bncc'}$ which is then comunicated back to torch for the rest of the attention mechanism.
 
+
+-->
 
 
 
