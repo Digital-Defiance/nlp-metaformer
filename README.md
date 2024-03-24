@@ -215,6 +215,11 @@ $$
 $$
 
 
+
+$$
+\partial_{p^{bnc''k'}} q^{bnu} = \bar M^{n} _ l p^{bng(u)f(l)}  \delta^{c''f(u)}   +  \bar M^{n}_ {l} p^{bnf(u)f(l)} \delta^{c''g(u)}
+$$
+
 ----
 
 
