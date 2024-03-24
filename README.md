@@ -42,27 +42,27 @@ where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. At this point, our ex
 
 $$\bar q^{bnu} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
 
+To take full advantage of the symmetry, we can proceed with the rest of the attention mechanism, which consists in the standard application of a softmax
 
 
+$$ s^{bnu} = \textrm{softmax}^{g(u)} \left ( \frac{1}{\sqrt{N_k}} \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ) $$
+
+but followed by the application of the scores on the same projection 
 
 
-$$ s^{bnu} = \textrm{softmax}^{g(u)} \left (\delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ) $$
+$$ t^{bnck} = s^{bncc'} p^{bnc''k} \delta_{c'c''}  = s^{bnc}_ {c'} p^{bnc'k} $$
+ 
+The result is then reflattened and a final transformation is applied to ensure mixing of the features and align the dimensionality to the original embedding space
 
 
-$$ t^{bnck} = s^{bncc'} p^{bnc''k} \delta_{c'c''} $$
-
-$$ t^{bnck} = s^{bnc}_ {c'} p^{bnc'k} $$
-
-
-$$ t^{bnck} = \delta^{cc'} s^{bnc}_ {c'} p^{bnc'k} + 2 \delta^{c>c'} s^{bnc}_ {c'} p^{bnc'k} $$
-
-$$ t^{bnck} = s^{bnc}_ {c} p^{bnck} + 2 \delta^{c>c'} s^{bnc}_ {c'} p^{bnc'k} $$
-
-$$ t^{bnf(u)f(l)} = \delta^{f(u)g(u)} s^{bn}_ {u} p^{bnf(u)f(l)} + 2 \tilde \delta^{f(u)g(u)} s^{bn}_ {u} p^{bng(u)f(l)} $$
+$$
+\bar t^{bcl} = t^{bnck}
+$$
 
 
-p^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
-
+$$
+y^{bcd} = E_l^d \bar t^{bcl}
+$$
 
 
 
