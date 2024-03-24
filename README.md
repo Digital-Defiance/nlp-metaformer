@@ -137,6 +137,13 @@ $$
 \partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k} p^{bnc'k}  \delta^{c''c}   +  M^{n}_ {k''k} p^{bnck} \delta^{c''c'}
 $$
 
+
+
+$$
+\partial_{p^{bnc''k'}} q^{bncc'} =  M^{n} _ {k'k} p^{bnc'k}  \delta^{c''c}   +  M^{n}_ {k'k} p^{bnck} \delta^{c''c'}
+$$
+
+
 ## Intro
 
 ### From scaled dot product attention to metric tensor attentin
