@@ -4,7 +4,9 @@
 ---
 
 
-### CUDA Kernel of the Metric Tensor Attention
+## CUDA Kernel of the Metric Tensor Attention
+
+### Forwards Pass
 
 Let $P^{nk}_d$ be $N_n$ learnable projections from $\mathbf R^{N_d}$ to $\mathbf R^{N_k}$ and $x^{bcd}$ a batch of $N_b$ sequences containing $N_c$ embeddings from $\mathbf R^{N_d}$. The action of these projections is expressed in Ricci notation by
 
@@ -36,66 +38,119 @@ which we use to rewrite our original expression as
 
 $$q^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bncf(l)} p^{bnc'g(l)}$$
 
-where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. 
+where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. Note that a further computational saving is unlocked with the usage of a metric tensor, since dot products are comutative it follows that $q^{bncc'} =q^{bnc'c}$, so the flattening procedure we just did for $kk'$ can be done for $cc'$. Let $u=F_{N_c}(c, c')$  and agree on the convention that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$, so we rewrite the forwards kernel as
 
-At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. However, a further computational saving is unlocked with the usage of a metric tensor. Since dot products are comutative, it follows that $q^{bncc'} =q^{bnc'c}$, so the procedure we just did for $kk'$ can be done for $cc'$. 
+$$\bar q^{bnu} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
 
-Let's use the same pairing function on the triangle matrix spanned by the range of $c$ and use the index $u$ to take the role of $l$ in this case. To avoid overuse of notation, the convention I'll use is that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$. 
+To take full advantage of the symmetry, we can proceed with the rest of the attention mechanism, which consists in the standard application of a softmax
 
-To avoid repetition, I'll do the treatment for the following expression 
 
-$$\rho^{bncc'l} = p^{bncf(l)} p^{bnc'g(l)}$$
+$$ s^{bnu} = \textrm{softmax}^{g(u)} \left ( \frac{1}{\sqrt{N_k}} \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ) $$
 
-and perform symbol substitution where necessary in order to place it back on the expression we're working. Performing direct substitution we get
+but followed by the application of the scores on the same projection 
 
-$$\rho^{bnul} = p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
 
-which we can similarly split into two expressions
+$$ t^{bnck} = s^{bncc'} p^{bnc''k} \delta_{c'c''}  = s^{bnc}_ {c'} p^{bnc'k} $$
+ 
+The result is then reflattened and a final transformation is applied to ensure mixing of the features and align the dimensionality to the original embedding space
 
-$$\rho^{bnul} = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bng(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
-
-Note that further contraction is possible on the first term but $\delta$ cannot be removed otherwise $u$ spans the entire triangular matrix, so we get 
-
-$$\rho^{bnul} = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
-
-Substituting this back, while attending to the relevant substitution on the first term of the original expression,
 
 $$
-\begin{aligned}
-q^{bnul} _ {l} &= \delta^{f(l)g(l)} \bar M^n_{l} \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)f(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)f(l)} \right ] \\
-&\quad + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ]
-\end{aligned}
-$$
-
-which we'll now group according to the $\delta$'s
-
-$$
-\begin{aligned}
-q^{bnul} _ {l} &=  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  \\
-&\quad + 2 \bar M^n_{l}  p^{bnf(u)f(l)} p^{bng(u)f(l)} \delta^{f(l)g(l)} \tilde \delta^{f(u)g(u)} \\
-&\quad + 2 \bar M^n_l p^{bnf(u)f(l)} p^{bnf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} \\
-&\quad + 4 \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}
-\end{aligned}
+\bar t^{bcl} = t^{bnck}
 $$
 
 
-
-For a given combination of $u$ and $l$, there's only one term to be calculated. All terms will be computed in paralel on the gpu and collected onto a tensor that represents $q^{bnul} _ {l}$, as demanded by the tensor notation, a sum is then performed over $l$ to obtain $q^{bnu}$. The lookup tables for $f$ and $g$ are then used to recover $q^{bncc'}$ which is then comunicated back to torch for the rest of the attention mechanism.
-
-
-
-
-Computation of the gradients is straightforward,
+$$
+y^{bcd} = E_l^d \bar t^{bcl}
+$$
 
 
-$$ \partial_{\bar M^n _ {l}} q^{bnul} _ {l} = \frac {q^{bnul} _ {l}}{\bar M^n _ {l}} $$
+However, for now, we'll choose this as our forwards pass 
+
+$$q^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bncf(l)} p^{bnc'g(l)}$$
 
 
+### Backwards Pass
+
+Gradient with respect with the metric coordinates:
+
+$$\partial_{M^{n'}_ {k'''k''''}} q^{bncc'} =  \partial_{M^{n'}_{k'''k''''}}  M^{n} _{kk'}  p^{bnck} p^{bnc'k'}$$
+
+
+$$\partial_{M^{n'} _ {k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \partial_{M^{n'}_ {k'''k''''}}  M^{n}_{kk'}$$
+
+$$
+\partial_{M^{n'} _ {k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \delta^{nn'} \delta ^ {kk'''} \delta^{k'k''''}
+$$
+
+$$
+\partial_{M^{n}_{k'''k''''}} q^{bncc'} =   p^{bnck'''} p^{bnc'k''''}
+$$
+
+$$
+\partial_{M^{n}_{kk'}} q^{bncc'} =   p^{bnck} p^{bnc'k'}
+$$
+
+
+$$
+\partial_{M^n_l} q^{bnu} =   p^{bnf(u)f(l)} p^{bng(u)g(l)}
+$$
+
+
+
+Gradient with respect to the input coordinates
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_ {kk'} \partial_{p^{bnc''k''}} p^{bnck} p^{bnc'k'}
+$$
+
+
+
+
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} = M^{n} _ {kk'} \left ( p^{bnc'k'} \partial_{p^{bnc''k''}} p^{bnck}  +  p^{bnck} \partial_{p^{bnc''k''}} p^{bnc'k'} \right )
+$$
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_ {kk'}  \left ( p^{bnc'k'} \delta^{c''c} \delta^{k''k}  +  p^{bnck} \delta^{c''c'} \delta^{k''k'}   \right )
+$$
+
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {kk'} p^{bnc'k'} \delta^{c''c}  \delta^{k''k}  +  M^{n}_ {kk'} p^{bnck} \delta^{c''c'} \delta^{k''k'}
+$$
+
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'} \delta^{c''c}    +  M^{n}_ {kk''} p^{bnck} \delta^{c''c'}
+$$
+
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'}  \delta^{c''c}   +  M^{n}_ {k''k} p^{bnck} \delta^{c''c'}
+$$
+
+
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k} p^{bnc'k}  \delta^{c''c}   +  M^{n}_ {k''k} p^{bnck} \delta^{c''c'}
+$$
+
+
+
+$$
+\partial_{p^{bnc''k'}} q^{bncc'} =  M^{n} _ {k'k} p^{bnc'k}  \delta^{c''c}   +  M^{n}_ {k'k} p^{bnck} \delta^{c''c'}
+$$
+
+
+## Intro
 
 ### From scaled dot product attention to metric tensor attentin
 
 To motivate the introduction of a modified attention we'll look at how the scaled dot product attention from 2017 is equivalent to a general quadratic form, and argue on the basis of interpretability and regularization for the imposition that the form be a metric. I have found that the formulas in the original paper are not very riguorous and at times, open to interpretation, so I'll be using ricci notation to fill in the gaps based on my knowledge of the code implementations from the original authors.
 
+The transformations $Q_d^{nk}$, $K_d^{nk}$ and $V_d^{nk}$ act on the input embeddings to produce the well known keys, queries and values,
 
 $$
 q^{bnck} = Q_d^{nk} x^{bcd}
@@ -109,22 +164,51 @@ $$
 v^{bnck} = V_d^{nk} x^{bcd}
 $$
 
+The queries and keys are multiplied toguether and scaled before being softmaxed, producing the scores matrix,
+
 $$
 s^{bncc'} = \textrm{softmax}^{c'} \left ( \frac{1}{\sqrt{N_k}} q^{bnck} k^{bnc'k'} \delta_{kk'} \right ) 
 $$
 
-$$
-p^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
-$$
-
-$$
-\bar p^{bcl} = p^{bnck}
-$$
+the use of the $N_k$ is what gives this core machanism its name, scaled dot product attention. The scores matrix is then applied to the values 
 
 
 $$
-y^{bcd} = E_l^d \bar p^{bcl}
+t^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
 $$
+
+and the result is reflatened and projected to the original embedding space
+
+$$
+\bar t^{bcl} = t^{bnck}
+$$
+
+
+$$
+y^{bcd} = E_l^d \bar t^{bcl}
+$$
+
+Our focus is on the step right before the application of a softmax 
+
+$$
+r^{bncc'} =  q^{bnck} k^{bnc'k'} \delta_{kk'}
+$$
+
+By substituting the operations that produced the queries and keys, we can see how the quadratic form emerges
+
+$$
+r^{bncc'} = Q_d^{nk}  K_{d'}^{nk'} \delta_{kk'} x^{bcd}   x^{bc'd'} 
+$$
+
+Defining $U^n_{dd'}=Q_d^{nk}  K_{d'}^{nk'} \delta_{kk'} $, 
+
+$$
+r^{bncc'} = U^n_{dd'} x^{bcd}   x^{bc'd'} 
+$$
+
+Disregarding training dynamics and efficiency considerations, we see that this is a complete mathematical equivalence. However, there is good reason not to keep this form. Even considering the case of using queries and keys, we see that the quadratic form is making use of $nd^2$ parameters while the original formulation uses $2ndk$, thus as long as $k < d/2$, that approach is more memory efficient.
+
+However, it is not the most efficient reformulation that can be squeezed out of the quadratic form,
 
 ----
 
