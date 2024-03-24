@@ -44,7 +44,17 @@ $$\bar q^{bnu} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 
 
 
 
+
+
 $$ s^{bnu} = \textrm{softmax}^{g(u)} \left (\delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ) $$
+
+
+$$ t^{bnl} = s^{bnu} p^{bnf(u')f(l)} \delta_{f(u)f(u')} $$
+
+p^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
+
+
+
 
 
 
