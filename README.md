@@ -118,17 +118,23 @@ $$
 
 
 $$
-\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {kk'} p^{bnc'k'}  \delta^{k''k}  +  M^{n}_ {kk'} p^{bnck} \delta^{k''k'}
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {kk'} p^{bnc'k'} \delta^{c''c}  \delta^{k''k}  +  M^{n}_ {kk'} p^{bnck} \delta^{c''c'} \delta^{k''k'}
 $$
 
 
 $$
-\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'}    +  M^{n}_ {kk''} p^{bnck} 
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'} \delta^{c''c}    +  M^{n}_ {kk''} p^{bnck} \delta^{c''c'}
 $$
 
 
 $$
-\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'}    +  M^{n}_ {k''k} p^{bnck} 
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'}  \delta^{c''c}   +  M^{n}_ {k''k} p^{bnck} \delta^{c''c'}
+$$
+
+
+
+$$
+\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k} p^{bnc'k}  \delta^{c''c}   +  M^{n}_ {k''k} p^{bnck} \delta^{c''c'}
 $$
 
 ## Intro
