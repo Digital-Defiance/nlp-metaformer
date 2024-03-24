@@ -65,6 +65,9 @@ y^{bcd} = E_l^d \bar t^{bcl}
 $$
 
 
+However, for now, we'll choose this as our forwards pass 
+
+$$q^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bncf(l)} p^{bnc'g(l)}$$
 
 
 
@@ -169,6 +172,9 @@ $$
 $$
 \partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'}    +  M^{n}_ {kk''} p^{bnck} = Q^{bnc'c}_{k''}
 $$
+
+
+## Intro
 
 ### From scaled dot product attention to metric tensor attentin
 
