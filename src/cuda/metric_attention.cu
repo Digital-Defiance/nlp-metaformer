@@ -140,7 +140,6 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             auto f_u = saved[4];
             auto g_u = saved[5];
 
-          
             const auto device = M_nl.device();
             auto grad_p_bnck = torch::zeros_like(p_bnck).to(device);
             auto grad_M_nl  = torch::zeros_like(M_nl).to(device);
