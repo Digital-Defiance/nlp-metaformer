@@ -8,29 +8,32 @@
 
 ### From scaled dot product attention to metric tensor attention
 
-In this section, we point out that the scaled dot product attention from 2017 is equivalent to a general quadratic form which lends itself to a mathematically equivelent, but more efficient formulation of the attention mechanism. Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product using Ricci calculus.
+In this section, we point out that the scaled dot product attention from 2017 is equivalent to a general quadratic form that lends itself to a more efficient reformulation of the multi-headed attention mechanism.
 
-The transformations $Q_d^{nk}$, $K_d^{nk}$ and $V_d^{nk}$ act on the input embeddings to produce the well known keys, queries and values,
+ Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product using Ricci calculus, transitioning into the proposed quadratic and metric attention.
 
-$$
-q^{bnck} = Q_d^{nk} x^{bcd}
-$$
+Let $Q_d^{nk}$, $K_d^{nk}$ and $V_d^{nk}$ be learnable projections that act on the input embeddings to produce the well known keys, queries and values,
 
 $$
 k^{bnck} = K_d^{nk} x^{bcd}
 $$
 
 $$
+q^{bnck} = Q_d^{nk} x^{bcd}
+$$
+
+
+$$
 v^{bnck} = V_d^{nk} x^{bcd}
 $$
 
-The queries and keys are multiplied toguether and scaled before being softmaxed, producing the scores matrix,
+Each resulting query is dotted with every other key, the result is scaled by the dimensionality of the projection space before being softmaxed along one of the directions, producing the scores matrix,
 
 $$
 s^{bncc'} = \textrm{softmax}^{c'} \left ( \frac{1}{\sqrt{N_k}} q^{bnck} k^{bnc'k'} \delta_{kk'} \right ) 
 $$
 
-the use of the $N_k$ is what gives this core machanism its name, scaled dot product attention. The scores matrix is then applied to the values 
+the use of the $N_k$ is what gives this core machanism its name, scaled dot product attention. The scores are then used to nudge the values 
 
 
 $$
@@ -95,9 +98,7 @@ and
 
 $$ w = g(F_{N}(v, w)) $$
 
-Such an arrangement is easily achieved by storing two arrays to be used as a lookup table for $f$ and $g$. 
-
-Finally, let $l=F_{N_l}(k, k')$, and define
+Such an arrangement is easily achieved by storing two arrays to be used as a lookup table for $f$ and $g$.  Finally, let $l=F_{N_l}(k, k')$, and define
 
 $$ \bar M^n_{l} =  M^n_{f(l)g(l)} $$
 
@@ -105,14 +106,58 @@ which we use to rewrite our original expression as
 
 $$q^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bncf(l)} p^{bnc'g(l)}$$
 
-where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $. At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$. Note that a further computational saving is unlocked with the usage of a metric tensor, since dot products are comutative it follows that $q^{bncc'} =q^{bnc'c}$, so the flattening procedure we just did for $kk'$ can be done for $cc'$. Let $u=F_{N_c}(c, c')$  and agree on the convention that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$, so we rewrite the forwards kernel as
+where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $.
+
+At this point, our expression already fits quite well within a cuda kernel. Note how the $\delta$'s neatly define which expression needs to be calculated for a given value of $l$ and how easily that can be determined with an if-statement on $l$.
+
+However, a further computational saving is unlocked with the usage of a metric tensor, since dot products are comutative it follows that $q^{bncc'} =q^{bnc'c}$, so we only need to perform the computation once for each $cc'$ where $c \geq c'$. Let $u=F_{N_c}(c, c')$  and agree on the convention that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$, so we rewrite the forwards kernel as
 
 $$\bar q^{bnu} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
 
-To take full advantage of the symmetry, we can proceed with the rest of the attention mechanism, which consists in the standard application of a softmax
 
 
-$$ s^{bnu} = \textrm{softmax}^{g(u)} \left ( \frac{1}{\sqrt{N_k}} \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ) $$
+
+To avoid repetition, I'll do the treatment for the following expression 
+
+$$\rho^{bncc'l} = p^{bncf(l)} p^{bnc'g(l)}$$
+
+and perform symbol substitution where necessary in order to place it back on the expression we're working. Performing direct substitution we get
+
+$$\rho^{bnul} = p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
+
+which we can similarly split into two expressions
+
+$$\rho^{bnul} = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bng(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
+
+$$\rho^{bnul} = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
+
+Substituting this back, while attending to the relevant substitution on the first term of the original expression,
+
+$$
+\begin{aligned}
+q^{bnu} &= \delta^{f(l)g(l)} \bar M^n_{l} \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)f(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)f(l)} \right ] \\
+&\quad + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ]
+\end{aligned}
+$$
+
+which we'll now group according to the $\delta$'s
+
+$$
+\begin{aligned}
+q^{bnu}  &=  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  \\
+&\quad + 2 \bar M^n_{l}  p^{bnf(u)f(l)} p^{bng(u)f(l)} \delta^{f(l)g(l)} \tilde \delta^{f(u)g(u)} \\
+&\quad + 2 \bar M^n_l p^{bnf(u)f(l)} p^{bnf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} \\
+&\quad + 4 \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}
+\end{aligned}
+$$
+
+
+Note that for every combination of $l$ and $u$, only one term in this expression needs to be computed and the number of floating point calculations has been reduced from $N_k^2N_c^2$ to $N_kN_c / 2$ (note to self: verify this ).
+
+To proceed with the rest of the attention mechanism, $q^{bncc'}$ is recovered and the standard application of a softmax is made
+
+
+$$ s^{bncc'} = \textrm{softmax}^{c'} \left ( \frac{q^{bncc'} }{\sqrt{N_k}}   \right ) $$
 
 but followed by the application of the scores on the same projection 
 
@@ -132,9 +177,6 @@ y^{bcd} = E_l^d \bar t^{bcl}
 $$
 
 
-However, for now, we'll choose this as our forwards pass 
-
-$$q^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bncf(l)} p^{bnc'g(l)}$$
 
 
 ### Backwards Pass
