@@ -4,9 +4,9 @@
 ---
 
 
-## Intro
+## Introduction
 
-### From scaled dot product attention to metric tensor attention
+### From scaled dot product to metric tensor 
 
 In this section, we point out that the multi-headed scaled dot product attention introduced in 2017 is equivalent to a general quadratic form that lends itself to a more efficient reformulation. Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product using Ricci calculus, transitioning into the proposed quadratic and metric attentions.
 
