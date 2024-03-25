@@ -8,9 +8,7 @@
 
 ### From scaled dot product attention to metric tensor attention
 
-In this section, we point out that the scaled dot product attention from 2017 is equivalent to a general quadratic form that lends itself to a more efficient reformulation of the multi-headed attention mechanism.
-
- Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product using Ricci calculus, transitioning into the proposed quadratic and metric attention.
+In this section, we point out that the multi-headed scaled dot product attention introduced in 2017 is equivalent to a general quadratic form that lends itself to a more efficient reformulation. Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product using Ricci calculus, transitioning into the proposed quadratic and metric attentions.
 
 Let $Q_d^{nk}$, $K_d^{nk}$ and $V_d^{nk}$ be learnable projections that act on the input embeddings to produce the well known keys, queries and values,
 
