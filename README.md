@@ -10,7 +10,7 @@
 
 In this section, we point out that the multi-headed scaled dot product attention introduced in 2017 is equivalent to a general quadratic form that lends itself to a more efficient reformulation. Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product using Ricci calculus, transitioning into the proposed quadratic and metric attentions.
 
-Let $Q_d^{nk}$, $K_d^{nk}$ and $V_d^{nk}$ be learnable projections that act on the input embeddings to produce the well known keys, queries and values,
+Let $Q_d^{nk}$, $K_d^{nk}$ and $V_d^{nk}$ each be $n$ learnable linear maps from  $R^d$ to $R^k$ that act on $b$ sequences of $c$ input embeddings to produce the well known keys, queries and values,
 
 $$
 k^{bnck} = K_d^{nk} x^{bcd}
@@ -20,19 +20,17 @@ $$
 q^{bnck} = Q_d^{nk} x^{bcd}
 $$
 
-
 $$
 v^{bnck} = V_d^{nk} x^{bcd}
 $$
 
-Each resulting query is dotted with every other key, the result is scaled by the dimensionality of the projection space before being softmaxed along one of the directions, producing the scores matrix,
+Each query is dotted with every other key and the result is inversly scaled by the root of the dimensionality of the projection space before being softmaxed along one of the directions, producing
 
 $$
-s^{bncc'} = \textrm{softmax}^{c'} \left ( \frac{1}{\sqrt{N_k}} q^{bnck} k^{bnc'k'} \delta_{kk'} \right ) 
+s^{bncc'} = \textrm{softmax}^{c'} \left ( \frac{1}{\sqrt{k}} q^{bnck} k^{bnc'k'} \delta_{kk'} \right ) 
 $$
 
-the use of the $N_k$ is what gives this core machanism its name, scaled dot product attention. The scores are then used to nudge the values 
-
+where $s^{bncc'}$ represents the influence of embedding $c$ on embedding $c'$. The use of $N_k$ is what gives this core machanism the name of scaled dot product attention. The scores are then used on a weighted sum of the values to produce new representations 
 
 $$
 t^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
@@ -55,13 +53,13 @@ $$
 r^{bncc'} =  q^{bnck} k^{bnc'k'} \delta_{kk'}
 $$
 
-By substituting the operations that produced the queries and keys, we can see how the quadratic form emerges
+By substituting the operations that produced the queries and keys,
 
 $$
 r^{bncc'} = Q_d^{nk}  K_{d'}^{nk'} \delta_{kk'} x^{bcd}   x^{bc'd'} 
 $$
 
-Defining $U^n_{dd'}=Q_d^{nk}  K_{d'}^{nk'} \delta_{kk'} $, 
+ and by defining $U^n_{dd'}=Q_d^{nk}  K_{d'}^{nk'} \delta_{kk'} $, we can see how the quadratic form emerges
 
 $$
 r^{bncc'} = U^n_{dd'} x^{bcd}   x^{bc'd'} 
