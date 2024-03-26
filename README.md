@@ -8,7 +8,7 @@
 
 ### From scaled dot product to metric tensor 
 
-In this section, we point out that the multi-headed scaled dot product attention introduced in 2017 is equivalent to a general quadratic form that lends itself to a more efficient reformulation. Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product using Ricci calculus, transitioning into the proposed quadratic and metric attentions.
+In this section, we point out that the multi-headed scaled dot product attention introduced in 2017 is equivalent to a general quadratic form that lends itself to a more efficient reformulation. Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product, using Ricci calculus to avoid underspecification and transitioning into the proposed quadratic and metric attentions.
 
 Let $K_d^{nk}$, $Q_d^{nk}$ and $V_d^{nk}$ each be $n$ learnable linear maps from  $\mathbf{R}^d$ to $\mathbf{R}^k$ that act on a batch of $b$ sequences of $c$ input embeddings from  $\mathbf{R}^d$ to produce the well known keys, queries and values,
 
@@ -59,13 +59,13 @@ $$
 r^{bncc'} = Q_d^{nk}  K_{d'}^{nk'} \delta_{kk'} x^{bcd}   x^{bc'd'} 
 $$
 
- and by defining $U^n_{dd'}=Q_d^{nk}  K_{d'}^{nk'} \delta_{kk'} $, we can see how the quadratic form emerges
+and by defining $U^n_{dd'} = K_{d'}^{nk'} Q_d^{nk}   \delta_{kk'} $, we can see how the quadratic form emerges
 
 $$
 r^{bncc'} = U^n_{dd'} x^{bcd}   x^{bc'd'} 
 $$
 
-Disregarding training dynamics and efficiency considerations, it is evident that this is a complete mathematical equivalence. However, there is good reason not to keep this form. Indeed, the motivation for using multiple heads that operate on a smaller dimensional space is that, whearas the quadratic form makes use of $nd^2$ parameters, the original formulation uses $2ndk$, thus, as long as $k < d/2$, that approach is more memory efficient.
+Disregarding training dynamics and efficiency considerations, it is evident that this is a complete mathematical equivalence. However, there is good reason not to keep this form. Indeed, the motivation for using multiple heads that operate on a smaller dimensional space is that, whearas the quadratic form makes use of $nd^2$ parameters, the 2017 formulation uses $2ndk$, thus, as long as $k < d/2$, that approach is more memory efficient.
 
 However, it is not the most efficient reformulation that can be squeezed out of the quadratic form,
 
@@ -74,7 +74,7 @@ However, it is not the most efficient reformulation that can be squeezed out of 
 
 ### Forwards Pass
 
-Let $P^{nk}_d$ be $N_n$ learnable projections from $\mathbf R^{N_d}$ to $\mathbf R^{N_k}$ and $x^{bcd}$ a batch of $N_b$ sequences containing $N_c$ embeddings from $\mathbf R^{N_d}$. The action of these projections is expressed in Ricci notation by
+Let $P^{nk}_d$ be $N_n$ learnable projections from $\mathbf R^{N_d}$ to $\mathbf R^{N_k}$ and $x^{bcd}$ a batch of $N_b$ sequences containing $N_c$ embeddings from $\mathbf R^{N_d}$. The action of these projections is expressed by
 
 $$p^{bnck} = P^{nk}_d  x^{bcd}$$
 
@@ -109,8 +109,6 @@ At this point, our expression already fits quite well within a cuda kernel. Note
 However, a further computational saving is unlocked with the usage of a metric tensor, since dot products are comutative it follows that $q^{bncc'} =q^{bnc'c}$, so we only need to perform the computation once for each $cc'$ where $c \geq c'$. Let $u=F_{N_c}(c, c')$  and agree on the convention that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$, so we rewrite the forwards kernel as
 
 $$\bar q^{bnu} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
-
-
 
 
 To avoid repetition, I'll do the treatment for the following expression 
@@ -278,6 +276,7 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 
 
 ## Roadmap
+
 https://github.com/orgs/Digital-Defiance/projects/11/views/1
 
 ### Phase 1
@@ -333,47 +332,7 @@ In this phase, all the lessons from 1 and 2 will be used to to fine tune Lamma i
 - https://paperswithcode.com/dataset/cnn-daily-mail-1
 - https://metatext.io/datasets/wikisummary
 
-## The reasoning behind modifying transformers self attention 
-
-NOTE: WIP
-
-NOTE2: this is not the usual index notation, see next section for explanation
-
-In the proposed self-attention mechanism, we consider a sequence input represented by a tensor $x_{bwc}$, where $b$ indexes the batch size, $w$ the sequence length, and $c$ the feature dimensions. The mechanism leverages a metric tensor to enhance the geometric understanding of the attention process proposed in 2017.
-
-The first step involves a series of linear transformation of $x_{bwc}$ to $n$ lower-dimensional spaces. For each head $n$, this is achieved using a weight tensor $A_{ck}^{(n)}$ where $k = c / n$ represents the reduced dimensions for each head. The transformation is given by:
-
-$$z_{bwk}^{(n)} = x_{bwc} A_{ck}^{(n)} $$
-
-
-The heart of the mechanism lies in the metric tensor $G^{(n)} _ {kk}$, initialized as a product of a learnable, lower triangular tensor $P ^{(n)} _ {kk}$ and its transpose. This ensures that $G^{(n)} _ {kk}$ is symmetric and semi-positive definite:
-$$G^{(n)}_{kk} = P ^{(n)} _ {kk} (P ^{(n)} _ {kk})^T$$
-This introduces a geometric structure into the attention mechanism. The tensor $G^{(n)} _ {kk}$ allowes the network to construct custom dot products which can be calculated via the usual quadratic form,
-
-$$ \textrm{dot}^{(n)}(z^{(n)} _ {bwk}, z^{(n)} _ {bwk}) = z^{(n)} _ {bwk} G^{(n)} _ {kk} ( z^{(n)} _ {bwk} ) ^T$$
-
-We use this custom metric to replace the $W_qW_k^T$ shown in the original 2017 publication,
-
-$$
-S^{(n)}_ {bww} =
-\text{softmax}_k\left( \frac{
-\textrm{dot}^{(n)}(z^{(n)} _ {bwk}, z^{(n)} _ {bwk})
-}{\sqrt{K}} \right)
-$$
-
-Here, $S^{(n)} _ {bww}$ represents the attention scores, quantifying the influence of each word in the sequence on every other word, with $w'$ indexing the sequence length. Once the attention scores are obtained, they are used to compute the output for each head. The output for head $n$, $O^{(n)}_{bwk}$, is a weighted sum of the transformed features:
-
-$$O^{(n)}_ {bwk} = S^{(n)} _{bww} z^{(n)} _{bwk}$$
-
-Finally, the outputs from all heads are concatenated and passed through another linear transformation $B_{ij}$ to yield the final output $Y_{bwi}$:
-
-$$Y _{bwi} = B _{ij} \left[ O^{(1)} _ {bwj}, O^{(2)} _{bwj}, \ldots, O^{(N)} _{bwj} \right]$$
-
-This mechanism, through the use of the metric tensor $G^{(n)}_{kk}$, provides a novel approach to compute attention, offering a geometric perspective to the understanding and processing of sequences in neural networks.
-
-
-
-## Tensor Notation Guidelines
+## In-Code Tensor Notation Guidelines
 
 In our code, we use a specific notation to denote the shape of tensors. Here's how it works:
 
