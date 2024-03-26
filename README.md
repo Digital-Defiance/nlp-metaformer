@@ -1,5 +1,6 @@
 # NLP MetaFormer - An ablation study on the transformer network 
 
+Inspired by: https://github.com/sail-sg/poolformer
 
 ---
 
