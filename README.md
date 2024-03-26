@@ -10,7 +10,7 @@
 
 In this section, we point out that the multi-headed scaled dot product attention introduced in 2017 is equivalent to a general quadratic form that lends itself to a more efficient reformulation. Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product using Ricci calculus, transitioning into the proposed quadratic and metric attentions.
 
-Let $Q_d^{nk}$, $K_d^{nk}$ and $V_d^{nk}$ each be $n$ learnable linear maps from  $R^d$ to $R^k$ that act on $b$ sequences of $c$ input embeddings to produce the well known keys, queries and values,
+Let $K_d^{nk}$, $Q_d^{nk}$ and $V_d^{nk}$ each be $n$ learnable linear maps from  $\mathbf{R}^d$ to $\mathbf{R}^k$ that act on a batch of $b$ sequences of $c$ input embeddings from  $\mathbf{R}^d$ to produce the well known keys, queries and values,
 
 $$
 k^{bnck} = K_d^{nk} x^{bcd}
