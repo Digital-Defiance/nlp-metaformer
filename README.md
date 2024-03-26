@@ -274,6 +274,8 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 
 ### Text Classification
 
+- https://github.com/Digital-Defiance/IMBd-dataset
+
 ### Summarization
 
 ### Next Token Prediction
