@@ -1,4 +1,4 @@
-# NLP MetaFormer - An ablation study on the transformer network 
+# NLP MetaFormer - An ablation study on the transformer network for NLP tasks
 
 Inspired by: https://github.com/sail-sg/poolformer - https://arxiv.org/pdf/2111.11418.pdf
 
@@ -71,9 +71,11 @@ Disregarding training dynamics and efficiency considerations, it is evident that
 However, it is not the most efficient reformulation that can be squeezed out of the quadratic form,
 
 
-## CUDA Kernel of the Metric Tensor Attention
+## Methods
 
-### Forwards Pass
+### CUDA Kernel of the Metric Tensor Attention
+
+#### Forwards Pass
 
 Let $P^{nk}_d$ be $N_n$ learnable projections from $\mathbf R^{N_d}$ to $\mathbf R^{N_k}$ and $x^{bcd}$ a batch of $N_b$ sequences containing $N_c$ embeddings from $\mathbf R^{N_d}$. The action of these projections is expressed by
 
@@ -174,7 +176,7 @@ $$
 
 
 
-### Backwards Pass
+#### Backwards Pass
 
 Gradient with respect with the metric coordinates:
 
@@ -258,8 +260,6 @@ $$
 $$
 
 
-## Experiments
-
 ### Pipelines
 
 Note: all workflows have been removed, pipelines are being moved to prefect
@@ -270,6 +270,10 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 | Sentiment Analysis Task (Completed without success, model overfits easily) | stanford dataset | Outdated | [![train-model: Sentiment Analysis @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml) |
 | GPT Shakespeare Textgen (Completed with success) | [sha-v0.1.0](https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/sha-v0.1.0) | Outdated | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml) |
 | GPT Array Sorter Experiment (Completed with success) | Generated | Outdated | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml) |
+
+
+
+## Experiments
 
 
 ### Text Classification
