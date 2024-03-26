@@ -256,12 +256,10 @@ $$
 \partial_{p^{bnc''k'}} q^{bnu} = \bar M^{n} _ l p^{bng(u)f(l)}  \delta^{c''f(u)}   +  \bar M^{n}_ {l} p^{bnf(u)f(l)} \delta^{c''g(u)}
 $$
 
-----
-
-
-
 
 ## Experiments
+
+### Pipelines
 
 Note: all workflows have been removed, pipelines are being moved to prefect
 
@@ -273,98 +271,18 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 | GPT Array Sorter Experiment (Completed with success) | Generated | Outdated | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml) |
 
 
+### Text Classification
+
+### Summarization
+
+### Next Token Prediction
 
 
-## Roadmap
+## Preliminary Results
 
-https://github.com/orgs/Digital-Defiance/projects/11/views/1
+These are some results and explorations from earlier experiments, they will soon be replaced by final results. 
 
-### Phase 1
-
-In this phase I am exploring a transformer variant and laying the groundwork for an ablation study similar to the one made on the MetaFormer (for vision). This phase is also primarily for me to build up my knowledge of NLP, data engineering, MLOps and large scale model training while hopefully getting some useful research done. 
-
-- [x] implement and train a simple gpt that sorts tokens - [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml)
-- [x] use simpler implementation to contruct the MLOps infra
-- [x] train a larger gpt on shakespeare - [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml)
-- [x] experiment with transformer modifications (i.e. mtn)
-- [ ] perform systematic comparison between mtn and transformer
-  - [ ] Sentiment Analysis 
-    - [x] [![train-model: Sentiment Analysis @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml)
-    - [x]  [![train-model: Sentiment Analysis Amazon Reviews @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml/badge.svg?branch=main)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task-asa.yml)
-  - [ ] topic classification
-  - [ ] machine translation
-  - [ ] summarization 
-- [ ] write report on comparison between transformer and metric tensor network (might focus more on this depending on the results)
-
-
-### Phase 2 
-
-In this phase the plan is to deploy the models trained on phase 1, alongside with open source LLMs.
-
-- [ ] write webapp (traefik - go + htmx + tmpl - fastapi + models)
-- [ ] deploy webapp
-- [ ] release first version
-
-### Phase 3
-
-In this phase, all the lessons from 1 and 2 will be used to to fine tune Lamma into multi-modility and finally, non-turn based voice chat. 
-
-- [ ] fine tune gpt2
-- [ ] fine tune lamma
-- [ ] setup whisper
-
-
-
-
-## possible dependencies
-
-- https://github.com/mozilla/TTS
-
-## some literature
-
-- https://paperswithcode.com/method/strided-attention
-- https://paperswithcode.com/method/fixed-factorized-attention
-- https://paperswithcode.com/method/dot-product-attention
-- https://paperswithcode.com/method/scaled
-
-## datasets
-
-- https://paperswithcode.com/dataset/cnn-daily-mail-1
-- https://metatext.io/datasets/wikisummary
-
-## In-Code Tensor Notation Guidelines
-
-In our code, we use a specific notation to denote the shape of tensors. Here's how it works:
-
-- A tensor's shape is indicated by appending a suffix to the variable name. Each letter in the suffix corresponds to a dimension in the tensor's shape. For example, a tensor with shape `(a, b, c)` would be named `some_tensor_abc`:
-
-    ```python
-    a, b, c = 10, 3, 5
-    some_tensor_abc = torch.randn(a, b, c)
-    ```
-
-- If the dimensions of the tensor are not represented by single letters, we use their initials. For instance, a tensor with dimensions `batch_size` and `vocabolary_size` would be named `some_tensor_bv`:
-
-    ```python
-    batch_size, vocabolary_size = 32, 1024
-    some_tensor_bv = torch.randn(batch_size, vocabolary_size)
-    ```
-
-- If a dimension has an explicit value, we include that value in the suffix. For example, `some_tensor_b2ac` indicates that the tensor has a second dimension (`dim=1`) with a size of 2. We only include explicit values in the suffix if they have more than one digit.
-
-- We also extend this notation to functions. A function name like `some_function_tq` indicates that the function transforms dimension `q` into size `t`:
-
-    ```python
-    result_abct = some_function_tq(input_abcq)
-    ```
-
-This notation helps us keep track of tensor shapes throughout our code, making it easier to understand and debug.
-
-
-
-# Preliminary Results
-
-## Modified Self Attention, Metric Tensor Heads
+Modified Self Attention, Metric Tensor Heads
 
 ![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/5f17ae14-a627-4c0d-9a44-6b60e69f3774)
 
@@ -372,13 +290,14 @@ This notation helps us keep track of tensor shapes throughout our code, making i
 
 ![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/b8026426-9d97-4379-8e08-f6c5a4722206)
 
-## Loss Graph Comparison between Transformer and Metric Tensor Network
+Loss Graph Comparison between Transformer and Metric Tensor Network
 
 ![2024-01-03-052123_571x464_scrot](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/94534309-d07b-4ad2-9a87-9dcd23f012a2)
 
-## Output Comparison
 
-### Transformer:
+Output Comparison
+
+- Transformer:
 
 ```
 The meaning of life is full of me:
@@ -423,7 +342,7 @@ All Edward again. Give me to France, madam, I.
 ```
 
 
-### metric tensor net
+- metric tensor net
 
 ```
 The meaning of life is soaking,'er's friend,
@@ -476,15 +395,50 @@ Our children of Clarence, if 'tis trueborn blood.
 Thus till then, my Edward is like our course of scful!
 ```
 
-## preliminary conclusion
 
-these results do not eliminate the modified network as a possible alternative to the transformer, but no significant advantages were found during training
+## some literature
 
-according to gpt4, the output from the metric tensor net looks more coherent (I don't fully understand archaic english) but this is likely to be a coincidence
+- https://paperswithcode.com/method/strided-attention
+- https://paperswithcode.com/method/fixed-factorized-attention
+- https://paperswithcode.com/method/dot-product-attention
+- https://paperswithcode.com/method/scaled
 
-the metric tensor network was obtained from an ad hoc modification to the transformer, it does not yet make use of the reduced number of parameters to increase efficiency
+## datasets
 
-----> the same results were obtained for the new architecture while making use of less parameters, could be a promising direction, more testing is needed. interpretability was not fully evaluated
+- https://paperswithcode.com/dataset/cnn-daily-mail-1
+- https://metatext.io/datasets/wikisummary
+
+
+## Attachments
+
+### In-Code Tensor Notation Guidelines
+
+In our code, we use a specific notation to denote the shape of tensors. Here's how it works:
+
+- A tensor's shape is indicated by appending a suffix to the variable name. Each letter in the suffix corresponds to a dimension in the tensor's shape. For example, a tensor with shape `(a, b, c)` would be named `some_tensor_abc`:
+
+    ```python
+    a, b, c = 10, 3, 5
+    some_tensor_abc = torch.randn(a, b, c)
+    ```
+
+- If the dimensions of the tensor are not represented by single letters, we use their initials. For instance, a tensor with dimensions `batch_size` and `vocabolary_size` would be named `some_tensor_bv`:
+
+    ```python
+    batch_size, vocabolary_size = 32, 1024
+    some_tensor_bv = torch.randn(batch_size, vocabolary_size)
+    ```
+
+- If a dimension has an explicit value, we include that value in the suffix. For example, `some_tensor_b2ac` indicates that the tensor has a second dimension (`dim=1`) with a size of 2. We only include explicit values in the suffix if they have more than one digit.
+
+- We also extend this notation to functions. A function name like `some_function_tq` indicates that the function transforms dimension `q` into size `t`:
+
+    ```python
+    result_abct = some_function_tq(input_abcq)
+    ```
+
+This notation helps us keep track of tensor shapes throughout our code, making it easier to understand and debug.
+
 
 
 
