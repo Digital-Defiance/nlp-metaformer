@@ -409,22 +409,18 @@ Thus till then, my Edward is like our course of scful!
 
 In all the results from very early experiments, despite the parameter reduction and the strong constraints, the network seemed to perform the same during and after training
 
-## some literature
+## References
 
 - https://paperswithcode.com/method/strided-attention
 - https://paperswithcode.com/method/fixed-factorized-attention
 - https://paperswithcode.com/method/dot-product-attention
 - https://paperswithcode.com/method/scaled
 
-## datasets
-
-- https://paperswithcode.com/dataset/cnn-daily-mail-1
-- https://metatext.io/datasets/wikisummary
 
 
 ## Attachments
 
-### In-Code Tensor Notation Guidelines
+###  A. In-Code Tensor Notation Guidelines
 
 In our code, we use a specific notation to denote the shape of tensors. Here's how it works:
 
