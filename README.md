@@ -283,7 +283,7 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 
 ## Preliminary Results
 
-These are some results and explorations from earlier experiments, they will soon be replaced by final (and more asd intelligible) results. 
+These are some results and explorations from earlier experiments, they will soon be replaced by final (and more  intelligible) results. 
 
 - Modified Self Attention, Metric Tensor Heads (possible avenues to look at when trying to interpret what they are doing) 
 
