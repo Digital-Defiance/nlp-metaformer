@@ -289,7 +289,7 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 ### Ablation
 
 
-## Preliminary Results
+## Results (Preliminary)
 
 These are some results and explorations from earlier experiments, they will soon be replaced by final (and more  intelligible) results. 
 
