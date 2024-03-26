@@ -262,7 +262,10 @@ $$
 $$
 
 
-### Pipelines
+
+
+
+## Experiments
 
 Note: all workflows have been removed, pipelines are being moved to prefect
 
@@ -273,9 +276,6 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 | GPT Shakespeare Textgen (Completed with success) | [sha-v0.1.0](https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/sha-v0.1.0) | Outdated | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml) |
 | GPT Array Sorter Experiment (Completed with success) | Generated | Outdated | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml) |
 
-
-
-## Experiments
 
 
 ### Text Classification
