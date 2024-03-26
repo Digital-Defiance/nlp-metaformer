@@ -284,12 +284,7 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 
 ### Summarization
 
-### Next Token Prediction
-
-### Ablation
-
-
-## Results (Preliminary)
+### Next Token Prediction (Preliminary)
 
 These are some results and explorations from earlier experiments, they will soon be replaced by final (and more  intelligible) results. 
 
@@ -408,6 +403,10 @@ Thus till then, my Edward is like our course of scful!
 
 
 In all the results from very early experiments, despite the parameter reduction and the strong constraints, the network seemed to perform the same during and after training
+
+
+### Ablation
+
 
 ## References
 
