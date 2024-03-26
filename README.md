@@ -278,9 +278,11 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 
 
 
-### Text Classification
+### Text Classification (Preliminary)
 
 - https://github.com/Digital-Defiance/IMBd-dataset
+  -  Early results on this dataset strongly point to the attention mechanism not being important for the task
+  -  Quadratic attention, straight average pooling and even an identity map were able to substitute scaled dot product with no signs of decreasing accuracy (1 transformer block followed by point-wise projection into the number of classes and an averaging of the embeddings, invalidating the capacity of the ouput layer as a possible explanation ) 
 
 ### Summarization
 
