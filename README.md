@@ -1,11 +1,15 @@
 # NLP MetaFormer - An ablation study on the transformer network for NLP tasks
 
-Inspired by: https://github.com/sail-sg/poolformer - https://arxiv.org/pdf/2111.11418.pdf
-
 ---
 
 
 ## Introduction
+
+Inspired by: https://github.com/sail-sg/poolformer - https://arxiv.org/pdf/2111.11418.pdf
+
+
+
+## Methods
 
 ### From scaled dot product to metric tensor 
 
@@ -70,8 +74,6 @@ Disregarding training dynamics and efficiency considerations, it is evident that
 
 However, it is not the most efficient reformulation that can be squeezed out of the quadratic form,
 
-
-## Methods
 
 ### CUDA Kernel of the Metric Tensor Attention
 
