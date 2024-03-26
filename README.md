@@ -281,9 +281,9 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 
 ## Preliminary Results
 
-These are some results and explorations from earlier experiments, they will soon be replaced by final results. 
+These are some results and explorations from earlier experiments, they will soon be replaced by final (and more asd intelligible) results. 
 
-Modified Self Attention, Metric Tensor Heads
+- Modified Self Attention, Metric Tensor Heads (possible avenues to look at when trying to interpret what they are doing) 
 
 ![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/5f17ae14-a627-4c0d-9a44-6b60e69f3774)
 
@@ -291,12 +291,12 @@ Modified Self Attention, Metric Tensor Heads
 
 ![image](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/b8026426-9d97-4379-8e08-f6c5a4722206)
 
-Loss Graph Comparison between Transformer and Metric Tensor Network
+- Loss Graph Comparison between Transformer and Metric Tensor Network (not much difference)
 
 ![2024-01-03-052123_571x464_scrot](https://github.com/Digital-Defiance/llm-voice-chat/assets/63464503/94534309-d07b-4ad2-9a87-9dcd23f012a2)
 
 
-Output Comparison
+- Output Comparison (not  much difference)
 
 - Transformer:
 
@@ -396,6 +396,8 @@ Our children of Clarence, if 'tis trueborn blood.
 Thus till then, my Edward is like our course of scful!
 ```
 
+
+In all the results from very early experiments, despite the parameter reduction and the strong constraints, the network seemed to perform the same during and after training
 
 ## some literature
 
