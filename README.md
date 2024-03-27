@@ -85,11 +85,11 @@ $$p^{bnck} = P^{nk}_d  x^{bcd}$$
 
 At the heart of the proposed attention mechanism is a learnable dot product of each projected embedding with each other embedding. This is achieved using $N_n$ learnable metric tensors $M^{n}_{kk'}$ and is given by
 
-$$q^{bncc'} = M^{n}_{kk'} p^{bnck} p^{bnc'k'}$$
+$$r^{bncc'} = M^{n}_{kk'} p^{bnck} p^{bnc'k'}$$
 
 The metric tensor is symmetric, so we can reduce the number of computations by grouping the terms strategically,
 
-$$q^{bncc'} = \delta^{kk'} M^n_{kk'} p^{bnck} p^{bnc'k'} + 2 \delta^{k>k'} M^n_{kk'} p^{bnck} p^{bnc'k'}$$
+$$r^{bncc'} = \delta^{kk'} M^n_{kk'} p^{bnck} p^{bnc'k'} + 2 \delta^{k>k'} M^n_{kk'} p^{bnck} p^{bnc'k'}$$
 
 Let $F_N(v, w)$ be a pairing function that indexes the elements above and including the diagonal of a matrix from $\mathbf R^{N\times N}$, and $f$ and $g$ integer valued functions that retrieve the first and second argument of $F_N$, that is
 
@@ -105,7 +105,7 @@ $$ \bar M^n_{l} =  M^n_{f(l)g(l)} $$
 
 which we use to rewrite our original expression as
 
-$$q^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bncf(l)} p^{bnc'g(l)}$$
+$$r^{bncc'} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bncf(l)} p^{bnc'f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bncf(l)} p^{bnc'g(l)}$$
 
 where $\tilde \delta^{f(l)g(l)} = 1 - \delta^{f(l)g(l)} $.
 
@@ -113,7 +113,7 @@ At this point, our expression already fits quite well within a cuda kernel. Note
 
 However, a further computational saving is unlocked with the usage of a metric tensor, since dot products are comutative it follows that $q^{bncc'} =q^{bnc'c}$, so we only need to perform the computation once for each $cc'$ where $c \geq c'$. Let $u=F_{N_c}(c, c')$  and agree on the convention that when $f$ and $g$ act on $l$, they'll recover $k$ and $k'$, but when they act on $u$, they'll recover $c$ and $c'$, so we rewrite the forwards kernel as
 
-$$\bar q^{bnu} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
+$$\bar r^{bnu} = \delta^{f(l)g(l)} \bar M^n_{l} p^{bnf(u)f(l)} p^{bng(u)f(l)} + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
 
 
 To avoid repetition, I'll do the treatment for the following expression 
@@ -124,17 +124,17 @@ and perform symbol substitution where necessary in order to place it back on the
 
 $$\rho^{bnul} = p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
 
-which we can similarly split into two expressions
+which we can similarly split into two terms
 
 $$\rho^{bnul} = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bng(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
 
-$$\rho^{bnul} = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
+$$  = \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)}$$
 
 Substituting this back, while attending to the relevant substitution on the first term of the original expression,
 
 $$
 \begin{aligned}
-q^{bnu} &= \delta^{f(l)g(l)} \bar M^n_{l} \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)f(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)f(l)} \right ] \\
+r^{bnu} &= \delta^{f(l)g(l)} \bar M^n_{l} \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)f(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)f(l)} \right ] \\
 &\quad + 2 \tilde \delta^{f(l)g(l)}   \bar M^n_l \left [ \delta^{f(u)g(u)} p^{bnf(u)f(l)} p^{bnf(u)g(l)} + 2  \tilde \delta^{f(u)g(u)}   p^{bnf(u)f(l)} p^{bng(u)g(l)} \right ]
 \end{aligned}
 $$
@@ -143,7 +143,7 @@ which we'll now group according to the $\delta$'s
 
 $$
 \begin{aligned}
-q^{bnu}  &=  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  \\
+r^{bnu}  &=  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  \\
 &\quad + 2 \bar M^n_{l}  p^{bnf(u)f(l)} p^{bng(u)f(l)} \delta^{f(l)g(l)} \tilde \delta^{f(u)g(u)} \\
 &\quad + 2 \bar M^n_l p^{bnf(u)f(l)} p^{bnf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} \\
 &\quad + 4 \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}
@@ -156,7 +156,7 @@ Note that for every combination of $l$ and $u$, only one term in this expression
 To proceed with the rest of the attention mechanism, $q^{bncc'}$ is recovered and the standard application of a softmax is made
 
 
-$$ s^{bncc'} = \textrm{softmax}^{c'} \left ( \frac{q^{bncc'} }{\sqrt{N_k}}   \right ) $$
+$$ s^{bncc'} = \textrm{softmax}^{c'} \left ( \frac{r^{bncc'} }{\sqrt{N_k}}   \right ) $$
 
 but followed by the application of the scores on the same projection 
 
@@ -182,86 +182,51 @@ $$
 
 Gradient with respect with the metric coordinates:
 
-$$\partial_{M^{n'}_ {k'''k''''}} q^{bncc'} =  \partial_{M^{n'}_{k'''k''''}}  M^{n} _{kk'}  p^{bnck} p^{bnc'k'}$$
 
 
-$$\partial_{M^{n'} _ {k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \partial_{M^{n'}_ {k'''k''''}}  M^{n}_{kk'}$$
-
-$$
-\partial_{M^{n'} _ {k'''k''''}} q^{bncc'} =   p^{bnck} p^{bnc'k'} \delta^{nn'} \delta ^ {kk'''} \delta^{k'k''''}
-$$
-
-$$
-\partial_{M^{n}_{k'''k''''}} q^{bncc'} =   p^{bnck'''} p^{bnc'k''''}
-$$
-
-$$
-\partial_{M^{n}_{kk'}} q^{bncc'} =   p^{bnck} p^{bnc'k'}
-$$
 
 
 $$
-\partial_{M^n_l} q^{bnu} =   p^{bnf(u)f(l)} p^{bng(u)g(l)}
+\begin{aligned}
+\partial_{M^{n'}_ {k'''k''''}} r^{bncc'}   &= \partial_{M^{n'}_{k'''k''''}}   p^{bnck} p^{bnc'k'} M^{n} _{kk'}   \\
+ &=  p^{bnck} p^{bnc'k'}  \partial _{M^{n'} _{k'''k''''}}  M^{n} _{kk'}  \\
+&=  p^{bnck} p^{bnc'k'} \delta^{nn'} \delta ^ {kk'''} \delta^{k'k''''} \\
+\end{aligned}
+$$
+
+
+which can be rewritten with
+
+$$
+\partial_{M^{n}_ {kk'}} r^{bncc'}   = p^{bnck} p^{bnc'k'}  
+$$
+
+and finally
+
+$$
+\partial_{\bar M^n_l} r^{bnu} =   p^{bnf(u)f(l)} p^{bng(u)g(l)}
 $$
 
 
 
 Gradient with respect to the input coordinates
 
-$$
-\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_ {kk'} \partial_{p^{bnc''k''}} p^{bnck} p^{bnc'k'}
-$$
-
-
 
 
 
 $$
-\partial_{p^{bnc''k''}} q^{bncc'} = M^{n} _ {kk'} \left ( p^{bnc'k'} \partial_{p^{bnc''k''}} p^{bnck}  +  p^{bnck} \partial_{p^{bnc''k''}} p^{bnc'k'} \right )
+\begin{aligned}
+\partial_{p^{bnc''k''}}  r^{bncc'}   &= M^{n}_ {kk'} \partial_{p^{bnc''k''}} p^{bnck} p^{bnc'k'}  \\
+&=  M^{n} _ {kk'} p^{bnc'k'} \partial_{p^{bnc''k''}} p^{bnck}  +   M^{n} _ {kk'}  p^{bnck} \partial_{p^{bnc''k''}} p^{bnc'k'} \\
+&=   M^{n}_ {kk'} p^{bnc'k'} \delta^{c''c} \delta^{k''k}  + M^{n}_ {kk'}  p^{bnck} \delta^{c''c'} \delta^{k''k'}    \\
+\end{aligned}
 $$
 
-$$
-\partial_{p^{bnc''k''}} q^{bncc'} = M^{n}_ {kk'}  \left ( p^{bnc'k'} \delta^{c''c} \delta^{k''k}  +  p^{bnck} \delta^{c''c'} \delta^{k''k'}   \right )
-$$
-
+Which can be rewritten as
 
 $$
-\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {kk'} p^{bnc'k'} \delta^{c''c}  \delta^{k''k}  +  M^{n}_ {kk'} p^{bnck} \delta^{c''c'} \delta^{k''k'}
+\partial_{p^{bnc''k''}}  r^{bnu} = \bar M_l p^{bng(u)g(l)} \delta^{c''f(u)} \delta^{k''f(l)}  +   \bar M_l   p^{bnf(u)f(l)} \delta^{c''g(u)} \delta^{k''g(l)} 
 $$
-
-
-$$
-\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'} \delta^{c''c}    +  M^{n}_ {kk''} p^{bnck} \delta^{c''c'}
-$$
-
-
-$$
-\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k'} p^{bnc'k'}  \delta^{c''c}   +  M^{n}_ {k''k} p^{bnck} \delta^{c''c'}
-$$
-
-
-
-$$
-\partial_{p^{bnc''k''}} q^{bncc'} =  M^{n} _ {k''k} p^{bnc'k}  \delta^{c''c}   +  M^{n}_ {k''k} p^{bnck} \delta^{c''c'}
-$$
-
-
-
-$$
-\partial_{p^{bnc''k'}} q^{bncc'} =  M^{n} _ {k'k} p^{bnc'k}  \delta^{c''c}   +  M^{n}_ {k'k} p^{bnck} \delta^{c''c'}
-$$
-
-$$
-\partial_{p^{bnc''k'}} q^{bncc'} =  M^{n} _ {kk'} p^{bnc'k}  \delta^{c''c}   +  M^{n}_ {kk'} p^{bnck} \delta^{c''c'}
-$$
-
-
-
-$$
-\partial_{p^{bnc''k'}} q^{bnu} = \bar M^{n} _ l p^{bng(u)f(l)}  \delta^{c''f(u)}   +  \bar M^{n}_ {l} p^{bnf(u)f(l)} \delta^{c''g(u)}
-$$
-
-
 
 
 
@@ -451,7 +416,6 @@ In our code, we use a specific notation to denote the shape of tensors. Here's h
     ```
 
 This notation helps us keep track of tensor shapes throughout our code, making it easier to understand and debug.
-
 
 
 
