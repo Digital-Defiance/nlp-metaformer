@@ -133,9 +133,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: "Configure git repository for development"
         run: |
-          git config --global user.email "mail@ruicampos.org"
-          git config --global user.name "Rui Campos"
-          git config --global --add safe.directory /__w/llm-voice-chat/llm-voice-chat
+          # git config --global user.email "mail@ruicampos.org"
+          # git config --global user.name "Rui Campos"
+          git config --global --add safe.directory /__w/nlp-metaformer/nlp-metaformer 
           git config pull.rebase false
   
       # stuff to be moved to the production image
