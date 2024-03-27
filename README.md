@@ -182,31 +182,14 @@ $$
 
 Gradient with respect with the metric coordinates:
 
-
-
-
-
 $$
 \begin{aligned}
-\partial_{M^{n'}_ {k'''k''''}} r^{bncc'}   &= \partial_{M^{n'}_{k'''k''''}}   p^{bnck} p^{bnc'k'} M^{n} _{kk'}   \\
- &=  p^{bnck} p^{bnc'k'}  \partial _{M^{n'} _{k'''k''''}}  M^{n} _{kk'}  \\
-&=  p^{bnck} p^{bnc'k'} \delta^{nn'} \delta ^ {kk'''} \delta^{k'k''''} \\
+\partial_{M^{n}_ {l'}} r^{bnu}  &=   \delta_{ll'} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  \\
+&\quad + 2  \delta_{ll'}   p^{bnf(u)f(l)} p^{bng(u)f(l)} \delta^{f(l)g(l)} \tilde \delta^{f(u)g(u)} \\
+&\quad + 2  \delta_{ll'}  p^{bnf(u)f(l)} p^{bnf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} \\
+&\quad + 4  \delta_{ll'}  p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}  
 \end{aligned}
 $$
-
-
-which can be rewritten with
-
-$$
-\partial_{M^{n}_ {kk'}} r^{bncc'}   = p^{bnck} p^{bnc'k'}  
-$$
-
-and finally
-
-$$
-\partial_{\bar M^n_l} r^{bnu} =   p^{bnf(u)f(l)} p^{bng(u)g(l)}
-$$
-
 
 
 Gradient with respect to the input coordinates
@@ -416,7 +399,6 @@ In our code, we use a specific notation to denote the shape of tensors. Here's h
     ```
 
 This notation helps us keep track of tensor shapes throughout our code, making it easier to understand and debug.
-
 
 
 
