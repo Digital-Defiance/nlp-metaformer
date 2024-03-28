@@ -87,18 +87,15 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             AutogradContext *ctx,
             Variable p_bnck,
             Variable M_nl,
-            constants_list constants
+            constants_list index_tables
         ) {
 
             const auto device = p_bnck.device();
-            auto q_nul = torch::zeros(p_bnck.sizes()).to(device);
     
-            auto f_l = constants[0];
-            auto g_l = constants[1];
-            auto f_u = constants[2];
-            auto g_u = constants[3];
-
-
+            auto q_nul = torch::zeros(p_bnck.sizes()).to(device);
+            auto index_table_l = index_tables[0];
+            auto index_table_u = index_tables[1];
+      
             const auto Nb = p_bnck.size(0);
             const auto Nl = M_nl.size(1);
             const auto Nn = M_nl.size(0);
@@ -107,22 +104,20 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             const int total_threads = Nb*Nl*Nu*Nn;
             const int threads_per_block = 1024;
             const int number_of_blocks = (total_threads + threads_per_block - 1) / threads_per_block;
-            
+
             auto q_bnul = torch::zeros((Nb, Nn, Nu, Nl));
 
             AT_DISPATCH_FLOATING_TYPES(p_bnck.type(), "metric_attention_forwards_kernel", ([&] {
                 metric_attention_forwards_kernel<scalar_t><<<number_of_blocks, threads_per_block>>>(
                     p_bnck.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>(),
-                    f_l.packed_accessor32<size_t, 1, torch::RestrictPtrTraits>(),
-                    g_l.packed_accessor32<size_t, 1, torch::RestrictPtrTraits>(),
-                    f_u.packed_accessor32<size_t, 1, torch::RestrictPtrTraits>(),
-                    g_u.packed_accessor32<size_t, 1, torch::RestrictPtrTraits>(),
+                    index_table_l.packed_accessor32<size_t, 1, torch::RestrictPtrTraits>(),
+                    index_table_u.packed_accessor32<size_t, 1, torch::RestrictPtrTraits>(),
                     M_nl.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                     q_bnul.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>()
                 );
             }));
 
-            ctx->save_for_backward({ q_bnul, M_nl, f_l, g_l, f_u, g_u });
+            ctx->save_for_backward({ q_bnul, M_nl, index_table_l, index_table_u });
 
 
             return { q_bnul };
@@ -130,26 +125,22 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
 
         static tensor_list backward(AutogradContext *ctx, tensor_list grad_outputs) {
 
-            torch::Tensor grad_q_bnul = grad_outputs[0];
+            auto grad_r_bnul = grad_outputs[0];
+            const auto device = grad_r_bnul.device();
 
             auto saved = ctx->get_saved_variables();
             auto q_bnul = saved[0];
             auto M_nl = saved[1];
-            auto f_l = saved[2];
-            auto g_l = saved[3];
-            auto f_u = saved[4];
-            auto g_u = saved[5];
-
-            const auto device = M_nl.device();
+            auto index_table_l = saved[2];
+            auto index_table_u = saved[3];
+            
             auto grad_p_bnck = torch::zeros_like(p_bnck).to(device);
             auto grad_M_nl  = torch::zeros_like(M_nl).to(device);
 
             AT_DISPATCH_FLOATING_TYPES(input_bcd.type(), "metric_attention_backwards_kernel", ([&] {
                 metric_attention_backwards_kernel<scalar_t><<<2, 1>>>(
-                    grad_q_bnul.data<scalar_t>(),
-
-                    p_bnck.data<scalar_t>(),                    
-                    
+                    grad_r_bnul.data<scalar_t>(),
+                    p_bnck.data<scalar_t>(),
                     M_nl.data<scalar_t>(),
                     grad_p_bnckd.data<scalar_t>(),
                     grad_M_nl.data<scalar_t>()
@@ -169,23 +160,21 @@ extern "C" {
         TensorPTR *q_1bnu,
         TensorPTR p_bnck,
         TensorPTR M_nl,
-        TensorPTR f_l,
-        TensorPTR g_l,
-        TensorPTR f_u,
-        TensorPTR g_u
+        TensorPTR index_table_l,
+        TensorPTR index_table_u,
     ) {
 
         CHECK_INPUT(p_bnck);
         CHECK_INPUT(*q_1bnu);
-        CHECK_INPUT(f_l); CHECK_INPUT(g_l);
-        CHECK_INPUT(f_u); CHECK_INPUT(g_u);
+        CHECK_INPUT(index_table_l);
+        CHECK_INPUT(index_table_u);
         CHECK_INPUT(M_nl);
 
-        constants_list constants = {*f_l, *g_l, *f_u, *g_u};
+        constants_list index_tables = {*index_table_l, *index_table_u };
         auto res = MetricTensorAttention::apply(
                 *p_bnck,
                 *M_nl,
-                constants
+                index_tables
         )[0];
         q_1bnu[0] = new torch::Tensor(res);
     }
