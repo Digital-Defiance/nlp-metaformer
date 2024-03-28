@@ -10,11 +10,8 @@ using namespace torch::autograd;
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
 #define CHECK_INPUT(x) CHECK_CUDA((*x)); CHECK_CONTIGUOUS((*x))
 
-typedef torch::Tensor *TensorPTR;
-typedef const int Vec1[];
 template<typename scalar_t, size_t D>
 using CudaTensorView = torch::PackedTensorAccessor32<scalar_t, D, torch::RestrictPtrTraits>;
-using Constant1DLookup = CudaTensorView<size_t, 1>;
 using constants_list = std::vector<at::Tensor>;
 
 
@@ -28,7 +25,7 @@ __global__ void metric_attention_forwards_kernel(
 ) {
 
     int idx = blockIdx.x * blockDim.x + threadIdx.x; // Global thread index
-
+    // TODO: index wizardy
     size_t b = ;
     size_t u = ;
     size_t l = ;
@@ -38,8 +35,6 @@ __global__ void metric_attention_forwards_kernel(
 
     size_t c = ...;
     size_t c_1 = ...;
-
-    // TODO: index wizardy
 
     // assign common factor
     q_bnul[b][n][u][l] =  M_nl[n][l]*p_bnck[b][n][c][k];
@@ -193,6 +188,9 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             return { grad_r_bnul__p_bnck, grad_r_bnu__M_nl };
   }
 };
+
+
+typedef torch::Tensor *TensorPTR;
 
 
 extern "C" {
