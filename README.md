@@ -146,7 +146,7 @@ $$
 r^{bnu}  &=  \bar M^n _ {l} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  \\
 &\quad + 2 \bar M^n_{l}  p^{bnf(u)f(l)} p^{bng(u)f(l)} \delta^{f(l)g(l)} \tilde \delta^{f(u)g(u)} \\
 &\quad + 2 \bar M^n_l p^{bnf(u)f(l)} p^{bnf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} \\
-&\quad + 4 \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}
+&\quad + 4 \bar M^n_l p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} 
 \end{aligned}
 $$
 
@@ -187,7 +187,8 @@ $$
 \partial_{M^{n}_ {l'}} r^{bnu}  &=   \delta_{ll'} p^{bnf(u)f(l)} p^{bnf(u)f(l)} \delta^{f(l)g(l)} \delta^{f(u)g(u)}  \\
 &\quad + 2  \delta_{ll'}   p^{bnf(u)f(l)} p^{bng(u)f(l)} \delta^{f(l)g(l)} \tilde \delta^{f(u)g(u)} \\
 &\quad + 2  \delta_{ll'}  p^{bnf(u)f(l)} p^{bnf(u)g(l)} \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)} \\
-&\quad + 4  \delta_{ll'}  p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}  
+&\quad + 4  \delta_{ll'}  p^{bnf(u)f(l)} p^{bng(u)g(l)} \tilde \delta^{f(u)g(u)} \tilde \delta^{f(l)g(l)}  \\
+&= r^{bnul} /  M^n _ {l}
 \end{aligned}
 $$
 
@@ -208,7 +209,7 @@ $$
 Which can be rewritten as
 
 $$
-\partial_{p^{bnc''k''}}  r^{bnu} = \bar M_l p^{bng(u)g(l)} \delta^{c''f(u)} \delta^{k''f(l)}  +   \bar M_l   p^{bnf(u)f(l)} \delta^{c''g(u)} \delta^{k''g(l)} 
+\partial_{p^{bnc''k''}}  r^{bnu} = \bar M^n _l p^{bng(u)g(l)} \delta^{c''f(u)} \delta^{k''f(l)}  +   \bar M^n _l   p^{bnf(u)f(l)} \delta^{c''g(u)} \delta^{k''g(l)} 
 $$
 
 
