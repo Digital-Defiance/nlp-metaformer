@@ -28,41 +28,35 @@ __global__ void metric_attention_forwards_kernel(
 ) {
 
     int idx = blockIdx.x * blockDim.x + threadIdx.x; // Global thread index
-    
-    int Nb = q_bnul.size(0);
-    int b = idx % Nb;
-    idx = (idx / Nb);
-    
-    int Nn = q_bnul.size(1);
-    int n = idx % Nn;
-    idx = idx / Nn;
 
-    int Nl = q_bnul.size(3);
-    int l = idx % Nl;
-    idx = idx / Nl;
+    size_t b = ;
+    size_t u = ;
+    size_t l = ;
 
-    int Nl = q_bnul.size(2);
-    int u = idx % Nu;
+    size_t k = ...;
+    size_t k_1 = ...;
 
-    int fu = f_u[u];
-    int gu = g_u[u];
+    size_t c = ...;
+    size_t c_1 = ...;
 
-    int fl = f_l[l];
-    int gl = g_l[l];
+    // TODO: index wizardy
 
-    if (fl == gl && fu == gu){
-        q_bnul[b][n][u][l] = M_nl[n][l]*p_bnck[b][n][fu][fl]*p_bnck[b][n][fu][fl];
-    } else if (fl == gl  && fu != gu) {
-        q_bnul[b][n][u][l] = 2*M_nl[n][l]*p_bnck[b][n][fu][fl]*p_bnck[b][n][gu][fl];
-    } else if (fl != gl  && fu == gu) {
-        q_bnul[b][n][u][l] = 2*M_nl[n][l]*p_bnck[b][n][fu][fl]*p_bnck[b][n][fu][gl];
-    } else if (fl != gl  && fu != gu) {
-        q_bnul[b][n][u][l] = 4*M_nl[n][l]*p_bnck[b][n][fu][fl]*p_bnck[b][n][gu][gl];
+    // assign common factor
+    q_bnul[b][n][u][l] =  M_nl[n][l]*p_bnck[b][n][c][k];
+
+    if (k == k_1 && c == c_1){
+        q_bnul[b][n][u][l] *= p_bnck[b][n][c][k];
+    } else if (k == k_1  && c != c_1) {
+        q_bnul[b][n][u][l] *= 2*p_bnck[b][n][c_1][k];
+    } else if (k != k_1  && c == c_1) {
+        q_bnul[b][n][u][l] *= 2*p_bnck[b][n][c][k_1];
+    } else if (k != k_1  && c != c_1) {
+        q_bnul[b][n][u][l] *= 4*p_bnck[b][n][c_1][k_1];
     }
 }
 
 
-template <typename scalar_t> 
+template <typename scalar_t>
 __global__ void metric_attention_backwards_kernel_p(
     CudaTensorView<scalar_t, 4> p_bnck,
     CudaTensorView<scalar_t, 2> M_nl,
@@ -164,13 +158,9 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             auto grad_r_bnul__p_bnck = torch::zeros(
                 (b, n, u, l, c, k)
             ).to(device);
-        
-            auto grad_r_bnu__M_nl  = torch::zeros(
-                (b, n, u, l)
-            ).to(device);
 
-            AT_DISPATCH_FLOATING_TYPES(input_bcd.type(), "metric_attention_backwards_kernel", ([&] {
-                metric_attention_backwards_kernel<scalar_t><<<2, 1>>>(
+            AT_DISPATCH_FLOATING_TYPES(input_bcd.type(), "metric_attention_backwards_kernel_p", ([&] {
+                metric_attention_backwards_kernel_p<scalar_t><<<2, 1>>>(
                     p_bnck.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                     M_nl.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                     grad_r_bnul__p_bnck.packed_accessor32<scalar_t, 6, torch::RestrictPtrTraits>(),
@@ -180,6 +170,24 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
                     
                 );
             }));
+
+
+            auto grad_r_bnu__M_nl  = torch::zeros(
+                (b, n, u, l)
+            ).to(device);
+
+            AT_DISPATCH_FLOATING_TYPES(input_bcd.type(), "metric_attention_backwards_kernel_p", ([&] {
+                metric_attention_backwards_kernel_p<scalar_t><<<2, 1>>>(
+                    p_bnck.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
+                    M_nl.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
+                    grad_r_bnul__p_bnck.packed_accessor32<scalar_t, 6, torch::RestrictPtrTraits>(),
+                    grad_r_bnu__M_nl.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>(),
+                    index_table_2l.packed_accessor32<size_t, 2, torch::RestrictPtrTraits>()>,
+                    index_table_2u.packed_accessor32<size_t, 2, torch::RestrictPtrTraits>()>
+                    
+                );
+            }));
+
 
             // TODO: chain rule, grad_network__r_bnul
             return { grad_r_bnul__p_bnck, grad_r_bnu__M_nl };
