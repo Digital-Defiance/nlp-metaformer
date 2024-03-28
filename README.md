@@ -226,6 +226,41 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 
 
 
+### Early Explorations with NanoGPT array sorter
+
+
+NanoGPT was trained to sort the tokens 1, 2 and 3.
+
+
+- induced distances between the embeddings for each token
+- position (i, j) = distance between token i and token j
+- note how the first head is clearly encoding for the sort order 
+
+
+![image](https://github.com/Digital-Defiance/nlp-metaformer/assets/63464503/3ae9012e-7606-4f6b-83f3-c3a77201b5e4)
+
+- scaled dot product doesn't really have an analogue to this, so there's nothing to compare
+- it does however, also have scores tables, which we can compare
+- scores for scaled dot product
+
+![image](https://github.com/Digital-Defiance/nlp-metaformer/assets/63464503/15a9d9d5-ab15-47a9-ae83-22debcaef8ea)
+
+- scores for metric based
+
+![image](https://github.com/Digital-Defiance/nlp-metaformer/assets/63464503/913d8506-8dac-48e1-8251-1dc2bc9af344)
+
+- we can also try to compare the weights matrices
+- in case of metric attention, they are metric tensors
+
+![image](https://github.com/Digital-Defiance/nlp-metaformer/assets/63464503/f64b6aff-fa76-4aeb-b00b-7ee192025322)
+
+- in case of scaled dot product, we use WqWk.T as an analogue
+
+![image](https://github.com/Digital-Defiance/nlp-metaformer/assets/63464503/82ba6f24-fefe-421a-b0e4-38e4ae162f4a)
+
+
+
+
 ### Text Classification (Preliminary)
 
 - https://github.com/Digital-Defiance/IMBd-dataset
