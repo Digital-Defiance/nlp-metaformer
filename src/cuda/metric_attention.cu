@@ -93,6 +93,8 @@ __global__ void metric_attention_backwards_kernel_M(
 }
 
 
+const int MAX_THREADS_PER_BLOCK = 1024;
+
 class MetricTensorAttention : public Function<MetricTensorAttention> {
     public:
         static variable_list forward(
@@ -105,22 +107,25 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             const auto device = p_bnck.device();
     
             auto q_nul = torch::zeros(p_bnck.sizes()).to(device);
+
             auto index_table_2l = index_tables[0];
             auto index_table_2u = index_tables[1];
       
-            const auto Nb = p_bnck.size(0);
-            const auto Nl = M_nl.size(1);
-            const auto Nn = M_nl.size(0);
-            const auto Nu = f_u.size(0);
+            const auto b = p_bnck.size(0);
+            const auto n = p_bnck.size(1);
+            const auto c = p_bnck.size(2);
+            const auto k = p_bnck.size(3);
 
-            const int total_threads = Nb*Nl*Nu*Nn;
-            const int threads_per_block = 1024;
-            const int number_of_blocks = (total_threads + threads_per_block - 1) / threads_per_block;
+            const auto l = index_table_2l.size(1);
+            const auto u = index_table_2u.size(1);
 
-            auto r_bnul = torch::zeros((Nb, Nn, Nu, Nl));
+            const int total_threads = b*n*l*u;
+            const int number_of_blocks = (total_threads + MAX_THREADS_PER_BLOCK - 1) / MAX_THREADS_PER_BLOCK;
+
+            auto r_bnul = torch::zeros((b, n, u, l)).to(device);
 
             AT_DISPATCH_FLOATING_TYPES(p_bnck.type(), "metric_attention_forwards_kernel", ([&] {
-                metric_attention_forwards_kernel<scalar_t><<<number_of_blocks, threads_per_block>>>(
+                metric_attention_forwards_kernel<scalar_t><<<number_of_blocks, MAX_THREADS_PER_BLOCK>>>(
                     p_bnck.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>(),
                     M_nl.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                     r_bnul.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>(),
@@ -141,21 +146,17 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
 
             auto grad_network__r_bnul = grad_outputs[0];
             const auto device = grad_r_bnul.device();
-
             auto saved = ctx->get_saved_variables();
-
             auto p_bnck = saved[0];
             auto M_nl = saved[1];
             auto index_table_2l = saved[2];
             auto index_table_2u = saved[3];
-        
-
-            auto grad_r_bnul__p_bnck = torch::zeros(
-                (b, n, u, l, c, k)
-            ).to(device);
+            auto grad_r_bnul__p_bnck = torch::zeros((b, n, u, l, c, k)).to(device);
+            int total_threads = b*n*l*u;
+            int number_of_blocks = (total_threads + MAX_THREADS_PER_BLOCK - 1) / MAX_THREADS_PER_BLOCK;
 
             AT_DISPATCH_FLOATING_TYPES(input_bcd.type(), "metric_attention_backwards_kernel_p", ([&] {
-                metric_attention_backwards_kernel_p<scalar_t><<<2, 1>>>(
+                metric_attention_backwards_kernel_p<scalar_t><<<number_of_blocks, MAX_THREADS_PER_BLOCK>>>(
                     p_bnck.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                     M_nl.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                     grad_r_bnul__p_bnck.packed_accessor32<scalar_t, 6, torch::RestrictPtrTraits>(),
@@ -167,12 +168,12 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             }));
 
 
-            auto grad_r_bnu__M_nl  = torch::zeros(
-                (b, n, u, l)
-            ).to(device);
+            int total_threads = b*n*l*u;
+            int number_of_blocks = (total_threads + MAX_THREADS_PER_BLOCK - 1) / MAX_THREADS_PER_BLOCK;
+            auto grad_r_bnu__M_nl  = torch::zeros((b, n, u, l)).to(device);
 
             AT_DISPATCH_FLOATING_TYPES(input_bcd.type(), "metric_attention_backwards_kernel_p", ([&] {
-                metric_attention_backwards_kernel_p<scalar_t><<<2, 1>>>(
+                metric_attention_backwards_kernel_p<scalar_t><<<number_of_blocks, MAX_THREADS_PER_BLOCK>>>(
                     p_bnck.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                     M_nl.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                     grad_r_bnul__p_bnck.packed_accessor32<scalar_t, 6, torch::RestrictPtrTraits>(),
@@ -211,7 +212,7 @@ extern "C" {
         CHECK_INPUT(index_table_u);
         CHECK_INPUT(M_nl);
 
-        constants_list index_tables = {*index_table_l, *index_table_u };
+        constants_list index_tables = { *index_table_l, *index_table_u };
         auto res = MetricTensorAttention::apply(
                 *p_bnck,
                 *M_nl,
