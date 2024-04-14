@@ -234,13 +234,13 @@ __global__ void metric_attention_forwards_kernel(
 In the backwards pass, we're interested in calculating the following quantities,
 
 $$
-\delta M^{n}_ {l} = \lambda \partial_{M^{n}_ {l}} L = \partial_{r^{bnu} } L \cdot \partial_{M^{n}_ {l}} r^{bnu} 
+\delta M^{n}_ {l} = \lambda \partial_{M^{n}_ {l}} L = \lambda \partial_{r^{bnu} } L \cdot \partial_{M^{n}_ {l}} r^{bnu} 
 $$
 
 and
 
 $$
-\delta p^{bnck} = \lambda \partial_{ p^{bnck}} L  = \partial_{r^{bnu} } L \cdot \partial_{ p^{bnck}} r^{bnu} 
+\delta p^{bnck} = \lambda \partial_{ p^{bnck}} L  = \lambda \partial_{r^{bnu} } L \cdot \partial_{ p^{bnck}} r^{bnu} 
 $$
 
 where $L$ denotes the loss function, $\lambda$ the learning rate and, $\delta M^{n}_ {l}$ and $\delta p^{bnck}$ the change in $M^{n}_ {l}$ and $p^{bnck}$ for the current iteration. 
