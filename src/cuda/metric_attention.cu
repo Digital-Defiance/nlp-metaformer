@@ -5,6 +5,7 @@
 #include <torch/torch.h>
 
 using namespace torch::autograd;
+const int MAX_THREADS_PER_BLOCK = 1024;
 
 #define CHECK_CUDA(x) TORCH_CHECK(x.device().is_cuda(), #x " must be a CUDA tensor")
 #define CHECK_CONTIGUOUS(x) TORCH_CHECK(x.is_contiguous(), #x " must be contiguous")
@@ -15,20 +16,45 @@ using CudaTensorView = torch::PackedTensorAccessor32<scalar_t, D, torch::Restric
 using constants_list = std::vector<at::Tensor>;
 
 
+struct results {
+    int idx;
+    int x;
+};
+
+inline void compute_index(int& idx, int Nx, size_t& x) {
+    x = idx % Nx;
+    idx = (idx - x) / Nx;
+}
+
 template <typename scalar_t> 
 __global__ void metric_attention_forwards_kernel(
     CudaTensorView<scalar_t, 4> p_bnck,
     CudaTensorView<scalar_t, 2> M_nl,
     CudaTensorView<scalar_t, 4> q_bnul,
     CudaTensorView<size_t, 2> index_table_2l,
-    CudaTensorView<size_t, 2> index_table_2u
+    CudaTensorView<size_t, 2> index_table_2u,
+    const int max_global_idx
 ) {
 
     int idx = blockIdx.x * blockDim.x + threadIdx.x; // Global thread index
-    // TODO: index wizardy
-    size_t b = ;
-    size_t u = ;
-    size_t l = ;
+
+    if idx > max_global_idx {
+        return 
+    }
+
+    
+    size_t b;
+    compte_index(idx, q_bnul.size(0), b);
+
+    size_t n;
+    compte_index(idx, q_bnul.size(1), n);
+
+    size_t u;
+    compte_index(idx, q_bnul.size(2), u);
+
+    size_t l;
+    compte_index(idx, q_bnul.size(3), l);
+
 
     size_t k = ...;
     size_t k_1 = ...;
@@ -57,8 +83,13 @@ __global__ void metric_attention_backwards_kernel_p(
     CudaTensorView<scalar_t, 2> M_nl,
     CudaTensorView<scalar_t, 6> grad_r_bnul__p_bnck,
     CudaTensorView<size_t, 2> index_table_2l,
-    CudaTensorView<size_t, 2> index_table_2u
+    CudaTensorView<size_t, 2> index_table_2u,
+    const int max_global_idx
 ) {
+
+    if idx > max_global_idx {
+        return 
+    }
 
     // TODO: index wizzardy 
     size_t c_2 = ...;
@@ -93,7 +124,6 @@ __global__ void metric_attention_backwards_kernel_M(
 }
 
 
-const int MAX_THREADS_PER_BLOCK = 1024;
 
 class MetricTensorAttention : public Function<MetricTensorAttention> {
     public:
@@ -105,16 +135,15 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
         ) {
 
             const auto device = p_bnck.device();
-    
-            auto q_nul = torch::zeros(p_bnck.sizes()).to(device);
-
-            auto index_table_2l = index_tables[0];
-            auto index_table_2u = index_tables[1];
       
             const auto b = p_bnck.size(0);
             const auto n = p_bnck.size(1);
             const auto c = p_bnck.size(2);
             const auto k = p_bnck.size(3);
+
+
+            auto index_table_2l = index_tables[0];
+            auto index_table_2u = index_tables[1];
 
             const auto l = index_table_2l.size(1);
             const auto u = index_table_2u.size(1);
@@ -130,13 +159,15 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
                     M_nl.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                     r_bnul.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>(),
                     index_table_2l.packed_accessor32<size_t, 2, torch::RestrictPtrTraits>(),
-                    index_table_2u.packed_accessor32<size_t, 2, torch::RestrictPtrTraits>()
+                    index_table_2u.packed_accessor32<size_t, 2, torch::RestrictPtrTraits>(),
+                    
+                    total_threads
                 );
             }));
 
-            ctx->save_for_backward({  p_bnck, M_nl, index_table_l, index_table_u  });
+            ctx->save_for_backward({  p_bnck, M_nl, index_table_2l, index_table_2u  });
 
-            auto r_bnu = r_bnul.sum(dim=-1);
+            auto r_bnu = r_bnul.sum();
 
             return { r_bnu };
         }
@@ -202,23 +233,20 @@ extern "C" {
         TensorPTR *q_1bnu,
         TensorPTR p_bnck,
         TensorPTR M_nl,
-        TensorPTR index_table_l,
-        TensorPTR index_table_u,
+        TensorPTR index_table_2l,
+        TensorPTR index_table_2u,
     ) {
 
         CHECK_INPUT(p_bnck);
         CHECK_INPUT(*q_1bnu);
-        CHECK_INPUT(index_table_l);
-        CHECK_INPUT(index_table_u);
+        CHECK_INPUT(index_table_2l);
+        CHECK_INPUT(index_table_2u);
         CHECK_INPUT(M_nl);
 
-        constants_list index_tables = { *index_table_l, *index_table_u };
-        auto res = MetricTensorAttention::apply(
-                *p_bnck,
-                *M_nl,
-                index_tables
-        )[0];
-        q_1bnu[0] = new torch::Tensor(res);
+        constants_list index_tables = { *index_table_2l, *index_table_2u };
+
+        auto res = MetricTensorAttention::apply(*p_bnck, *M_nl, index_tables);
+        q_1bnu[0] = new torch::Tensor(res[0]);
     }
 }
 
