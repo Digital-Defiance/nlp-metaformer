@@ -71,14 +71,14 @@ __global__ void metric_attention_forwards_kernel(
 
 template <typename scalar_t>
 __global__ void metric_attention_backwards_kernel_p(
+    // CudaTensorView<scalar_t, 3> grad_L__r_bnu,
     CudaTensorView<scalar_t, 4> p_bnck,
     CudaTensorView<scalar_t, 2> M_nl,
-    CudaTensorView<scalar_t, 6> grad_r_bnul__p_bnck,
+    CudaTensorView<scalar_t, 6> grad_L__p_bnck,
     CudaTensorView<size_t, 2> index_table_2l,
     CudaTensorView<size_t, 2> index_table_2u,
     const int max_global_idx
 ) {
-
 
     int idx = blockIdx.x * blockDim.x + threadIdx.x; // Global thread index
     if (idx > max_global_idx) return;
@@ -103,7 +103,6 @@ __global__ void metric_attention_backwards_kernel_p(
     size_t c = index_table_2u[0][u];
     size_t c_1 = index_table_2u[1][u];
 
- 
     size_t c_2;
     compute_index(idx, p_bnck.size(3), c_2);
 
@@ -117,6 +116,10 @@ __global__ void metric_attention_backwards_kernel_p(
     if (c_2 == c_1  && k_2 == k_1){
         grad_r_bnul__p_bnck[b][n][u][l][c_2][k_2] += M_nl[n][l]*p_bnck[b][n][c][k];
     }
+
+    // grad_L__p_bnck[b][n][u][l][c_2][k_2] *= grad_L__r_bnu[b][n][u];
+
+    
 }
 
 
@@ -124,6 +127,7 @@ __global__ void metric_attention_backwards_kernel_p(
 
 template <typename scalar_t> 
 __global__ void metric_attention_backwards_kernel_M(
+    CudaTensorView<scalar_t, 3> grad_L__r_bnu,
     CudaTensorView<scalar_t, 4> p_bnck,
     CudaTensorView<scalar_t, 2> M_nl,
     CudaTensorView<scalar_t, 4> grad_r_bnu__M_nl,
@@ -185,9 +189,8 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
 
         static tensor_list backward(AutogradContext *ctx, tensor_list grad_outputs) {
 
-            auto grad_network__r_bnu = grad_outputs[0];
-
-            const auto device = grad_network__r_bnu.device();
+            auto grad_L__r_bnu = grad_outputs[0];
+            const auto device = grad_L__r_bnu.device();
         
 
             auto saved = ctx->get_saved_variables();
@@ -206,8 +209,8 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
                     grad_r_bnul__p_bnck.packed_accessor32<scalar_t, 6, torch::RestrictPtrTraits>(),
                     grad_r_bnu__M_nl.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>(),
                     index_table_2l.packed_accessor32<size_t, 2, torch::RestrictPtrTraits>()>,
-                    index_table_2u.packed_accessor32<size_t, 2, torch::RestrictPtrTraits>()>
-                    
+                    index_table_2u.packed_accessor32<size_t, 2, torch::RestrictPtrTraits>()>,
+                    total_threads
                 );
             }));
 
