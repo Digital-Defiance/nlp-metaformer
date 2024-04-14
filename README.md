@@ -240,10 +240,10 @@ $$
 and
 
 $$
-\delta p^{bnck} = \lambda \partial_{ p^{bnck}} L  = \lambda \partial_{r^{bnu} } L \cdot \partial_{ p^{bnck}} r^{bnu} 
+\partial_{ p^{bnck}} L  =  \partial_{r^{bnu} } L \cdot \partial_{ p^{bnck}} r^{bnu} 
 $$
 
-where $L$ denotes the loss function, $\lambda$ the learning rate and, $\delta M^{n}_ {l}$ and $\delta p^{bnck}$ the change in $M^{n}_ {l}$ and $p^{bnck}$ for the current iteration. 
+where $L$ denotes the loss function, $\lambda$ the learning rate and, $\delta M^{n}_ {l}$ the update in $M^{n}_ {l}$ for the current iteration of the gradient descent algorithm. The quantity $\partial_{ p^{bnck}} L$ is required so that the backwards propagation can be continued towards the preceding layer. 
 
 
 Gradient with respect with the metric coordinates:
