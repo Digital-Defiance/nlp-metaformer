@@ -71,9 +71,10 @@ __global__ void metric_attention_forwards_kernel(
 
 template <typename scalar_t>
 __global__ void metric_attention_backwards_kernel_p(
+    CudaTensorView<scalar_t, 4> grad_L__p_bnck,
+    CudaTensorView<scalar_t, 3> grad_L__r_bnu,
     CudaTensorView<scalar_t, 4> p_bnck,
     CudaTensorView<scalar_t, 2> M_nl,
-    CudaTensorView<scalar_t, 6> grad_r_bnul__p_bnck,
     CudaTensorView<size_t, 2> index_table_2l,
     CudaTensorView<size_t, 2> index_table_2u,
     const int max_global_idx
@@ -89,11 +90,11 @@ __global__ void metric_attention_backwards_kernel_p(
     size_t n;
     compute_index(idx, q_bnul.size(1), n);
 
-    size_t u;
-    compute_index(idx, q_bnul.size(2), u);
+    size_t c;
+    compute_index(idx, q_bnul.size(2), c);
 
-    size_t l;
-    compute_index(idx, q_bnul.size(3), l);
+    size_t k;
+    compute_index(idx, q_bnul.size(3), k);
 
 
     size_t k = index_table_2l[0][l];
@@ -109,11 +110,11 @@ __global__ void metric_attention_backwards_kernel_p(
     compute_index(idx, p_bnck.size(4), k_2);
 
     if (c_2 == c  && k_2 == k){
-        grad_r_bnul__p_bnck[b][n][u][l][c_2][k_2] += M_nl[n][l]*p_bnck[b][n][c_1][k_1];
+        grad_L__p_bnck[b][n][u][l][c_2][k_2] += M_nl[n][l]*p_bnck[b][n][c_1][k_1];
     }
 
     if (c_2 == c_1  && k_2 == k_1){
-        grad_r_bnul__p_bnck[b][n][u][l][c_2][k_2] += M_nl[n][l]*p_bnck[b][n][c][k];
+        grad_L__p_bnck[b][n][u][l][c_2][k_2] += M_nl[n][l]*p_bnck[b][n][c][k];
     }
     
 }
@@ -188,30 +189,34 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             auto grad_L__r_bnu = grad_outputs[0];
             const auto device = grad_L__r_bnu.device();
         
-
             auto saved = ctx->get_saved_variables();
             auto p_bnck = saved[0];
             auto M_nl = saved[1];
             auto index_table_2l = saved[2];
             auto index_table_2u = saved[3];
 
-            auto delta_M_nl = torch::zeros_like(M_nl).to(device);
-            auto grad_L_p_bnck = torch::zeros_like(p_bnck).to(device);
 
             int total_threads = b*n*l*u;
+
             int number_of_blocks = (total_threads + MAX_THREADS_PER_BLOCK - 1) / MAX_THREADS_PER_BLOCK;
+
+            auto grad_L__p_bnck = torch::zeros_like(p_bnck).to(device);
+
 
             AT_DISPATCH_FLOATING_TYPES(input_bcd.type(), "metric_attention_backwards_kernel_p", ([&] {
                 metric_attention_backwards_kernel_p<scalar_t><<<number_of_blocks, MAX_THREADS_PER_BLOCK>>>(
+                    grad_L__p_bnck.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>(),
                     p_bnck.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
                     M_nl.packed_accessor32<scalar_t, 2, torch::RestrictPtrTraits>(),
-                    grad_r_bnul__p_bnck.packed_accessor32<scalar_t, 6, torch::RestrictPtrTraits>(),
-                    grad_r_bnu__M_nl.packed_accessor32<scalar_t, 4, torch::RestrictPtrTraits>(),
                     index_table_2l.packed_accessor32<size_t, 2, torch::RestrictPtrTraits>()>,
                     index_table_2u.packed_accessor32<size_t, 2, torch::RestrictPtrTraits>()>,
                     total_threads
                 );
             }));
+
+
+
+            auto delta_M_nl = torch::zeros_like(M_nl).to(device);
 
 
             int total_threads = b*n*l*u;
