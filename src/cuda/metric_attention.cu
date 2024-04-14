@@ -56,11 +56,11 @@ __global__ void metric_attention_forwards_kernel(
     compte_index(idx, q_bnul.size(3), l);
 
 
-    size_t k = ...;
-    size_t k_1 = ...;
+    size_t k = index_table_2l[0][l];
+    size_t k_1 = index_table_2l[1][l];
 
-    size_t c = ...;
-    size_t c_1 = ...;
+    size_t c = index_table_2u[0][u];
+    size_t c_1 = index_table_2u[1][u];
 
     // assign common factor
     q_bnul[b][n][u][l] =  M_nl[n][l]*p_bnck[b][n][c][k];
