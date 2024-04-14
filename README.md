@@ -35,7 +35,7 @@ $$
 s^{bncc'} = \textrm{softmax}^{c'} \left ( \frac{1}{\sqrt{N_k}} q^{bnck} k^{bnc'k'} \delta_{kk'} \right ) 
 $$
 
-where $s^{bncc'}$ represents the influence of embedding $c'$ on embedding $c$. The use of $N_k$ is what gives this core machanism the name of scaled dot product attention. The scores are then used on a weighted sum of the values to produce new representations 
+where $s^{bncc'}$ represents the influence of embedding $c'$ on embedding $c$. The use of $N_k$ is what gives this core mechanism the name of scaled dot product attention. The scores are then used on a weighted sum of the values to produce new representations 
 
 $$
 t^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
