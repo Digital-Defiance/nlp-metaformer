@@ -71,10 +71,9 @@ __global__ void metric_attention_forwards_kernel(
 
 template <typename scalar_t>
 __global__ void metric_attention_backwards_kernel_p(
-    // CudaTensorView<scalar_t, 3> grad_L__r_bnu,
     CudaTensorView<scalar_t, 4> p_bnck,
     CudaTensorView<scalar_t, 2> M_nl,
-    CudaTensorView<scalar_t, 6> grad_L__p_bnck,
+    CudaTensorView<scalar_t, 6> grad_r_bnul__p_bnck,
     CudaTensorView<size_t, 2> index_table_2l,
     CudaTensorView<size_t, 2> index_table_2u,
     const int max_global_idx
@@ -116,9 +115,6 @@ __global__ void metric_attention_backwards_kernel_p(
     if (c_2 == c_1  && k_2 == k_1){
         grad_r_bnul__p_bnck[b][n][u][l][c_2][k_2] += M_nl[n][l]*p_bnck[b][n][c][k];
     }
-
-    // grad_L__p_bnck[b][n][u][l][c_2][k_2] *= grad_L__r_bnu[b][n][u];
-
     
 }
 
@@ -198,7 +194,10 @@ class MetricTensorAttention : public Function<MetricTensorAttention> {
             auto M_nl = saved[1];
             auto index_table_2l = saved[2];
             auto index_table_2u = saved[3];
-            auto grad_r_bnul__p_bnck = torch::zeros((b, n, u, l, c, k)).to(device);
+
+            auto delta_M_nl = torch::zeros_like(M_nl).to(device);
+            auto grad_L_p_bnck = torch::zeros_like(p_bnck).to(device);
+
             int total_threads = b*n*l*u;
             int number_of_blocks = (total_threads + MAX_THREADS_PER_BLOCK - 1) / MAX_THREADS_PER_BLOCK;
 
