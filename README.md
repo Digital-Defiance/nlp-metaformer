@@ -177,6 +177,57 @@ $$
 
 
 
+> to provide some clarity into how this fits toguether in a cuda kernel, here q_bnul corresponds to $r^{bnul}$ which is then summed over l afterwards to get $r^{bnu}$
+
+```cuda
+template <typename scalar_t> 
+__global__ void metric_attention_forwards_kernel(
+    CudaTensorView<scalar_t, 4> p_bnck,
+    CudaTensorView<scalar_t, 2> M_nl,
+    CudaTensorView<scalar_t, 4> q_bnul,
+    CudaTensorView<size_t, 2> index_table_2l,
+    CudaTensorView<size_t, 2> index_table_2u,
+    const int max_global_idx
+) {
+
+    int idx = blockIdx.x * blockDim.x + threadIdx.x; // Global thread index
+
+    if (idx > max_global_idx) return;
+
+    size_t b;
+    compute_index(idx, q_bnul.size(0), b);
+
+    size_t n;
+    compute_index(idx, q_bnul.size(1), n);
+
+    size_t u;
+    compute_index(idx, q_bnul.size(2), u);
+
+    size_t l;
+    compute_index(idx, q_bnul.size(3), l);
+
+
+    size_t k = index_table_2l[0][l];
+    size_t k_1 = index_table_2l[1][l];
+
+    size_t c = index_table_2u[0][u];
+    size_t c_1 = index_table_2u[1][u];
+
+    // assign common factor
+    q_bnul[b][n][u][l] =  M_nl[n][l]*p_bnck[b][n][c][k];
+
+    if (k == k_1 && c == c_1){
+        q_bnul[b][n][u][l] *= p_bnck[b][n][c][k];
+    } else if (k == k_1  && c != c_1) {
+        q_bnul[b][n][u][l] *= 2*p_bnck[b][n][c_1][k];
+    } else if (k != k_1  && c == c_1) {
+        q_bnul[b][n][u][l] *= 2*p_bnck[b][n][c][k_1];
+    } else if (k != k_1  && c != c_1) {
+        q_bnul[b][n][u][l] *= 4*p_bnck[b][n][c_1][k_1];
+    }
+}
+```
+
 
 #### Backwards Pass
 
