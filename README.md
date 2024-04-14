@@ -234,13 +234,13 @@ __global__ void metric_attention_forwards_kernel(
 In the backwards pass, we're interested in calculating the following quantities,
 
 $$
-\delta M^{n}_ {l} = \lambda \partial_{M^{n}_ {l}} L = \lambda \partial_{r^{bnu} } L \cdot \partial_{M^{n}_ {l}} r^{bnu} 
+\delta M^{n}_ {l} = \lambda \partial_{M^{n}_ {l}} L =  \lambda \delta_u^u \partial_{r^{bnu} } L \cdot \partial_{M^{n}_ {l}} r^{bnu} 
 $$
 
 and
 
 $$
-\partial_{ p^{bnck}} L  =  \partial_{r^{bnu} } L \cdot \partial_{ p^{bnck}} r^{bnu} 
+\partial_{ p^{bnck}} L  = \delta_u^u \partial_{r^{bnu} } L \cdot \partial_{ p^{bnck}} r^{bnu} 
 $$
 
 where $L$ denotes the loss function, $\lambda$ the learning rate and, $\delta M^{n}_ {l}$ the update in $M^{n}_ {l}$ for the current iteration of the gradient descent algorithm. The quantity $\partial_{ p^{bnck}} L$ is required so that the backwards propagation can be continued towards the preceding layer. 
