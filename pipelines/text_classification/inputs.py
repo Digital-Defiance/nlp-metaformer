@@ -1,3 +1,4 @@
+#this file contains the pydantic models
 from pipelines.text_classification.constants import DEV_RUST_BINARY, DEFAULT_ATTENTION_MECHANISM
 from pydantic_settings import BaseSettings
 from typing import Literal
