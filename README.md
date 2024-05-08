@@ -35,7 +35,7 @@ $$
 s^{bncc'} = \textrm{softmax}^{c'} \left ( \frac{1}{\sqrt{N_k}} q^{bnck} k^{bnc'k'} \delta_{kk'} \right ) 
 $$
 
-where $s^{bncc'}$ represents the influence of embedding $c'$ on embedding $c$. The use of $N_k$ is what gives this core machanism the name of scaled dot product attention. The scores are then used on a weighted sum of the values to produce new representations 
+where $s^{bncc'}$ represents the influence of embedding $c'$ on embedding $c$. The use of $N_k$ is what gives this core mechanism the name of scaled dot product attention. The scores are then used on a weighted sum of the values to produce new representations 
 
 $$
 t^{bnck} = s^{bncc'} v^{bnc''k} \delta_{c'c''}
@@ -177,8 +177,74 @@ $$
 
 
 
+> to provide some clarity into how this fits toguether in a cuda kernel, here q_bnul corresponds to $r^{bnul}$ which is then summed over l afterwards to get $r^{bnu}$
+
+```cuda
+template <typename scalar_t> 
+__global__ void metric_attention_forwards_kernel(
+    CudaTensorView<scalar_t, 4> p_bnck,
+    CudaTensorView<scalar_t, 2> M_nl,
+    CudaTensorView<scalar_t, 4> q_bnul,
+    CudaTensorView<size_t, 2> index_table_2l,
+    CudaTensorView<size_t, 2> index_table_2u,
+    const int max_global_idx
+) {
+
+    int idx = blockIdx.x * blockDim.x + threadIdx.x; // Global thread index
+
+    if (idx > max_global_idx) return;
+
+    size_t b;
+    compute_index(idx, q_bnul.size(0), b);
+
+    size_t n;
+    compute_index(idx, q_bnul.size(1), n);
+
+    size_t u;
+    compute_index(idx, q_bnul.size(2), u);
+
+    size_t l;
+    compute_index(idx, q_bnul.size(3), l);
+
+
+    size_t k = index_table_2l[0][l];
+    size_t k_1 = index_table_2l[1][l];
+
+    size_t c = index_table_2u[0][u];
+    size_t c_1 = index_table_2u[1][u];
+
+    // assign common factor
+    q_bnul[b][n][u][l] =  M_nl[n][l]*p_bnck[b][n][c][k];
+
+    if (k == k_1 && c == c_1){
+        q_bnul[b][n][u][l] *= p_bnck[b][n][c][k];
+    } else if (k == k_1  && c != c_1) {
+        q_bnul[b][n][u][l] *= 2*p_bnck[b][n][c_1][k];
+    } else if (k != k_1  && c == c_1) {
+        q_bnul[b][n][u][l] *= 2*p_bnck[b][n][c][k_1];
+    } else if (k != k_1  && c != c_1) {
+        q_bnul[b][n][u][l] *= 4*p_bnck[b][n][c_1][k_1];
+    }
+}
+```
+
 
 #### Backwards Pass
+
+In the backwards pass, we're interested in calculating the following quantities,
+
+$$
+\delta M^{n}_ {l} = \lambda \partial_{M^{n}_ {l}} L =  \lambda ( \partial_{r^{bnu} } L ) \delta_u^u ( \partial_{M^{n}_ {l}} r^{bnu} )
+$$
+
+and
+
+$$
+\partial_{ p^{bnck}} L  = ( \partial_{r^{bnu} } L )  \delta_u^u ( \partial_{ p^{bnck}} r^{bnu} ) 
+$$
+
+where $L$ denotes the loss function, $\lambda$ the learning rate and, $\delta M^{n}_ {l}$ the update in $M^{n}_ {l}$ for the current iteration of the gradient descent algorithm. The quantity $\partial_{ p^{bnck}} L$ is required so that the backwards propagation can be continued towards the preceding layer. 
+
 
 Gradient with respect with the metric coordinates:
 
@@ -223,6 +289,41 @@ Note: all workflows have been removed, pipelines are being moved to prefect
 | Sentiment Analysis Task (Completed without success, model overfits easily) | stanford dataset | Outdated | [![train-model: Sentiment Analysis @ EC2 Spot](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/train-model-sentiment-analysis-task.yml) |
 | GPT Shakespeare Textgen (Completed with success) | [sha-v0.1.0](https://github.com/Digital-Defiance/llm-voice-chat/releases/tag/sha-v0.1.0) | Outdated | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/gpt_shakespear_experiment.yml) |
 | GPT Array Sorter Experiment (Completed with success) | Generated | Outdated | [![GPT Array Sorter Experiment](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml/badge.svg)](https://github.com/Digital-Defiance/llm-voice-chat/actions/workflows/python-app.yml) |
+
+
+
+### Early Explorations with NanoGPT array sorter
+
+
+NanoGPT was trained to sort the tokens 1, 2 and 3.
+
+
+- induced distances between the embeddings for each token
+- position (i, j) = distance between token i and token j
+- note how the first head is clearly encoding for the sort order 
+
+
+![image](https://github.com/Digital-Defiance/nlp-metaformer/assets/63464503/3ae9012e-7606-4f6b-83f3-c3a77201b5e4)
+
+- scaled dot product doesn't really have an analogue to this, so there's nothing to compare
+- it does however, also have scores tables, which we can compare
+- scores for scaled dot product
+
+![image](https://github.com/Digital-Defiance/nlp-metaformer/assets/63464503/15a9d9d5-ab15-47a9-ae83-22debcaef8ea)
+
+- scores for metric based
+
+![image](https://github.com/Digital-Defiance/nlp-metaformer/assets/63464503/913d8506-8dac-48e1-8251-1dc2bc9af344)
+
+- we can also try to compare the weights matrices
+- in case of metric attention, they are metric tensors
+
+![image](https://github.com/Digital-Defiance/nlp-metaformer/assets/63464503/f64b6aff-fa76-4aeb-b00b-7ee192025322)
+
+- in case of scaled dot product, we use WqWk.T as an analogue
+
+![image](https://github.com/Digital-Defiance/nlp-metaformer/assets/63464503/82ba6f24-fefe-421a-b0e4-38e4ae162f4a)
+
 
 
 
@@ -356,6 +457,10 @@ In all the results from very early experiments, despite the parameter reduction 
 
 
 ### Ablation
+
+### Benchmarking
+
+- https://arxiv.org/pdf/2205.14135.pdf
 
 ## Discussion
 
