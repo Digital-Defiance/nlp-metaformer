@@ -37,7 +37,8 @@ class NextTokenPredictor(LightningModule):
         super().__init__()
         self.backbone = model_cfg.to_model()
         self.layernorm = nn.LayerNorm(model_cfg.embeddings_cfg.dim)
-        self.proj_1dt = make_linear(1, model_cfg.embeddings_cfg.dim, model_cfg.embeddings_cfg.vocab_size)
+        
+        self.proj_dt = self.backbone.embedder.vocabolary.weight  #  make_linear(model_cfg.embeddings_cfg.dim, model_cfg.embeddings_cfg.vocab_size)
         self.scheduler = scheduler
 
     def generate_text(self, text: str):
@@ -53,7 +54,7 @@ class NextTokenPredictor(LightningModule):
     def forward(self, x_bc: Tensor) -> Tensor:
         x_bcd = self.backbone(x_bc)
         x_bcd = self.layernorm(x_bcd)
-        logits_bct = x_bcd @ self.proj_1dt
+        logits_bct = x_bcd @ self.proj_dt
         return logits_bct
 
     def training_step(self, batch: tuple[Tensor, Tensor], batch_idx: int):

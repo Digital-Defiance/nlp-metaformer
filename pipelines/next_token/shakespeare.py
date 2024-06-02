@@ -23,8 +23,7 @@ from pipelines.backbone.attention import AttentionConfig
 from pipelines.backbone.feedforward import FeedForwardConfig
 from pydantic import BaeModel
 from typing import Literal
-
-DEVICE = "cuda"
+from pipelines.commons import DEVICE
 
 class DataLoader(BaseModel):
     iterations: int
@@ -46,7 +45,6 @@ class DataLoader(BaseModel):
             y_bcd = torch.stack([torch.from_numpy((data[i+1:i+1+block_size]).astype(np.int64)) for i in idx_b])
             yield x_bcd.pin_memory().to(DEVICE, non_blocking=True), y_bcd.pin_memory().to(DEVICE, non_blocking=True)
 
-
 @flow
 def train_shakespear(
     cfg: TransformerConfig = TransformerConfig(
@@ -58,9 +56,15 @@ def train_shakespear(
             AttentionConfig(
                 kind="scaled_dot_product",
                 number_of_heads = 6,
+                masked = True,
+                norm_input = "LayerNorm",
+                residual = True,
             ),
             FeedForwardConfig(
                 scale = 4,
+                activation = "gelu",
+                norm_input = "LayerNorm",
+                residual = True,
             )
         ]
     ),
