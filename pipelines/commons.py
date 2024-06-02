@@ -5,6 +5,11 @@ from prefect import task, Task
 from functools import wraps
 from typing import Callable
 from torch import nn
+import torch
+from torch import nn
+
+
+DEVICE = "cpu"
 
 def shell_task(command_factory: Callable) -> Task:
     @task(name = command_factory.__name__)
@@ -14,16 +19,15 @@ def shell_task(command_factory: Callable) -> Task:
         return await shell_operation.run()
     return prefect_task
 
-import torch
-from torch import nn
 
-def make_linear(*_dim):
+
+def make_linear(*_dim, in_features_dim = -2):
     dim = list(_dim)
 
-    d0 = dim.pop(-2)
-    
+    d0 = dim.pop(in_features_dim)
+
     d = 1
     for x in dim:
         d*=x
 
-    return nn.Linear(d0, d, bias=False).weight.view(*_dim).contiguous()
+    return nn.Linear(d0, d, bias=False).weight.view(*_dim).contiguous().to(DEVICE)
