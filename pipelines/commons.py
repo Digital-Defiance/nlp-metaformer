@@ -14,10 +14,16 @@ def shell_task(command_factory: Callable) -> Task:
         return await shell_operation.run()
     return prefect_task
 
+import torch
+from torch import nn
 
+def make_linear(*_dim):
+    dim = list(_dim)
 
-def make_linear(*dim):
+    d0 = dim.pop(-2)
+    
     d = 1
     for x in dim:
         d*=x
-    return nn.Linear(1, d, bias=False).weight.reshape(*dim)
+
+    return nn.Linear(d0, d, bias=False).weight.view(*_dim).contiguous()

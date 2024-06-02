@@ -18,9 +18,9 @@ from pipelines.commons import make_linear
 
 
 class EmbeddingsConfig(BaseModel):
-    dim: int = 60
-    vocab_size: int = 50304
-    ctx_win: int = 50
+    dim: int = 128
+    vocab_size: int = 50257
+    ctx_win: int = 64
     
     def to_model(self):
         return Embedder(self)
@@ -33,5 +33,5 @@ class Embedder(nn.Module):
 
     def forward(self, x_bc: Tensor):
         C = x_bc.size(1)
-        ctx = torch.arange(0, C)
+        ctx = torch.arange(0, C).to("cuda")
         return self.vocabolary(x_bc) + self.pos_encoding(ctx)

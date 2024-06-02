@@ -20,9 +20,9 @@ class FeedForward(nn.Module):
         super().__init__()
 
         self.ff = nn.Sequential(
-            nn.Linear(embedd_cfg.dim, cfg.scale*embedd_cfg.dim),
+            nn.Linear(embedd_cfg.dim, cfg.scale*embedd_cfg.dim, bias = True),
             nn.GELU(),
-            nn.Linear(cfg.scale*embedd_cfg.dim, embedd_cfg.dim)
+            nn.Linear(cfg.scale*embedd_cfg.dim, embedd_cfg.dim, bias = True)
         )
 
         if cfg.norm_input is not None:
