@@ -13,7 +13,9 @@ Inspired by: https://github.com/sail-sg/poolformer - https://arxiv.org/pdf/2111.
 
 ### From scaled dot product to metric tensor 
 
-In this section, we point out that the multi-headed scaled dot product attention introduced in 2017 is equivalent to a general quadratic form that lends itself to a more efficient reformulation. Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric. What follows is a short exposition of scaled dot product, using Ricci calculus to avoid underspecification and transitioning into the proposed quadratic and metric attentions.
+In this section, we point out that the multi-headed scaled dot product attention introduced in [2017](https://arxiv.org/abs/1706.03762) is equivalent to a general quadratic form that lends itself to a more efficient reformulation. Furthermore, we argue on the grounds of efficiency, interpretability and regularization for the imposition that the form be a metric/metric-like tensor.
+
+What follows is a short exposition of scaled dot product, using Ricci calculus to avoid underspecification and transitioning into the proposed quadratic and metric attentions.
 
 Let $K_d^{nk}$, $Q_d^{nk}$ and $V_d^{nk}$ each be $N_n$ learnable linear maps from  $\mathbf{R}^{N_d}$ to $\mathbf{R}^{N_k}$ that act on a batch of $N_b$ sequences of $N_c$ input embeddings from  $\mathbf{R}^{N_d}$ to produce the well known keys, queries and values,
 
@@ -70,9 +72,25 @@ $$
 r^{bncc'} = U^n_{dd'} x^{bcd}   x^{bc'd'} 
 $$
 
-Disregarding training dynamics and efficiency considerations, it is evident that this is a complete mathematical equivalence. However, there is good reason not to keep this form. Indeed, the motivation for using multiple heads that operate on a smaller dimensional space is that, whearas the quadratic form makes use of $N_nN_d^2$ parameters, the 2017 formulation uses $2N_nN_dN_k$, thus, as long as $N_k < N_d/2$, that approach is more memory efficient.
+It is evident that the original group of equations are equivalent to the simple quadratic form. 
 
-However, it is not the most efficient reformulation that can be squeezed out of the quadratic form,
+The motivation for using multiple heads that operate on a smaller dimensional space is that, whearas the quadratic form makes use of $N_nN_d^2$ parameters in $U^n_{dd'}$, the 2017 formulation uses $2N_nN_dN_k$, thus, as long as $N_k < N_d/2$ across $K_d^{nk}$, $Q_d^{nk}$ and $V_d^{nk}$, making approach is more memory efficient.
+
+However, it is not the most efficient reformulation that can be squeezed out of the quadratic form. Let us assume that there exists $P^{nk}_d$ such that $U^n_{dd'} = P^{nk}_d P^{nk}_{d'} $, then
+
+$$
+r^{bncc'} = P^{nk}_d P^{nk}_{d'} x^{bcd}   x^{bc'd'}
+= (P^{nk}_d x^{bcd})   (P^{nk}_{d'} x^{bc'd'})
+$$
+
+This restriction has now halved the number of parameters down to $N_d N_n N_k$ in $P^{nk}_d$.
+
+Some additional things to note:
+
+- the $U^n_{dd'} = P^{nk}_d P^{nk}_{d'} $ condition restricts the amount of possible values of $U^n_{dd'}$, leading to a possible regularization effect
+- the $U^n_{dd'} = P^{nk}_d P^{nk}_{d'} $ condition leads to metric-like properties like non-negativity and symmetry
+- moving forward towards a true metric might mean venturing into more computationally complex operations, missing properties: identity of indiscernibles and triangle inequality
+
 
 
 ### CUDA Kernel of the Metric Tensor Attention
