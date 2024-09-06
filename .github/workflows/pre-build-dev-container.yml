@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - '.github/.devcontainer/pre-build/**'
+      - '.github/.devcontainer/**'
       - '.github/workflows/pre-build-dev-container.yml'
     branches:
       - "main"
@@ -39,7 +39,7 @@ jobs:
         name: Pre-build dev container image
         uses: devcontainers/ci@v0.3
         with:
-          subFolder: .devcontainer/pre-build
+          subFolder: .devcontainer
           imageName: ghcr.io/${{ env.GITHUB_REPOSITORY_LOWER }}:devcontainer
           cacheFrom: ghcr.io/${{ env.GITHUB_REPOSITORY_LOWER }}:devcontainer
           push: always
