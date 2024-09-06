@@ -15,6 +15,19 @@
     "ghcr.io/devcontainers/features/node:1": { "version": "20.16"},
     "ghcr.io/jungaretti/features/make:1": {}
   },
+  "postCreateCommand": "./.devcontainer/postCreateCommand.sh",
+  "mounts": [
+      { 
+          "source": "/etc/localtime", 
+          "target": "/etc/localtime",
+          "type": "bind" 
+      },
+      { 
+          "source": "${localWorkspaceFolder}/.devcontainer/resolv.conf", 
+          "target": "/etc/resolv.conf",
+          "type": "bind" 
+      }
+  ],
   "hostRequirements": {
     "gpu": "optional" 
   }
