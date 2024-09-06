@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - '.github/.devcontainer/pre-build/devcontainer.json'
+      - '.github/.devcontainer/pre-build/.devcontainer.json'
       - '.github/workflows/pre-build-dev-container.yml'
     branches:
       - "main"
