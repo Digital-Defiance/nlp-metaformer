@@ -2,10 +2,10 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "runArgs": [
-      "--gpus",
-      "all"
-  ],
+  // "runArgs": [
+  //    "--gpus",
+  //   "all"
+  // ],
   "features": {
     "ghcr.io/devcontainers/features/nvidia-cuda:1": {},
     "ghcr.io/duduribeiro/devcontainer-features/neovim:1": { "version": "nightly" },
