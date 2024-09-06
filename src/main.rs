@@ -14,6 +14,7 @@ mod optimizer;
 
 use crate::mlflow::Metric;
 use clap::Parser;
+use libc::printf;
 use libc::MPOL_DEFAULT;
 use nn::Optimizer;
 use optimizer::build_optimizer;
@@ -21,9 +22,9 @@ use optimizer::build_optimizer;
 use metaformer::{metaformer, MetaFormer};
 use mlflow::log_metrics;
 
-use model::metaformer::embedder::create_embedder_module;
 use clap::Parser;
 use config::Cli;
+use model::metaformer::embedder::create_embedder_module;
 use serde::Deserialize;
 use tch;
 use tch::nn;
@@ -88,15 +89,15 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn get_device(&model) -> Device {
+    pub fn get_device(&self) -> Device {
         let cuda = Device::cuda_if_available();
-        if model.use_gpu == "True" {
+        if self.use_gpu == "True" {
             print!("Current training device: CUDA");
             match cuda {
                 Device::Cuda(_) => cuda,
                 _ => panic!("Invalid device specification. Did you mean CPU ?"),
             }
-        } else if model.use_gpu == "False" {
+        } else if self.use_gpu == "False" {
             print!("Current training device: CPU");
             Device::Cpu
         } else {
@@ -107,7 +108,9 @@ impl Cli {
 
 /// Implementation of gradient descent
 fn main() {
+    print!("Reading CLI arguments");
     let config: Cli = Cli::parse();
+    print!("Determining device, CPU or CUDA");
     let training_device = config.get_device();
     let vs: nn::VarStore = nn::VarStore::new(training_device);
 
@@ -144,21 +147,29 @@ fn main() {
         model.finish(vs_path, config.output_vocabolary);
         model
     };
-
     print!("Model has been built.");
-    let adam: Result<Optimizer, TchError> = tch::nn::Adam::default().build(vs, config.learning_rate);
+
+    let adam: Result<Optimizer, TchError> =
+        tch::nn::Adam::default().build(vs, config.learning_rate);
     let mut opt = match adam {
         Ok(result) => result,
         Err(err) => panic!("Error while building optimizer: {}", err),
     };
     print!("Optimizer has been built");
 
-    for train_step in 1..(config.slices * config.epochs + 1) {
+    print!("Training will start now.");
+    for epoch in 1..(config.epochs + 1) {
+        print!("Performing training epoch");
         let mut loss_accumulator = MetricAccumulator::new("loss/train");
-        let dataslice: std::collections::HashMap<String, tch::Tensor> =
-            read_dataslice("train", train_step);
-        let x_sc = dataslice.get("X").unwrap().to(training_device);
-        let y_s = dataslice.get("Y").unwrap().to(training_device);
+
+        println!("Reading data...");
+        let data: std::collections::HashMap<String, tch::Tensor> = {
+            let path_to_slice = std::path::Path::new(&config.path);
+            let dataslice = tch::Tensor::read_safetensors(path_to_slice).unwrap();
+            dataslice.into_iter().collect()
+        };
+        let x_sc = data.get("X").unwrap().to(training_device);
+        let y_s = data.get("Y").unwrap().to(training_device);
 
         println!("Loaded slice to device.");
         let s = y_s.size()[0]; // slice size s
@@ -177,17 +188,13 @@ fn main() {
             opt.backward_step(&loss);
             loss_accumulator.accumulate(loss.double_value(&[]));
         }
-        
+
         let avg_train_loss = loss_accumulator.to_metric(train_step);
-        // let mut metrics: Vec<Metric> = model.perform_eval(&config, EVAL_SLICE_IDX, train_step);
-        // metrics.push(avg_train_loss);
-        log_metrics(&config, vec![avg_train_loss]);
     }
 
     let displacement = 5 + config.slices * config.epochs;
     for test_idx in 1..(config.slices + 1) {
         let step = test_idx + displacement;
         let metrics: Vec<Metric> = model.perform_eval(&config, test_idx, step);
-        log_metrics(&config, metrics);
     }
 }
