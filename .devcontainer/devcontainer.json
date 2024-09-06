@@ -1,7 +1,8 @@
 {
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "image": "ubuntu:22.04",
+  // "build": {
+   //  "dockerfile": "Dockerfile"
+  // },
   // "runArgs": [
   //    "--gpus",
   //   "all"
