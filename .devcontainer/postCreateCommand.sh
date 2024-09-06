@@ -1,5 +1,5 @@
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
+pip3 install torch==2.2.0  --index-url https://download.pytorch.org/whl/cu118
+git config --global --add safe.directory /workspaces/nlp-metaformer
 sudo apt install pkg-config
 sudo apt install libssl-dev
 nvm install 20

@@ -20,6 +20,9 @@
           "type": "bind" 
       }
   ],
+  "containerEnv": {
+    "LIBTORCH_USE_PYTORCH": "1"
+  },
   "hostRequirements": {
     "gpu": "optional" 
   }

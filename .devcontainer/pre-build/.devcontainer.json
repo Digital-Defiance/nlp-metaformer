@@ -1,12 +1,7 @@
 {
-  "image": "ubuntu:22.04",
-  // "build": {
-   //  "dockerfile": "Dockerfile"
-  // },
-  // "runArgs": [
-  //    "--gpus",
-  //   "all"
-  // ],
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "features": {
     "ghcr.io/devcontainers/features/nvidia-cuda:1": {},
     "ghcr.io/duduribeiro/devcontainer-features/neovim:1": { "version": "nightly" },
@@ -18,5 +13,6 @@
     "ghcr.io/devcontainers/features/rust:1": {},
     "ghcr.io/devcontainers/features/python:1": { "version": "3.12"}
 
-  }
+  },
+    "postCreateCommand": "pip3 install torch==2.2.0  --index-url https://download.pytorch.org/whl/cu118"
 }

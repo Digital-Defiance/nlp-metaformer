@@ -21,7 +21,7 @@ use optimizer::build_optimizer;
 use metaformer::{metaformer, MetaFormer};
 use mlflow::log_metrics;
 
-use self::metaformer::embedder::create_embedder_module;
+use model::metaformer::embedder::create_embedder_module;
 use clap::Parser;
 use config::Cli;
 use serde::Deserialize;
@@ -88,15 +88,15 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn get_device(&self) -> Device {
+    pub fn get_device(&model) -> Device {
         let cuda = Device::cuda_if_available();
-        if self.use_gpu == "True" {
+        if model.use_gpu == "True" {
             print!("Current training device: CUDA");
             match cuda {
                 Device::Cuda(_) => cuda,
                 _ => panic!("Invalid device specification. Did you mean CPU ?"),
             }
-        } else if self.use_gpu == "False" {
+        } else if model.use_gpu == "False" {
             print!("Current training device: CPU");
             Device::Cpu
         } else {
@@ -111,19 +111,74 @@ fn main() {
     let training_device = config.get_device();
     let vs: nn::VarStore = nn::VarStore::new(training_device);
 
-    let model: MetaFormer = MetaFormer {
-        embedding_dimension,
-        training_device,
-        size_of_context_window,
-        layers: vec![Box::new(embedder)],
-    }
-    .build_model(vs_path.root(), &config, training_device);
+    // Build model from config
+    let model = {
+        print!("Building model");
+        let mut model: MetaFormer = MetaFormer {
+            embedding_dimension,
+            training_device,
+            size_of_context_window,
+            layers: vec![Box::new(embedder)],
+        };
+        println!("Creating embedder module");
+        let embedder = create_embedder_module(
+            vs_path,
+            config.dimension,
+            config.input_vocabolary,
+            config.context_window,
+            device,
+        );
 
-    let mut opt: Optimizer = build_optimizer(&vs, &config);
+        for _ in 0..config.depth {
+            print!("Adding transformer block...");
+            model = match config.attention_kind.as_str() {
+                quadratic => model.add_quadratic_form(vs_path, config.heads),
+                scaled_dot_product => model.add_scaled_dot_product(vs_path, config.heads),
+                identity => model,
+                average_pooling => model.add_avg_pooling(vs_path, config.kernel_size.unwrap()),
+                metric => todo!(),
+                _ => panic!("Not suported"),
+            };
+            model = self.add_mlp(vs_path);
+        }
+        model.finish(vs_path, config.output_vocabolary);
+        model
+    };
+
+    print!("Model has been built.");
+    let adam: Result<Optimizer, TchError> = tch::nn::Adam::default().build(vs, config.learning_rate);
+    let mut opt = match adam {
+        Ok(result) => result,
+        Err(err) => panic!("Error while building optimizer: {}", err),
+    };
+    print!("Optimizer has been built");
 
     for train_step in 1..(config.slices * config.epochs + 1) {
-        let avg_train_loss =
-            model.perform_train_step(&config, training_device, train_step, &mut opt);
+        let mut loss_accumulator = MetricAccumulator::new("loss/train");
+        let dataslice: std::collections::HashMap<String, tch::Tensor> =
+            read_dataslice("train", train_step);
+        let x_sc = dataslice.get("X").unwrap().to(training_device);
+        let y_s = dataslice.get("Y").unwrap().to(training_device);
+
+        println!("Loaded slice to device.");
+        let s = y_s.size()[0]; // slice size s
+
+        for idx in 0..(s / config.batch_size) {
+            let start = idx * config.batch_size;
+            let end = start + config.batch_size;
+
+            let x_bc: tch::Tensor = x_sc.slice(0, start, end, 1);
+            let y_b = y_s.slice(0, start, end, 1);
+
+            let logits_bct = self.forward(&x_bc);
+            let logits_bt = logits_bct.mean_dim(1, false, kind::Kind::Float);
+            let loss = logits_bt.cross_entropy_for_logits(&y_b);
+
+            opt.backward_step(&loss);
+            loss_accumulator.accumulate(loss.double_value(&[]));
+        }
+        
+        let avg_train_loss = loss_accumulator.to_metric(train_step);
         // let mut metrics: Vec<Metric> = model.perform_eval(&config, EVAL_SLICE_IDX, train_step);
         // metrics.push(avg_train_loss);
         log_metrics(&config, vec![avg_train_loss]);

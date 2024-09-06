@@ -48,17 +48,17 @@ impl Module for MetaFormer {
 }
 
 impl MetaFormer {
-    fn add_mlp(self, vs_path: &nn::Path) -> Self {
+    pub fn add_mlp(self, vs_path: &nn::Path) -> Self {
         let layer = create_mlp(vs_path, self.embedding_dimension);
         self.add(vs_path, layer)
     }
 
-    fn add_avg_pooling(self, vs_path: &nn::Path, kernel_size: i64) -> Self {
+    pub fn add_avg_pooling(self, vs_path: &nn::Path, kernel_size: i64) -> Self {
         let layer = AvgPooling::new(kernel_size);
         self.add(vs_path, layer)
     }
 
-    fn add_scaled_dot_product(self, vs_path: &nn::Path, number_of_heads: i64) -> Self {
+    pub fn add_scaled_dot_product(self, vs_path: &nn::Path, number_of_heads: i64) -> Self {
         let layer = ScaledDotProductAttention::new(
             vs_path,
             number_of_heads,
@@ -69,7 +69,7 @@ impl MetaFormer {
         self.add(vs_path, layer)
     }
 
-    fn add_quadratic_form(self, vs_path: &nn::Path, number_of_heads: i64) -> Self {
+    pub fn add_quadratic_form(self, vs_path: &nn::Path, number_of_heads: i64) -> Self {
         let layer = QuadraticAttention::new(
             vs_path,
             number_of_heads,
@@ -80,7 +80,7 @@ impl MetaFormer {
         self.add(vs_path, layer)
     }
 
-    fn finish(mut self, vs_path: &nn::Path, output_tokens: i64) -> Self {
+    pub fn finish(mut self, vs_path: &nn::Path, output_tokens: i64) -> Self {
         let d = self.embedding_dimension;
         let t = output_tokens;
 
