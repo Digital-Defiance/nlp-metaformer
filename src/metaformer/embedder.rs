@@ -1,13 +1,10 @@
-
-use tch::nn::{ self, Module };
+use tch::nn::{self, Module};
 
 use crate::metaformer::commons;
 use commons::generate_init;
 
-
-fn create_config() -> nn::EmbeddingConfig{
-    nn::EmbeddingConfig{
-    
+fn create_config() -> nn::EmbeddingConfig {
+    nn::EmbeddingConfig {
         /*
         If True, gradient w.r.t. weight matrix will be a sparse tensor.
         See Notes for more details regarding sparse gradients
@@ -18,9 +15,9 @@ fn create_config() -> nn::EmbeddingConfig{
         scale_grad_by_freq: false,
 
         /*
-        If specified, the entries at padding_idx do not contribute to the gradient; 
-        therefore, the embedding vector at padding_idx is not updated during training, 
-        i.e. it remains as a fixed “pad”. For a newly constructed Embedding, the embedding 
+        If specified, the entries at padding_idx do not contribute to the gradient;
+        therefore, the embedding vector at padding_idx is not updated during training,
+        i.e. it remains as a fixed “pad”. For a newly constructed Embedding, the embedding
         vector at padding_idx will default to all zeros, but can be updated to another
         value to be used as the padding vector.
          */
@@ -30,17 +27,14 @@ fn create_config() -> nn::EmbeddingConfig{
     }
 }
 
-
-
 /// Creates the embedder module, which transforms integer valued tokens into positionally encoded embeddings.
 pub fn create_embedder_module(
     vs: &nn::Path,
     embedding_dimension: i64,
     size_of_vocabolary: i64,
     size_of_context_window: i64,
-    training_device: tch::Device
+    training_device: tch::Device,
 ) -> impl nn::Module {
- 
     let config = create_config();
     let d: i64 = embedding_dimension;
     let v: i64 = size_of_vocabolary;
@@ -55,38 +49,28 @@ pub fn create_embedder_module(
     })
 }
 
-
-
-
-
-
-
 #[cfg(test)]
 mod tests {
-    use super::*; 
-    use tch::{nn, Device, Kind, Tensor};
+    use super::*;
     use tch::nn::Module;
-
+    use tch::{nn, Device, Kind, Tensor};
 
     #[test]
-    pub fn test_layer(){
-
-
+    pub fn test_layer() {
         let vs = nn::VarStore::new(Device::Cpu);
         let vs_path = &vs.root();
-    
+
         let b = 10;
         let c = 5;
         let d = 4;
         // let n = 2;
         // let q = 2;
 
-        let input_bc = Tensor::randint( 50, &[b, c],  (Kind::Int, Device::Cpu));
+        let input_bc = Tensor::randint(50, &[b, c], (Kind::Int, Device::Cpu));
         let layer = create_embedder_module(vs_path, d, 50, c, Device::Cpu);
         let output_bcd = layer.forward(&input_bc);
 
         debug_assert!(output_bcd.size() == vec![b, c, d]);
-
     }
-
 }
+

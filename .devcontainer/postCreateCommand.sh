@@ -1,3 +1,6 @@
+
+sudo apt install pkg-config
+sudo apt install libssl-dev
 nvm install 20
 nvm use 20
 
