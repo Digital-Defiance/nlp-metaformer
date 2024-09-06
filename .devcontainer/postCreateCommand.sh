@@ -8,3 +8,11 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 $HOME/.fzf/install --key-bindings --completion --update-rc
 echo "alias nf='nvim \$(fzf)'" >> $HOME/.bashrc
 nvim --headless "+Lazy! sync" +qa 
+
+
+echo "eval \$(op signin )" >> $HOME/.bashrc
+echo "op run -- gh auth setup-git" >> $HOME/.bashrc
+echo "echo 'Running git setup'" >> $HOME/.bashrc
+
+echo "git config --global user.email \$(op read op://digital-defiance-personal/github/GH_EMAIL)" >> $HOME/.bashrc
+echo "git config --global user.name \$(op read op://digital-defiance-personal/github/GH_NAME)" >> $HOME/.bashrc
