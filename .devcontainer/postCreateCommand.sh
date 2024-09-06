@@ -14,6 +14,7 @@ echo "alias nf='nvim \$(fzf)'" >> $HOME/.bashrc
 nvim --headless "+Lazy! sync" +qa 
 
 
+echo "export GH_TOKEN='op://digital-defiance-personal/github/GH_TOKEN'" >> $HOME/.bashrc
 echo "eval \$(op signin )" >> $HOME/.bashrc
 echo "op run -- gh auth setup-git" >> $HOME/.bashrc
 echo "echo 'Running git setup'" >> $HOME/.bashrc
