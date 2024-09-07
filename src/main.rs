@@ -3,32 +3,19 @@
 https://paperswithcode.com/paper/bert-pre-training-of-deep-bidirectional
 
 */
-use attention::quadratic_form::QuadraticAttention;
-use tch::kind;
-use tch::nn::Module;
-use tch::nn::OptimizerConfig;
 pub mod attention;
-pub mod config;
 pub mod cuda;
-pub mod files;
-pub mod mlflow;
 
+use attention::quadratic_form::QuadraticAttention;
 use clap::Parser;
 use nn::Optimizer;
-use serde::Deserialize;
 use tch;
+use tch::kind;
 use tch::nn;
+use tch::nn::Module;
+use tch::nn::OptimizerConfig;
 use tch::Device;
 use tch::TchError;
-
-#[derive(PartialEq, Clone, Copy, Deserialize, Debug)]
-pub enum AttentionKind {
-    Quadratic,
-    ScaledDotProduct,
-    Metric,
-    Identity,
-    AveragePooling,
-}
 
 /// Train a MetaFormer model.
 #[derive(Parser, Debug)]
