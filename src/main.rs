@@ -5,14 +5,12 @@ https://paperswithcode.com/paper/bert-pre-training-of-deep-bidirectional
 */
 
 use clap::Parser;
-use nn::Optimizer;
 use tch;
 use tch::kind;
 use tch::nn;
 use tch::nn::Module;
 use tch::nn::OptimizerConfig;
 use tch::Device;
-use tch::TchError;
 use tch::Tensor;
 
 /// Train a MetaFormer model.
@@ -62,9 +60,6 @@ pub struct Cli {
 
     #[clap(long, env)]
     pub epochs: i64,
-
-    #[clap(long, env)]
-    pub use_gpu: String,
 }
 
 #[derive(Debug)]
