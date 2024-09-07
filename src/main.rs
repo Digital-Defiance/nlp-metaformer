@@ -3,10 +3,7 @@
 https://paperswithcode.com/paper/bert-pre-training-of-deep-bidirectional
 
 */
-pub mod attention;
-pub mod cuda;
 
-use attention::quadratic_form::QuadraticAttention;
 use clap::Parser;
 use nn::Optimizer;
 use tch;
@@ -16,6 +13,7 @@ use tch::nn::Module;
 use tch::nn::OptimizerConfig;
 use tch::Device;
 use tch::TchError;
+use tch::Tensor;
 
 /// Train a MetaFormer model.
 #[derive(Parser, Debug)]
@@ -168,6 +166,100 @@ pub fn create_embedder_module(
     })
 }
 
+/// Performs self attention N times using the quadratic form $xW_nx.T$ where $W_n$ is a learnable matrix.
+/// This is an early version of the metric self attention, where $W$ is forced to have the properties a metric tensor.
+/// https://arxiv.org/abs/2111.11418 - evidence that any of the attention mechanisms might have similar performance
+// Implement the nn::Module trait for QuadraticAttention.
+#[derive(Debug)]
+pub struct QuadraticAttention {
+    projections_1ndq: Tensor,
+    metric_tensors_1nqq: Tensor,
+    adapter_1pd: Tensor,
+    sqrt_q: f64,
+    cp: (i64, i64),
+}
+impl nn::Module for QuadraticAttention {
+    fn forward(&self, x_bcd: &Tensor) -> Tensor {
+        let b = x_bcd.size()[0];
+        // assert_eq!(x_bcd.size(), vec![b, c, d]);
+
+        // Apply n projections to the input
+        let x_b1cd = &x_bcd.unsqueeze(1);
+        let x_bncq = &x_b1cd.matmul(&self.projections_1ndq);
+        // debug_assert_eq!(x_bncq.size(), vec![b, n, c, q]);
+
+        // Use n custom dot products to generate n score tables
+        let x_bnqc = &x_bncq.transpose(-1, -2);
+        let dotproducts_bncc = &x_bncq.matmul(&self.metric_tensors_1nqq.matmul(x_bnqc));
+        // debug_assert!(dotproducts_bncc.size() == vec![b, n, c, c]);
+
+        // From scaled dot product attention introduced in https://arxiv.org/abs/1706.03762
+        let scaled_dotproducts_bncc = &dotproducts_bncc.divide_scalar(self.sqrt_q);
+
+        let softmaxed_scaled_dotproducts_bncc =
+            &scaled_dotproducts_bncc.softmax(-1, tch::kind::Kind::Float);
+        let y_bnqc = &x_bncq
+            .transpose(-1, -2)
+            .matmul(softmaxed_scaled_dotproducts_bncc);
+        // debug_assert!(y_bnqc.size() == vec![b, n, q, c]);
+
+        let y_bcp = &y_bnqc.reshape(&[b, self.cp.0, self.cp.1]);
+        // debug_assert!(y_bcp.size() == vec![b, c, p]);
+
+        y_bcp.matmul(&self.adapter_1pd)
+    }
+}
+
+/// Performs self attention N times using the quadratic form $xW_nx.T$ where $W_n$ is a learnable matrix.
+/// This is an early version of the metric self attention, where $W$ is forced to have the properties a metric tensor.
+/// https://arxiv.org/abs/2111.11418 - evidence that any of the attention mechanisms might have similar performance
+// Implement the nn::Module trait for QuadraticAttention.
+#[derive(Debug)]
+pub struct ScaledDotProductAttention {
+    query_weights_1ndq: Tensor,
+    key_weights_1ndq: Tensor,
+    value_weights_1ndq: Tensor,
+    adapter_1pd: Tensor,
+    sqrt_q: f64,
+    cp: (i64, i64),
+}
+impl nn::Module for ScaledDotProductAttention {
+    fn forward(&self, x_bcd: &Tensor) -> Tensor {
+        let b = x_bcd.size()[0];
+        // assert_eq!(x_bcd.size(), vec![b, self.c, self.d]);
+
+        // Apply n projections to the input
+        let x_b1cd = &x_bcd.unsqueeze(1);
+
+        let queries_bncq = &x_b1cd.matmul(&self.query_weights_1ndq);
+        let keys_bncq = &x_b1cd.matmul(&self.key_weights_1ndq);
+        let values_bncq = &x_b1cd.matmul(&self.value_weights_1ndq);
+
+        // debug_assert_eq!(queries_bncq.size(), vec![b, n, c, q]);
+        // debug_assert_eq!(keys_bncq.size(), vec![b, n, c, q]);
+        // debug_assert_eq!(values_bncq.size(), vec![b, n, c, q]);
+
+        // Use n custom dot products to generate n score tables
+        let keys_bnqc = &keys_bncq.transpose(-1, -2);
+        let scores_bncc = &queries_bncq.matmul(keys_bnqc);
+        // debug_assert!(scores_bncc.size() == vec![b, n, c, c]);
+
+        // From scaled dot product attention introduced in https://arxiv.org/abs/1706.03762
+        let scaled_scores_bncc = &scores_bncc.divide_scalar(self.sqrt_q);
+
+        let softmaxed_scaled_scores_bncc = &scaled_scores_bncc.softmax(-1, tch::kind::Kind::Float);
+        let y_bnqc = &values_bncq
+            .transpose(-1, -2)
+            .matmul(softmaxed_scaled_scores_bncc);
+        // debug_assert!(y_bnqc.size() == vec![b, n, q, c]);
+
+        let y_bcp = &y_bnqc.reshape(&[b, self.cp.0, self.cp.1]);
+        // debug_assert!(y_bcp.size() == vec![b, c, p]);
+
+        y_bcp.matmul(&self.adapter_1pd)
+    }
+}
+
 fn main() {
     print!("Reading CLI arguments");
     let config: Cli = Cli::parse();
@@ -178,6 +270,7 @@ fn main() {
         _ => Device::Cpu,
     };
     let vs: nn::VarStore = nn::VarStore::new(training_device);
+    let vs_path = &vs.root();
 
     let model = {
         print!("Building model");
@@ -191,6 +284,11 @@ fn main() {
         );
         let mut layers: Vec<Box<dyn Module>> = vec![Box::new(embedder)];
 
+        let n = config.heads;
+        let d = config.dimension;
+        let c = config.context_window;
+        let q = config.dimension / config.heads;
+        let p = config.dimension;
         for _ in 0..config.depth {
             print!("Adding transformer block...");
             print!("Adding linear norm");
@@ -199,22 +297,41 @@ fn main() {
 
             print!("Adding attention module");
             let layer: Box<dyn nn::Module> = match config.attention_kind.as_str() {
-                "quadratic" => Box::new(QuadraticAttention::new(
-                    &vs.root(),
-                    config.heads,
-                    config.dimension,
-                    config.dimension / config.heads,
-                    config.context_window,
-                )),
-                "scaled_dot_product" => Box::new(
-                    attention::scaled_dot_product::ScaledDotProductAttention::new(
-                        &vs.root(),
-                        config.heads,
-                        config.dimension,
-                        config.dimension / config.heads,
-                        config.context_window,
+                "quadratic" => Box::new(QuadraticAttention {
+                    projections_1ndq: vs_path.var(
+                        "projections_1ndq",
+                        &[1, n, d, q],
+                        generate_init(),
                     ),
-                ),
+                    metric_tensors_1nqq: vs_path.var(
+                        "metric_tensors_1nqq",
+                        &[1, n, q, q],
+                        generate_init(),
+                    ),
+                    adapter_1pd: vs_path.var("adapter_1pd", &[1, p, d], generate_init()),
+                    sqrt_q: f64::sqrt(q as f64),
+                    cp: (c, p),
+                }),
+                "scaled_dot_product" => Box::new(ScaledDotProductAttention {
+                    query_weights_1ndq: vs_path.var(
+                        "query_weights_1ndq",
+                        &[1, n, d, q],
+                        generate_init(),
+                    ),
+                    key_weights_1ndq: vs_path.var(
+                        "key_weights_1ndq",
+                        &[1, n, d, q],
+                        generate_init(),
+                    ),
+                    value_weights_1ndq: vs_path.var(
+                        "value_weights_1ndq",
+                        &[1, n, d, q],
+                        generate_init(),
+                    ),
+                    adapter_1pd: vs_path.var("adapter_1pd", &[1, p, d], generate_init()),
+                    sqrt_q: f64::sqrt(q as f64),
+                    cp: (c, p),
+                }),
                 // identity => model,
                 // average_pooling => layers.push_avg_pooling(&vs.root(), config.kernel_size.unwrap()),
                 // metric => todo!(),
