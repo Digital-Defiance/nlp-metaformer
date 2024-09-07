@@ -3,7 +3,7 @@
     "dockerfile": "Dockerfile"
   },
   "features": {
-    "ghcr.io/devcontainers/features/nvidia-cuda:1": {},
+    "ghcr.io/devcontainers/features/nvidia-cuda:1": { "installToolkit": true },
     "ghcr.io/duduribeiro/devcontainer-features/neovim:1": { "version": "nightly" },
     "ghcr.io/itsmechlark/features/1password:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
