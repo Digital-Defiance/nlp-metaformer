@@ -17,48 +17,45 @@ use tch::Tensor;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
-    #[clap(long, env)]
+    #[arg(long, env, default_value = "data/data.safetensors")]
     pub path: String,
 
-    #[clap(long, env)]
-    pub encoding: String,
-
     /// The kind of attention to use.
-    #[clap(long, env)]
+    #[arg(long, env, default_value = "scaled_dot_product")]
     pub attention_kind: String,
 
     /// Dimension of the vector space that the network uses internally to represent tokens
-    #[clap(long, env)]
+    #[arg(long, env, default_value_t = 512)]
     pub dimension: i64,
 
     /// Number of transformer blocks
-    #[clap(long, env)]
+    #[arg(long, env, default_value_t = 3)]
     pub depth: i64,
 
     /// Number of attention modules per transformer block
-    #[clap(long, env)]
+    #[arg(long, env, default_value_t = 3)]
     pub heads: i64,
 
     /// Maximum number of tokens in the input sequence
-    #[clap(long, env)]
+    #[arg(long, env, default_value_t = 50)]
     pub context_window: i64,
 
     /// Total number of tokens that the network recognizes in its input
-    #[clap(long, env)]
+    #[arg(long, env)]
     pub input_vocabolary: i64,
 
     /// Total number of tokens that the network recognizes in its outpput
-    #[clap(long, env)]
+    #[arg(long, env)]
     pub output_vocabolary: i64,
 
     /// Number of samples in a batch
-    #[clap(long, env)]
+    #[arg(long, env, default_value_t = 16)]
     pub batch_size: i64,
 
-    #[clap(long, env)]
+    #[arg(long, env, default_value_t = 1e-4)]
     pub learning_rate: f64,
 
-    #[clap(long, env)]
+    #[arg(long, env, default_value_t = 5)]
     pub epochs: i64,
 }
 
@@ -265,14 +262,15 @@ fn main() {
         _ => Device::Cpu,
     };
 
-    let (x_sc, y_s) = {
+    let (data_val_BC, data_test_BC, data_train_BC) = {
         println!("Reading data...");
         let path_to_slice = std::path::Path::new(&config.path);
         let dataslice = tch::Tensor::read_safetensors(path_to_slice).unwrap();
         let data: std::collections::HashMap<String, tch::Tensor> = dataslice.into_iter().collect();
-        let x_sc = data.get("X").unwrap().to(training_device);
-        let y_s = data.get("Y").unwrap().to(training_device);
-        (x_sc, y_s)
+        let data_val_BC = data.get("val").unwrap().to(training_device);
+        let data_test_BC = data.get("test").unwrap().to(training_device);
+        let data_train_BC = data.get("train").unwrap().to(training_device);
+        (data_val_BC, data_test_BC, data_train_BC)
     };
 
     print!("Building model");
@@ -369,26 +367,34 @@ fn main() {
     print!("Optimizer has been built");
 
     print!("Training will start now.");
-    let s = y_s.size()[0]; // slice size s
     for _epoch in 1..(config.epochs + 1) {
-        print!("Performing training epoch");
+        // RANDOMIZE DATA
+        //
+        //
+        //
+        // DIVIDE DATA INTO BATCHES
+        //
+        //
+        // PERFORM STOCHASTIC GRADIENT DESCENT
+
+        // print!("Performing training epoch");
         // let mut loss_accumulator = MetricAccumulator::new("loss/train");
 
-        for idx in 0..(s / config.batch_size) {
-            let start = idx * config.batch_size;
-            let end = start + config.batch_size;
-
-            let x_bc: tch::Tensor = x_sc.slice(0, start, end, 1);
-            let y_b = y_s.slice(0, start, end, 1);
-
-            let logits_bct = model.forward(&x_bc);
-            let logits_bt = logits_bct.mean_dim(1, false, kind::Kind::Float);
-            let loss = logits_bt.cross_entropy_for_logits(&y_b);
-
-            opt.backward_step(&loss);
-            // loss_accumulator.accumulate(loss.double_value(&[]));
-        }
-
+        // for idx in 0..(s / config.batch_size) {
+        //     let start = idx * config.batch_size;
+        //     let end = start + config.batch_size;
+        //
+        //     let x_bc: tch::Tensor = x_sc.slice(0, start, end, 1);
+        //     let y_b = y_s.slice(0, start, end, 1);
+        //
+        //     let logits_bct = model.forward(&x_bc);
+        //     let logits_bt = logits_bct.mean_dim(1, false, kind::Kind::Float);
+        //     let loss = logits_bt.cross_entropy_for_logits(&y_b);
+        //
+        //     opt.backward_step(&loss);
+        //     // loss_accumulator.accumulate(loss.double_value(&[]));
+        // }
+        //
         // let avg_train_loss = loss_accumulator.to_metric(train_step);
     }
 
