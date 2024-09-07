@@ -269,11 +269,22 @@ fn main() {
         Device::Cuda(_) => cuda,
         _ => Device::Cpu,
     };
-    let vs: nn::VarStore = nn::VarStore::new(training_device);
-    let vs_path = &vs.root();
 
+    let (x_sc, y_s) = {
+        println!("Reading data...");
+        let path_to_slice = std::path::Path::new(&config.path);
+        let dataslice = tch::Tensor::read_safetensors(path_to_slice).unwrap();
+        let data: std::collections::HashMap<String, tch::Tensor> = dataslice.into_iter().collect();
+        let x_sc = data.get("X").unwrap().to(training_device);
+        let y_s = data.get("Y").unwrap().to(training_device);
+        (x_sc, y_s)
+    };
+
+    print!("Building model");
+    let vs: nn::VarStore = nn::VarStore::new(training_device);
     let model = {
-        print!("Building model");
+        let vs_path = &vs.root();
+
         println!("Creating embedder module");
         let embedder = create_embedder_module(
             &vs.root(),
@@ -356,30 +367,17 @@ fn main() {
     };
     print!("Model has been built.");
 
-    let adam: Result<Optimizer, TchError> =
-        tch::nn::Adam::default().build(&vs, config.learning_rate);
-    let mut opt = match adam {
+    let mut opt = match tch::nn::Adam::default().build(&vs, config.learning_rate) {
         Ok(result) => result,
         Err(err) => panic!("Error while building optimizer: {}", err),
     };
     print!("Optimizer has been built");
 
     print!("Training will start now.");
+    let s = y_s.size()[0]; // slice size s
     for _epoch in 1..(config.epochs + 1) {
         print!("Performing training epoch");
         // let mut loss_accumulator = MetricAccumulator::new("loss/train");
-
-        println!("Reading data...");
-        let data: std::collections::HashMap<String, tch::Tensor> = {
-            let path_to_slice = std::path::Path::new(&config.path);
-            let dataslice = tch::Tensor::read_safetensors(path_to_slice).unwrap();
-            dataslice.into_iter().collect()
-        };
-        let x_sc = data.get("X").unwrap().to(training_device);
-        let y_s = data.get("Y").unwrap().to(training_device);
-
-        println!("Loaded slice to device.");
-        let s = y_s.size()[0]; // slice size s
 
         for idx in 0..(s / config.batch_size) {
             let start = idx * config.batch_size;
