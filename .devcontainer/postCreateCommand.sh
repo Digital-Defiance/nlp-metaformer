@@ -1,4 +1,6 @@
 pip3 install torch==2.2.0  --index-url https://download.pytorch.org/whl/cu118
+pip install numpy==1.26.4
+pip install setuptools
 git config --global --add safe.directory /workspaces/nlp-metaformer
 sudo apt install pkg-config
 sudo apt install libssl-dev
